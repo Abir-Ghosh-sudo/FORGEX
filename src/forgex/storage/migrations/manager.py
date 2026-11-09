@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import marshal
 import re
 import sqlite3
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
@@ -14,7 +16,15 @@ from typing import Callable
 from forgex.core.exceptions import StorageError
 from forgex.storage.database import Database
 
+
 logger = logging.getLogger(__name__)
+
+MigrationOperation = Callable[[sqlite3.Connection], None]
+
+
+def utc_now() -> str:
+    """Return the current timezone-aware UTC timestamp."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,22 +33,101 @@ class Migration:
 
     version: int
     name: str
-    up: Callable[[sqlite3.Connection], None]
-    down: Callable[[sqlite3.Connection], None] | None = None
+    up: MigrationOperation
+    down: MigrationOperation | None = None
 
     def __post_init__(self) -> None:
-        if self.version <= 0:
-            raise ValueError("Migration version must be positive.")
+        if (
+            not isinstance(self.version, int)
+            or isinstance(self.version, bool)
+            or self.version <= 0
+        ):
+            raise ValueError(
+                "Migration version must be a positive integer."
+            )
 
-        if not re.fullmatch(r"[a-zA-Z0-9_-]+", self.name):
-            raise ValueError("Migration name contains invalid characters.")
+        if not isinstance(self.name, str):
+            raise ValueError("Migration name must be a string.")
+
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", self.name):
+            raise ValueError(
+                "Migration name must start with a lowercase letter "
+                "and contain only lowercase letters, numbers, "
+                "and underscores."
+            )
+
+        if not callable(self.up):
+            raise ValueError(
+                "Migration up operation must be callable."
+            )
+
+        if self.down is not None and not callable(self.down):
+            raise ValueError(
+                "Migration down operation must be callable."
+            )
+
+    @staticmethod
+    def _operation_fingerprint(
+        operation: MigrationOperation | None,
+    ) -> str:
+        """Generate a deterministic fingerprint for an operation."""
+
+        if operation is None:
+            return "none"
+
+        digest = hashlib.sha256()
+
+        code = getattr(operation, "__code__", None)
+
+        if code is not None:
+            digest.update(marshal.dumps(code))
+
+            defaults = repr(
+                getattr(operation, "__defaults__", None)
+            )
+            keyword_defaults = repr(
+                getattr(operation, "__kwdefaults__", None)
+            )
+
+            digest.update(defaults.encode("utf-8"))
+            digest.update(keyword_defaults.encode("utf-8"))
+
+            closure = getattr(operation, "__closure__", None)
+
+            if closure:
+                for cell in closure:
+                    try:
+                        value = repr(cell.cell_contents)
+                    except ValueError:
+                        value = "<empty-cell>"
+
+                    digest.update(value.encode("utf-8"))
+
+        else:
+            identity = (
+                f"{type(operation).__module__}."
+                f"{type(operation).__qualname__}"
+            )
+            digest.update(identity.encode("utf-8"))
+
+        return digest.hexdigest()
 
     @property
     def checksum(self) -> str:
-        """Return a stable identifier for migration metadata."""
+        """Return a stable checksum of the complete migration."""
 
-        identity = f"{self.version}:{self.name}"
-        return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        payload = "|".join(
+            (
+                str(self.version),
+                self.name,
+                self._operation_fingerprint(self.up),
+                self._operation_fingerprint(self.down),
+            )
+        )
+
+        return hashlib.sha256(
+            payload.encode("utf-8")
+        ).hexdigest()
 
 
 class MigrationManager:
@@ -74,11 +163,15 @@ class MigrationManager:
             ) from exc
 
     def register(self, migration: Migration) -> None:
-        """Register a migration."""
+        """Register one migration."""
+
+        if not isinstance(migration, Migration):
+            raise TypeError("Expected a Migration instance.")
 
         if migration.version in self._migrations:
             raise StorageError(
-                f"Migration version {migration.version} is already registered."
+                f"Migration version {migration.version} "
+                "is already registered."
             )
 
         self._migrations[migration.version] = migration
@@ -87,7 +180,13 @@ class MigrationManager:
         self,
         migrations: list[Migration],
     ) -> None:
-        """Register multiple migrations."""
+        """Register multiple migrations atomically."""
+
+        for migration in migrations:
+            if not isinstance(migration, Migration):
+                raise TypeError(
+                    "All entries must be Migration instances."
+                )
 
         versions = [migration.version for migration in migrations]
 
@@ -96,14 +195,19 @@ class MigrationManager:
                 "Duplicate migration versions detected."
             )
 
-        for migration in sorted(
-            migrations,
-            key=lambda item: item.version,
-        ):
-            self.register(migration)
+        duplicates = set(versions).intersection(self._migrations)
+
+        if duplicates:
+            version = min(duplicates)
+            raise StorageError(
+                f"Migration version {version} is already registered."
+            )
+
+        for migration in migrations:
+            self._migrations[migration.version] = migration
 
     def applied_migrations(self) -> list[dict]:
-        """Return migration history."""
+        """Return migration history ordered by version."""
 
         try:
             rows = self.database.execute(
@@ -116,62 +220,93 @@ class MigrationManager:
 
             return [dict(row) for row in rows]
 
-        except sqlite3.Error as exc:
+        except (sqlite3.Error, StorageError) as exc:
             raise StorageError(
                 f"Cannot read migration history: {exc}"
             ) from exc
 
     def current_version(self) -> int:
-        """Return the latest applied migration version."""
+        """Return the latest successfully applied migration version."""
 
-        row = self.database.execute(
-            f"SELECT MAX(version) FROM {self.TABLE_NAME}"
-        ).fetchone()
+        try:
+            row = self.database.execute(
+                f"""
+                SELECT COALESCE(MAX(version), 0)
+                FROM {self.TABLE_NAME}
+                """
+            ).fetchone()
 
-        return int(row[0] or 0)
+            return int(row[0]) if row else 0
 
-    def pending_migrations(self) -> list[Migration]:
-        """Return migrations that have not been applied."""
+        except (sqlite3.Error, StorageError) as exc:
+            raise StorageError(
+                f"Cannot determine current migration version: {exc}"
+            ) from exc
 
-        applied = {
-            item["version"]: item
-            for item in self.applied_migrations()
-        }
+    def _validate_applied_migrations(self) -> None:
+        """Ensure applied migration definitions have not changed."""
 
-        pending = []
+        history = self.applied_migrations()
 
-        for version, migration in sorted(self._migrations.items()):
-            existing = applied.get(version)
+        for item in history:
+            version = item["version"]
+            migration = self._migrations.get(version)
 
-            if existing is None:
-                pending.append(migration)
-                continue
+            if migration is None:
+                raise StorageError(
+                    f"Applied migration {version} is not registered."
+                )
 
-            if existing["name"] != migration.name:
+            if migration.name != item["name"]:
                 raise StorageError(
                     f"Migration {version} name has changed."
                 )
 
-            if existing["checksum"] != migration.checksum:
+            if migration.checksum != item["checksum"]:
                 raise StorageError(
-                    f"Migration {version} checksum mismatch."
+                    f"Migration {version} checksum mismatch. "
+                    "An applied migration has been modified."
                 )
 
-        return pending
+    def pending_migrations(self) -> list[Migration]:
+        """Return migrations that have not been applied."""
+
+        self._validate_applied_migrations()
+
+        applied_versions = {
+            item["version"]
+            for item in self.applied_migrations()
+        }
+
+        return [
+            migration
+            for version, migration in sorted(
+                self._migrations.items()
+            )
+            if version not in applied_versions
+        ]
 
     def apply(
         self,
         target_version: int | None = None,
     ) -> list[int]:
-        """Apply pending migrations sequentially.
+        """Apply pending migrations sequentially."""
 
-        Returns the versions successfully applied.
-        """
+        if target_version is not None:
+            if (
+                not isinstance(target_version, int)
+                or isinstance(target_version, bool)
+            ):
+                raise ValueError(
+                    "target_version must be an integer."
+                )
+
+            if target_version < 0:
+                raise ValueError(
+                    "target_version cannot be negative."
+                )
 
         pending = self.pending_migrations()
-
-        if target_version is not None and target_version < 0:
-            raise ValueError("target_version cannot be negative.")
 
         if target_version is not None:
             pending = [
@@ -180,37 +315,48 @@ class MigrationManager:
                 if migration.version <= target_version
             ]
 
-        applied_versions = []
+        applied_versions: list[int] = []
 
         for migration in pending:
-            with self.database.transaction(immediate=True) as connection:
-                try:
+            expected_version = self.current_version() + 1
+
+            if migration.version != expected_version:
+                raise StorageError(
+                    f"Migration sequence gap: expected version "
+                    f"{expected_version}, got {migration.version}."
+                )
+
+            try:
+                with self.database.transaction(
+                    immediate=True
+                ) as connection:
+
                     migration.up(connection)
 
                     connection.execute(
                         f"""
                         INSERT INTO {self.TABLE_NAME}
-                        (version, name, checksum, applied_at)
+                            (version, name, checksum, applied_at)
                         VALUES (?, ?, ?, ?)
                         """,
                         (
                             migration.version,
                             migration.name,
                             migration.checksum,
-                            datetime.now(timezone.utc).isoformat(),
+                            utc_now(),
                         ),
                     )
 
-                except Exception as exc:
-                    logger.exception(
-                        "Migration %s failed.",
-                        migration.version,
-                    )
+            except Exception as exc:
+                logger.exception(
+                    "Migration %s failed.",
+                    migration.version,
+                )
 
-                    raise StorageError(
-                        f"Migration {migration.version} "
-                        f"({migration.name}) failed: {exc}"
-                    ) from exc
+                raise StorageError(
+                    f"Migration {migration.version} "
+                    f"({migration.name}) failed: {exc}"
+                ) from exc
 
             applied_versions.append(migration.version)
 
@@ -226,68 +372,85 @@ class MigrationManager:
         self,
         steps: int = 1,
     ) -> list[int]:
-        """Rollback the latest applied migrations.
+        """Rollback the latest applied migrations."""
 
-        A migration without a down function cannot be rolled back.
-        """
+        if (
+            not isinstance(steps, int)
+            or isinstance(steps, bool)
+            or steps <= 0
+        ):
+            raise ValueError(
+                "steps must be a positive integer."
+            )
 
-        if steps <= 0:
-            raise ValueError("steps must be positive.")
+        self._validate_applied_migrations()
 
         history = self.applied_migrations()
 
         if steps > len(history):
             raise StorageError(
-                "Cannot rollback more migrations than have been applied."
+                "Cannot rollback more migrations than "
+                "have been applied."
             )
 
-        rolled_back = []
+        rolled_back: list[int] = []
 
         for item in reversed(history[-steps:]):
-            migration = self._migrations.get(item["version"])
+            version = item["version"]
+            migration = self._migrations.get(version)
 
             if migration is None:
                 raise StorageError(
-                    f"Migration {item['version']} is not registered."
+                    f"Migration {version} is not registered."
                 )
 
             if migration.down is None:
                 raise StorageError(
-                    f"Migration {item['version']} does not support rollback."
+                    f"Migration {version} does not support rollback."
                 )
 
             if migration.checksum != item["checksum"]:
                 raise StorageError(
-                    f"Migration {item['version']} checksum mismatch."
+                    f"Migration {version} checksum mismatch."
                 )
 
-            with self.database.transaction(immediate=True) as connection:
-                try:
+            try:
+                with self.database.transaction(
+                    immediate=True
+                ) as connection:
+
                     migration.down(connection)
 
-                    connection.execute(
+                    cursor = connection.execute(
                         f"""
                         DELETE FROM {self.TABLE_NAME}
                         WHERE version = ?
                         """,
-                        (migration.version,),
+                        (version,),
                     )
 
-                except Exception as exc:
-                    logger.exception(
-                        "Rollback of migration %s failed.",
-                        migration.version,
-                    )
+                    if cursor.rowcount != 1:
+                        raise StorageError(
+                            f"Migration history entry {version} "
+                            "could not be removed."
+                        )
 
-                    raise StorageError(
-                        f"Rollback of migration {migration.version} failed: {exc}"
-                    ) from exc
+            except Exception as exc:
+                logger.exception(
+                    "Rollback of migration %s failed.",
+                    version,
+                )
 
-            rolled_back.append(migration.version)
+                raise StorageError(
+                    f"Rollback of migration {version} "
+                    f"({migration.name}) failed: {exc}"
+                ) from exc
+
+            rolled_back.append(version)
 
             logger.info(
                 "Rolled back migration %s: %s",
-                migration.version,
+                version,
                 migration.name,
             )
 
