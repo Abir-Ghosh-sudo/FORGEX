@@ -1,0 +1,10 @@
+^C:\USERS\ABIR\ONEDRIVE\DESKTOP\HACATHON\FORGEX\CMAKELISTS.TXT
+setlocal
+C:\Users\ABIR\AppData\Local\Temp\pip-build-env-twhfd0bg\normal\Lib\site-packages\cmake\data\bin\cmake.exe -SC:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex -BC:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/cp314-cp314-win_amd64 --check-stamp-file C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/cp314-cp314-win_amd64/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

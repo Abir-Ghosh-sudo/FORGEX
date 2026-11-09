@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\ABIR\OneDrive\Desktop\hacathon\Forgex\build\cp314-cp314-win_amd64\CMakeFiles\18224f133c834655c02bf9b094bdf412\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{5AE07C79-48F3-3833-AFA2-B79B084F7731}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

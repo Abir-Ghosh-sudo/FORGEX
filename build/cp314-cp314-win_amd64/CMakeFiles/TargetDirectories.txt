@@ -1,0 +1,2 @@
+C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/cp314-cp314-win_amd64/CMakeFiles/ALL_BUILD.dir
+C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/cp314-cp314-win_amd64/CMakeFiles/ZERO_CHECK.dir
