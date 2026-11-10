@@ -1,265 +1,211 @@
 
-"""Secure and atomic file writing utilities for FORGEX."""
+"""Secure workspace file writing utilities."""
 
 from __future__ import annotations
 
-import codecs
-import logging
 import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from forgex.tools.filesystem.paths import (
-    WorkspacePathResolver,
+from forgex.tools.filesystem.paths import WorkspacePathResolver
+from forgex.tools.filesystem.protection import (
+    WorkspaceProtection,
 )
-
-logger = logging.getLogger(__name__)
-
-DEFAULT_MAX_WRITE_SIZE = 10 * 1024 * 1024
 
 
 class FileWriteError(Exception):
     """Base exception for file writing failures."""
 
 
-class FileAlreadyExistsError(FileWriteError):
-    """Raised when overwrite is not permitted."""
-
-
-class FileWriteSizeError(FileWriteError):
-    """Raised when content exceeds the configured size limit."""
+class FileWritePermissionError(FileWriteError):
+    """Raised when a write operation is not permitted."""
 
 
 @dataclass(frozen=True, slots=True)
 class FileWriteResult:
-    """Result of a successful file write."""
+    """Result of a file writing operation."""
 
     path: Path
     bytes_written: int
     created: bool
-    atomic: bool
+    overwritten: bool
 
     def to_dict(self) -> dict[str, object]:
         return {
             "path": str(self.path),
             "bytes_written": self.bytes_written,
             "created": self.created,
-            "atomic": self.atomic,
+            "overwritten": self.overwritten,
         }
 
 
 class FileWriter:
-    """Write files inside a validated workspace.
-
-    Writes use a temporary file in the destination directory followed by
-    an atomic replacement. Existing files are protected unless overwrite
-    is explicitly enabled.
-    """
+    """Write files safely inside a validated workspace."""
 
     def __init__(
         self,
         resolver: WorkspacePathResolver,
         *,
-        max_write_size: int = DEFAULT_MAX_WRITE_SIZE,
-        default_encoding: str = "utf-8",
-        file_mode: int = 0o600,
+        protection: WorkspaceProtection | None = None,
+        max_write_size: int = 10 * 1024 * 1024,
+        create_parents: bool = True,
     ) -> None:
-        if max_write_size <= 0:
-            raise ValueError("max_write_size must be positive.")
-
         if not isinstance(resolver, WorkspacePathResolver):
             raise TypeError("resolver must be a WorkspacePathResolver.")
 
-        try:
-            codecs.lookup(default_encoding)
-        except LookupError as exc:
-            raise ValueError(
-                f"Unknown encoding: {default_encoding}"
-            ) from exc
+        if max_write_size <= 0:
+            raise ValueError("max_write_size must be positive.")
 
-        if file_mode < 0 or file_mode > 0o777:
-            raise ValueError("file_mode must be between 0 and 0o777.")
+        if protection is not None:
+            if not isinstance(protection, WorkspaceProtection):
+                raise TypeError("protection must be WorkspaceProtection.")
+
+            if protection.workspace != resolver.workspace:
+                raise ValueError(
+                    "Protection workspace must match resolver workspace."
+                )
 
         self._resolver = resolver
+        self._protection = protection
         self._max_write_size = max_write_size
-        self._default_encoding = default_encoding
-        self._file_mode = file_mode
+        self._create_parents = create_parents
 
-    def write(
+    def write_text(
         self,
         path: str | Path,
-        content: str | bytes,
+        content: str,
         *,
-        encoding: str | None = None,
+        encoding: str = "utf-8",
         overwrite: bool = False,
-        create_parents: bool = False,
     ) -> FileWriteResult:
-        """Atomically write content to a workspace file."""
+        """Write UTF-encoded text atomically."""
 
-        if not isinstance(content, (str, bytes)):
-            raise TypeError("content must be str or bytes.")
+        if not isinstance(content, str):
+            raise TypeError("content must be a string.")
 
-        if isinstance(content, str):
-            selected_encoding = encoding or self._default_encoding
-            try:
-                data = content.encode(selected_encoding)
-            except (LookupError, UnicodeEncodeError) as exc:
-                raise FileWriteError(
-                    f"Could not encode content using {selected_encoding}."
-                ) from exc
-        else:
-            if encoding is not None:
-                raise ValueError(
-                    "encoding must not be specified when content is bytes."
-                )
-            data = content
+        return self.write_bytes(
+            path,
+            content.encode(encoding),
+            overwrite=overwrite,
+        )
 
-        if len(data) > self._max_write_size:
-            raise FileWriteSizeError(
+    def write_bytes(
+        self,
+        path: str | Path,
+        content: bytes,
+        *,
+        overwrite: bool = False,
+    ) -> FileWriteResult:
+        """Write bytes using a temporary file and atomic installation."""
+
+        if not isinstance(content, bytes):
+            raise TypeError("content must be bytes.")
+
+        if len(content) > self._max_write_size:
+            raise FileWriteError(
                 f"Content exceeds the {self._max_write_size}-byte limit."
             )
 
         resolved = self._resolver.resolve(path)
         destination = resolved.absolute
+
+        self._check_protection(destination)
+
+        if destination == self._resolver.workspace:
+            raise FileWriteError("Cannot write to the workspace root.")
+
         parent = destination.parent
 
         if not parent.exists():
-            if not create_parents:
+            if not self._create_parents:
                 raise FileWriteError(
-                    f"Parent directory does not exist: {parent}"
+                    "Parent directory does not exist."
                 )
+            parent.mkdir(parents=True, exist_ok=True)
 
-            self._create_parent_directories(parent)
-
-        # Revalidate after directory creation.
-        resolved = self._resolver.resolve(path)
+        # Revalidate after parent creation.
+        resolved = self._resolver.resolve(destination)
         destination = resolved.absolute
-        parent = destination.parent
+        self._check_protection(destination)
 
-        if destination.exists() and destination.is_dir():
+        if destination.is_symlink():
+            raise FileWriteError("Writing through symlinks is not permitted.")
+
+        existed = destination.exists()
+
+        if existed and not destination.is_file():
+            raise FileWriteError("Destination is not a regular file.")
+
+        if existed and not overwrite:
             raise FileWriteError(
-                f"Destination is a directory: {destination}"
-            )
-
-        created = not destination.exists()
-
-        if not overwrite and not created:
-            raise FileAlreadyExistsError(
-                f"File already exists: {destination}"
+                f"Destination already exists: {destination}"
             )
 
         temporary_path: Path | None = None
 
         try:
-            file_descriptor, temporary_name = tempfile.mkstemp(
-                prefix=".forgex-",
+            with tempfile.NamedTemporaryFile(
+                mode="wb",
+                prefix=".forgex-write-",
                 suffix=".tmp",
                 dir=parent,
-            )
-            temporary_path = Path(temporary_name)
+                delete=False,
+            ) as temporary:
+                temporary_path = Path(temporary.name)
+                temporary.write(content)
+                temporary.flush()
+                os.fsync(temporary.fileno())
 
-            try:
-                if os.name != "nt":
-                    os.fchmod(file_descriptor, self._file_mode)
+            # Revalidate immediately before installing the file.
+            self._resolver.resolve(destination)
+            self._check_protection(destination)
 
-                with os.fdopen(file_descriptor, "wb") as file:
-                    file.write(data)
-                    file.flush()
-                    os.fsync(file.fileno())
-
-            except Exception:
-                # fdopen owns the descriptor once successfully constructed.
-                try:
-                    os.close(file_descriptor)
-                except OSError:
-                    pass
-                raise
-
-            # Revalidate immediately before replacement.
-            self._resolver.resolve(path)
-
-            if not overwrite and destination.exists():
-                raise FileAlreadyExistsError(
-                    f"File appeared during write: {destination}"
+            if destination.is_symlink():
+                raise FileWriteError(
+                    "Destination became a symlink during writing."
                 )
 
-            os.replace(temporary_path, destination)
-            temporary_path = None
+            if overwrite:
+                os.replace(temporary_path, destination)
+            else:
+                # Hard-link creation fails atomically if destination exists.
+                os.link(temporary_path, destination)
+                temporary_path.unlink()
 
-            self._fsync_directory(parent)
+            temporary_path = None
 
             return FileWriteResult(
                 path=destination,
-                bytes_written=len(data),
-                created=created,
-                atomic=True,
+                bytes_written=len(content),
+                created=not existed,
+                overwritten=existed,
             )
 
         except FileWriteError:
             raise
+        except FileExistsError as exc:
+            raise FileWriteError(
+                f"Destination already exists: {destination}"
+            ) from exc
         except OSError as exc:
-            logger.exception("Failed to write file: %s", destination)
             raise FileWriteError(
                 f"Could not write file: {destination}"
             ) from exc
         finally:
             if temporary_path is not None:
-                try:
-                    temporary_path.unlink(missing_ok=True)
-                except OSError:
-                    logger.warning(
-                        "Could not remove temporary file: %s",
-                        temporary_path,
-                    )
+                temporary_path.unlink(missing_ok=True)
 
-    def _create_parent_directories(self, parent: Path) -> None:
-        """Create missing directories one level at a time."""
+    def _check_protection(self, path: Path) -> None:
+        """Reject writes targeting protected paths."""
 
-        try:
-            relative = parent.relative_to(self._resolver.workspace)
-        except ValueError as exc:
-            raise FileWriteError(
-                "Parent directory escapes the workspace."
-            ) from exc
-
-        current = self._resolver.workspace
-
-        for component in relative.parts:
-            current = current / component
-
-            if current.exists():
-                if current.is_symlink() or not current.is_dir():
-                    raise FileWriteError(
-                        f"Unsafe parent directory: {current}"
-                    )
-                continue
-
-            current.mkdir(mode=0o700)
-
-            if current.is_symlink():
-                raise FileWriteError(
-                    f"Unexpected symlink in parent directory: {current}"
-                )
-
-    @staticmethod
-    def _fsync_directory(directory: Path) -> None:
-        """Best-effort directory sync for rename durability on POSIX."""
-
-        if os.name == "nt":
+        if self._protection is None:
             return
 
-        descriptor: int | None = None
+        result = self._protection.inspect(
+            path,
+            operation="write",
+        )
 
-        try:
-            descriptor = os.open(directory, os.O_RDONLY)
-            os.fsync(descriptor)
-        except OSError:
-            logger.debug(
-                "Directory fsync unavailable: %s",
-                directory,
-                exc_info=True,
-            )
-        finally:
-            if descriptor is not None:
-                os.close(descriptor)
+        if not result.allowed:
+            raise FileWritePermissionError(result.reason)

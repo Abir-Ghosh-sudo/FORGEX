@@ -5,6 +5,8 @@ from forgex.tools.filesystem.deleter import (
     FileDeleter,
     FileDeletionError,
     FileDeletionResult,
+    PermanentDeletionDenied,
+    ProtectedDeletionError,
 )
 from forgex.tools.filesystem.directory import (
     DirectoryEntry,
@@ -18,11 +20,18 @@ from forgex.tools.filesystem.operations import (
     FileOperationResult,
     FileOperations,
     InvalidOperationError,
+    ProtectedFileOperationError,
 )
 from forgex.tools.filesystem.paths import (
     PathResolutionError,
     ResolvedPath,
     WorkspacePathResolver,
+)
+from forgex.tools.filesystem.protection import (
+    ProtectionError,
+    ProtectionResult,
+    ProtectedPathError,
+    WorkspaceProtection,
 )
 from forgex.tools.filesystem.reader import (
     FileReadError,
@@ -36,8 +45,13 @@ from forgex.tools.filesystem.search import (
 )
 from forgex.tools.filesystem.writer import (
     FileWriteError,
+    FileWritePermissionError,
     FileWriteResult,
     FileWriter,
+)
+from forgex.tools.filesystem.workspace import (
+    WorkspaceConfiguration,
+    WorkspaceService,
 )
 
 __all__ = [
@@ -57,12 +71,22 @@ __all__ = [
     "FileReader",
     "FileSearch",
     "FileWriteError",
+    "FileWritePermissionError",
     "FileWriteResult",
     "FileWriter",
     "InvalidOperationError",
     "PathResolutionError",
+    "PermanentDeletionDenied",
+    "ProtectionError",
+    "ProtectionResult",
+    "ProtectedDeletionError",
+    "ProtectedFileOperationError",
+    "ProtectedPathError",
     "ResolvedPath",
     "SearchMatch",
     "SearchResult",
+    "WorkspaceConfiguration",
     "WorkspacePathResolver",
+    "WorkspaceProtection",
+    "WorkspaceService",
 ]

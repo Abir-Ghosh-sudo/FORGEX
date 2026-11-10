@@ -1,5 +1,5 @@
 
-"""Recoverable file deletion utilities for FORGEX."""
+"""Secure and recoverable workspace file deletion."""
 
 from __future__ import annotations
 
@@ -8,253 +8,252 @@ import os
 import shutil
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 
 from forgex.tools.filesystem.paths import WorkspacePathResolver
+from forgex.tools.filesystem.protection import WorkspaceProtection
 
 logger = logging.getLogger(__name__)
 
-TRASH_DIRECTORY = ".forgex-trash"
+
+class FileDeletionError(Exception):
+    """Base exception for file deletion failures."""
 
 
-class FileDeleteError(Exception):
-    """Base exception for deletion failures."""
+class PermanentDeletionDenied(FileDeletionError):
+    """Raised when permanent deletion is not explicitly permitted."""
 
 
-class PermanentDeleteDeniedError(FileDeleteError):
-    """Raised when permanent deletion is not explicitly authorized."""
+class ProtectedDeletionError(FileDeletionError):
+    """Raised when attempting to delete a protected path."""
 
 
 @dataclass(frozen=True, slots=True)
-class FileDeleteResult:
-    """Result of a deletion operation."""
+class FileDeletionResult:
+    """Information required to restore a deleted entry."""
 
     original_path: Path
-    stored_path: Path | None
-    permanent: bool
-    deleted_at: datetime
-
-    @property
-    def recoverable(self) -> bool:
-        return self.stored_path is not None and not self.permanent
+    trash_path: Path
+    is_directory: bool
+    permanent: bool = False
 
     def to_dict(self) -> dict[str, object]:
         return {
             "original_path": str(self.original_path),
-            "stored_path": (
-                str(self.stored_path) if self.stored_path else None
-            ),
+            "trash_path": str(self.trash_path),
+            "is_directory": self.is_directory,
             "permanent": self.permanent,
-            "recoverable": self.recoverable,
-            "deleted_at": self.deleted_at.isoformat(),
         }
 
 
 class FileDeleter:
-    """Delete files and directories with recoverable trash support."""
+    """Delete workspace entries with recoverable trash support."""
 
     def __init__(
         self,
         resolver: WorkspacePathResolver,
         *,
-        trash_directory: str = TRASH_DIRECTORY,
+        protection: WorkspaceProtection | None = None,
         allow_permanent_delete: bool = False,
     ) -> None:
         if not isinstance(resolver, WorkspacePathResolver):
-            raise TypeError("resolver must be a WorkspacePathResolver.")
+            raise TypeError("resolver must be WorkspacePathResolver.")
 
-        if not trash_directory or Path(trash_directory).is_absolute():
-            raise ValueError("trash_directory must be a relative path.")
+        if protection is not None:
+            if not isinstance(protection, WorkspaceProtection):
+                raise TypeError("protection must be WorkspaceProtection.")
 
-        trash_path = Path(trash_directory)
-
-        if ".." in trash_path.parts or len(trash_path.parts) != 1:
-            raise ValueError(
-                "trash_directory must be a single safe directory name."
-            )
+            if protection.workspace != resolver.workspace:
+                raise ValueError(
+                    "Protection workspace must match resolver workspace."
+                )
 
         self._resolver = resolver
-        self._trash_name = trash_path.name
+        self._protection = protection
         self._allow_permanent_delete = allow_permanent_delete
+        self._trash_directory = resolver.workspace / ".forgex-trash"
 
     def delete(
         self,
         path: str | Path,
         *,
         permanent: bool = False,
-        confirm_permanent: bool = False,
-    ) -> FileDeleteResult:
-        """Move a path to trash or permanently delete it."""
+        confirm: bool = False,
+    ) -> FileDeletionResult:
+        """Delete an entry, using recoverable trash by default."""
 
-        target = self._resolver.resolve(path, must_exist=True)
-        original = target.absolute
+        resolved = self._resolver.resolve(path, must_exist=True)
+        target = resolved.absolute
 
-        if original == self._resolver.workspace:
-            raise FileDeleteError(
-                "Deleting the workspace root is forbidden."
-            )
-
-        if self._trash_name in target.relative.parts:
-            raise FileDeleteError(
-                "Direct deletion of the FORGEX trash directory is forbidden."
-            )
+        self._validate_target(target)
 
         if permanent:
             if not self._allow_permanent_delete:
-                raise PermanentDeleteDeniedError(
+                raise PermanentDeletionDenied(
                     "Permanent deletion is disabled by configuration."
                 )
 
-            if not confirm_permanent:
-                raise PermanentDeleteDeniedError(
+            if not confirm:
+                raise PermanentDeletionDenied(
                     "Permanent deletion requires explicit confirmation."
                 )
 
-            self._remove_path(original)
+            self._remove_target(target)
 
-            return FileDeleteResult(
-                original_path=original,
-                stored_path=None,
+            return FileDeletionResult(
+                original_path=target,
+                trash_path=target,
+                is_directory=resolved.is_directory,
                 permanent=True,
-                deleted_at=datetime.now(UTC),
             )
 
-        trash_root = self._resolver.workspace / self._trash_name
-        self._ensure_trash_directory(trash_root)
+        self._ensure_trash_directory()
 
-        deletion_id = uuid.uuid4().hex
-        destination = trash_root / deletion_id
+        trash_target = self._trash_directory / uuid.uuid4().hex
 
-        # Revalidate the target and trash boundary before moving.
-        current = self._resolver.resolve(original, must_exist=True)
-        if current.absolute != original:
-            raise FileDeleteError(
-                "Target path changed during deletion."
-            )
+        # Validate again immediately before moving.
+        self._resolver.resolve(target, must_exist=True)
+        self._validate_target(target)
 
         try:
-            os.replace(original, destination)
+            os.replace(target, trash_target)
         except OSError as exc:
-            logger.exception("Could not move path to trash: %s", original)
-            raise FileDeleteError(
-                f"Could not move path to trash: {original}"
+            raise FileDeletionError(
+                f"Could not move entry to trash: {target}"
             ) from exc
 
-        return FileDeleteResult(
-            original_path=original,
-            stored_path=destination,
-            permanent=False,
-            deleted_at=datetime.now(UTC),
+        return FileDeletionResult(
+            original_path=target,
+            trash_path=trash_target,
+            is_directory=resolved.is_directory,
         )
 
-    def restore(self, deletion: FileDeleteResult) -> Path:
-        """Restore a previously trashed file or directory."""
+    def restore(self, result: FileDeletionResult) -> Path:
+        """Restore an entry from trash to its original location."""
 
-        if not isinstance(deletion, FileDeleteResult):
-            raise TypeError("deletion must be a FileDeleteResult.")
+        if not isinstance(result, FileDeletionResult):
+            raise TypeError("result must be FileDeletionResult.")
 
-        if not deletion.recoverable or deletion.stored_path is None:
-            raise FileDeleteError("This deletion cannot be recovered.")
-
-        stored = deletion.stored_path
-        original = deletion.original_path
-
-        expected_trash = self._resolver.workspace / self._trash_name
-
-        try:
-            stored_resolved = stored.resolve(strict=True)
-            stored_resolved.relative_to(expected_trash.resolve(strict=True))
-        except (OSError, ValueError) as exc:
-            raise FileDeleteError(
-                "Stored path is outside the FORGEX trash directory."
-            ) from exc
-
-        try:
-            original.relative_to(self._resolver.workspace)
-        except ValueError as exc:
-            raise FileDeleteError(
-                "Original path is outside the workspace."
-            ) from exc
-
-        if not stored.exists():
-            raise FileDeleteError(
-                f"Trashed item no longer exists: {stored}"
+        if result.permanent:
+            raise FileDeletionError(
+                "Permanently deleted entries cannot be restored."
             )
 
-        if original.exists():
-            raise FileDeleteError(
-                f"Cannot restore because destination exists: {original}"
+        if result.trash_path.parent != self._trash_directory:
+            raise FileDeletionError("Invalid trash location.")
+
+        if not result.trash_path.exists():
+            raise FileDeletionError("Trash entry does not exist.")
+
+        original = self._resolver.resolve(result.original_path)
+        destination = original.absolute
+
+        self._validate_target(destination)
+
+        if destination.exists() or destination.is_symlink():
+            raise FileDeletionError(
+                f"Cannot restore: destination already exists: {destination}"
             )
 
-        parent = original.parent
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        self._resolver.resolve(destination)
 
         try:
-            parent_resolved = parent.resolve(strict=True)
-            parent_resolved.relative_to(self._resolver.workspace)
-        except (OSError, ValueError) as exc:
-            raise FileDeleteError(
-                "Restore parent is missing or outside the workspace."
-            ) from exc
-
-        if not parent_resolved.is_dir():
-            raise FileDeleteError("Restore parent is not a directory.")
-
-        try:
-            os.replace(stored_resolved, original)
+            os.replace(result.trash_path, destination)
         except OSError as exc:
-            raise FileDeleteError(
-                f"Could not restore item: {original}"
+            raise FileDeletionError(
+                f"Could not restore entry: {destination}"
             ) from exc
 
-        return original
+        return destination
 
-    def _ensure_trash_directory(self, trash_root: Path) -> None:
-        """Create or validate the workspace trash directory."""
+    def list_trash(self) -> tuple[Path, ...]:
+        """List recoverable entries currently stored in trash."""
 
-        if trash_root.is_symlink():
-            raise FileDeleteError(
+        self._ensure_trash_directory()
+
+        try:
+            return tuple(
+                sorted(
+                    self._trash_directory.iterdir(),
+                    key=lambda item: item.name,
+                )
+            )
+        except OSError as exc:
+            raise FileDeletionError("Could not inspect trash directory.") from exc
+
+    def _validate_target(self, target: Path) -> None:
+        """Validate workspace boundaries and protected paths."""
+
+        if target == self._resolver.workspace:
+            raise FileDeletionError(
+                "The workspace root cannot be deleted."
+            )
+
+        if target == self._trash_directory:
+            raise FileDeletionError(
+                "The trash directory cannot be deleted through this API."
+            )
+
+        if self._trash_directory in target.parents:
+            raise FileDeletionError(
+                "Direct deletion of trash entries is not permitted."
+            )
+
+        if target.is_symlink():
+            raise FileDeletionError(
+                "Symlink deletion is not permitted."
+            )
+
+        if self._protection is not None:
+            result = self._protection.inspect(
+                target,
+                operation="delete",
+            )
+
+            if not result.allowed:
+                raise ProtectedDeletionError(result.reason)
+
+    def _ensure_trash_directory(self) -> None:
+        """Create and validate the workspace trash directory."""
+
+        if self._trash_directory.is_symlink():
+            raise FileDeletionError(
                 "Trash directory cannot be a symlink."
             )
 
-        if not trash_root.exists():
-            try:
-                trash_root.mkdir(mode=0o700)
-            except OSError as exc:
-                raise FileDeleteError(
-                    "Could not create FORGEX trash directory."
-                ) from exc
+        self._trash_directory.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
-        if not trash_root.is_dir() or trash_root.is_symlink():
-            raise FileDeleteError(
-                "FORGEX trash path is not a safe directory."
+        if not self._trash_directory.is_dir():
+            raise FileDeletionError(
+                "Trash location is not a directory."
             )
 
-        try:
-            trash_root.resolve(strict=True).relative_to(
-                self._resolver.workspace
-            )
-        except (OSError, ValueError) as exc:
-            raise FileDeleteError(
-                "Trash directory escapes the workspace."
-            ) from exc
+        self._resolver.resolve(
+            self._trash_directory,
+            must_exist=True,
+            expected_type="directory",
+        )
 
     @staticmethod
-    def _remove_path(path: Path) -> None:
-        """Remove a file, symlink or directory without following symlinks."""
+    def _remove_target(target: Path) -> None:
+        """Permanently remove a file or directory."""
 
         try:
-            if path.is_symlink() or path.is_file():
-                path.unlink()
-            elif path.is_dir():
-                shutil.rmtree(path)
+            if target.is_symlink() or target.is_file():
+                target.unlink()
+            elif target.is_dir():
+                shutil.rmtree(target)
             else:
-                raise FileDeleteError(
-                    f"Unsupported filesystem object: {path}"
+                raise FileDeletionError(
+                    f"Unsupported filesystem object: {target}"
                 )
-        except FileDeleteError:
-            raise
         except OSError as exc:
-            raise FileDeleteError(
-                f"Could not permanently delete: {path}"
+            logger.exception("Permanent deletion failed: %s", target)
+            raise FileDeletionError(
+                f"Could not permanently delete: {target}"
             ) from exc
