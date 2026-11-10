@@ -1,7 +1,8 @@
+
 [build-system]
 requires = [
     "scikit-build-core>=0.10",
-    "pybind11>=2.13"
+    "pybind11>=2.13",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -15,7 +16,7 @@ requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 
 authors = [
-    { name = "FORGEX Contributors" }
+    { name = "FORGEX Contributors" },
 ]
 
 keywords = [
@@ -25,7 +26,7 @@ keywords = [
     "developer-tools",
     "terminal",
     "llm",
-    "code-assistant"
+    "code-assistant",
 ]
 
 classifiers = [
@@ -38,7 +39,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development",
-    "Topic :: Software Development :: Code Generators"
+    "Topic :: Software Development :: Code Generators",
 ]
 
 dependencies = [
@@ -54,28 +55,28 @@ dependencies = [
     "langchain-core>=0.3",
     "langgraph>=0.2",
     "huggingface-hub>=0.26",
-    "tokenizers>=0.20"
+    "tokenizers>=0.20",
 ]
 
 
 [project.optional-dependencies]
 
 local = [
-    "ollama>=0.4"
+    "ollama>=0.4",
 ]
 
 transformers = [
     "transformers>=4.45",
     "accelerate>=1.0",
-    "safetensors>=0.4"
+    "safetensors>=0.4",
 ]
 
 mcp = [
-    "mcp>=1.0"
+    "mcp>=1.0",
 ]
 
 vector = [
-    "chromadb>=0.5"
+    "chromadb>=0.5",
 ]
 
 dev = [
@@ -85,87 +86,66 @@ dev = [
     "ruff>=0.7",
     "mypy>=1.13",
     "pre-commit>=4.0",
-    "build>=1.2"
+    "build>=1.2",
 ]
 
 
 [project.scripts]
-
 forgex = "forgex.cli.app:main"
 
 
 [tool.scikit-build]
-
 wheel.packages = ["src/forgex"]
-
 cmake.version = ">=3.24"
-
 build-dir = "build/{wheel_tag}"
 
 
 [tool.pytest.ini_options]
-
 testpaths = ["tests"]
-
 python_files = ["test_*.py"]
-
 python_classes = ["Test*"]
-
 python_functions = ["test_*"]
 
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 addopts = [
     "-ra",
-    "--strict-markers"
+    "--strict-markers",
 ]
 
 
 [tool.ruff]
-
 line-length = 100
-
 target-version = "py311"
-
 src = ["src"]
 
 
 [tool.ruff.lint]
-
 select = [
     "E",
     "F",
     "I",
     "UP",
     "B",
-    "SIM"
+    "SIM",
 ]
 
 
 [tool.mypy]
-
 python_version = "3.11"
-
 strict = true
-
 warn_unused_configs = true
-
 check_untyped_defs = true
-
 namespace_packages = true
-
 mypy_path = "src"
 
 
 [tool.coverage.run]
-
 branch = true
-
 source = ["forgex"]
 
 
 [tool.coverage.report]
-
 show_missing = true
-
 skip_covered = true
