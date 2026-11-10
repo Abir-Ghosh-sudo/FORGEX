@@ -7,7 +7,7 @@ import hashlib
 import hmac
 import secrets
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Final
@@ -31,7 +31,7 @@ class ApprovalNotFoundError(ApprovalError):
 
 
 class ApprovalExpiredError(ApprovalError):
-    """Raised when an approval request has expired."""
+    """Raised when an approval request or token has expired."""
 
 
 class ApprovalAlreadyResolvedError(ApprovalError):
@@ -62,25 +62,50 @@ class ApprovalRequest:
         for name in ("request_id", "subject", "operation", "resource", "reason"):
             value = getattr(self, name)
 
-            if not value.strip():
+            if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"{name} cannot be empty.")
 
-        if self.created_at.tzinfo is None or self.expires_at.tzinfo is None:
+        if not isinstance(self.created_at, datetime):
+            raise ValueError("created_at must be a datetime.")
+
+        if not isinstance(self.expires_at, datetime):
+            raise ValueError("expires_at must be a datetime.")
+
+        if (
+            self.created_at.tzinfo is None
+            or self.created_at.utcoffset() is None
+            or self.expires_at.tzinfo is None
+            or self.expires_at.utcoffset() is None
+        ):
             raise ValueError("Approval timestamps must be timezone-aware.")
 
         if self.expires_at <= self.created_at:
             raise ValueError("Approval expiration must follow creation time.")
 
-        if self.resolved_at is not None and self.resolved_at.tzinfo is None:
-            raise ValueError("Resolution timestamp must be timezone-aware.")
+        if self.resolved_at is not None:
+            if (
+                self.resolved_at.tzinfo is None
+                or self.resolved_at.utcoffset() is None
+            ):
+                raise ValueError(
+                    "Resolution timestamp must be timezone-aware."
+                )
 
-        if self.status == ApprovalStatus.PENDING and self.resolved_at is not None:
-            raise ValueError("Pending requests cannot have a resolution timestamp.")
+        if self.status == ApprovalStatus.PENDING:
+            if self.resolved_at is not None or self.resolved_by is not None:
+                raise ValueError(
+                    "Pending requests cannot have resolution metadata."
+                )
+
+        elif self.resolved_at is None:
+            raise ValueError(
+                "Resolved requests must have a resolution timestamp."
+            )
 
 
 @dataclass(frozen=True, slots=True)
 class ApprovalToken:
-    """A one-time token bound to a specific approved operation."""
+    """A one-time capability bound to a specific approved operation."""
 
     token_id: str
     request_id: str
@@ -88,7 +113,7 @@ class ApprovalToken:
     operation: str
     resource: str
     expires_at: datetime
-    _secret_hash: str
+    secret: str = field(repr=False, compare=False)
 
     def __repr__(self) -> str:
         return (
@@ -110,9 +135,10 @@ class ApprovalResult:
 class ApprovalManager:
     """Thread-safe approval lifecycle and one-time token manager.
 
-    Important:
-        Approval tokens are in-memory capabilities. They are not durable
-        across process restarts and must never be logged or exposed publicly.
+    Tokens are in-memory capabilities. They are not durable across
+    process restarts and must never be logged or exposed publicly.
+
+    Only token hashes are retained by the manager.
     """
 
     _DEFAULT_TIMEOUT: Final[timedelta] = timedelta(minutes=5)
@@ -134,7 +160,7 @@ class ApprovalManager:
 
         self._requests: dict[str, ApprovalRequest] = {}
         self._tokens: dict[str, ApprovalToken] = {}
-        self._consumed_tokens: set[str] = set()
+        self._token_hashes: dict[str, str] = {}
 
         self._lock = threading.RLock()
 
@@ -149,7 +175,9 @@ class ApprovalManager:
     ) -> ApprovalRequest:
         """Create a pending approval request."""
 
-        duration = timeout or self._default_timeout
+        duration = (
+            self._default_timeout if timeout is None else timeout
+        )
 
         if duration <= timedelta(0):
             raise ValueError("Approval timeout must be positive.")
@@ -177,7 +205,7 @@ class ApprovalManager:
         *,
         approved_by: str,
     ) -> ApprovalResult:
-        """Approve a request and issue a one-time capability token."""
+        """Approve a pending request and issue a one-time token."""
 
         if not approved_by.strip():
             raise ValueError("Approver identity cannot be empty.")
@@ -248,32 +276,55 @@ class ApprovalManager:
         operation: str,
         resource: str,
     ) -> bool:
-        """Consume a token once after validating its exact operation binding.
+        """Validate and consume a token exactly once."""
 
-        Returns True only when the token authorizes this exact operation.
-        """
+        if not isinstance(token, ApprovalToken):
+            raise ApprovalTokenError("Invalid approval token.")
 
         with self._lock:
             stored = self._tokens.get(token.token_id)
 
             if stored is None:
-                raise ApprovalTokenError("Unknown approval token.")
+                raise ApprovalTokenError(
+                    "Unknown or already consumed approval token."
+                )
 
-            if token.token_id in self._consumed_tokens:
-                raise ApprovalTokenError("Approval token has already been consumed.")
+            expected_hash = self._token_hashes.get(token.token_id)
+
+            if expected_hash is None:
+                raise ApprovalTokenError("Token integrity data is missing.")
+
+            supplied_hash = hashlib.sha256(
+                token.secret.encode("utf-8")
+            ).hexdigest()
 
             if not hmac.compare_digest(
-                stored._secret_hash,
-                token._secret_hash,
+                expected_hash,
+                supplied_hash,
             ):
-                raise ApprovalTokenError("Approval token integrity check failed.")
+                raise ApprovalTokenError(
+                    "Approval token secret verification failed."
+                )
 
-            if stored != token:
-                raise ApprovalTokenError("Approval token does not match stored token.")
+            # Validate immutable token metadata independently.
+            if (
+                stored.request_id != token.request_id
+                or stored.subject != token.subject
+                or stored.operation != token.operation
+                or stored.resource != token.resource
+                or stored.expires_at != token.expires_at
+            ):
+                raise ApprovalTokenError(
+                    "Approval token metadata does not match."
+                )
 
-            if stored.expires_at <= datetime.now(UTC):
-                self._tokens.pop(token.token_id, None)
-                raise ApprovalExpiredError("Approval token has expired.")
+            now = datetime.now(UTC)
+
+            if stored.expires_at <= now:
+                self._remove_token(token.token_id)
+                raise ApprovalExpiredError(
+                    "Approval token has expired."
+                )
 
             if (
                 stored.subject != subject
@@ -286,11 +337,24 @@ class ApprovalManager:
 
             request = self._requests.get(stored.request_id)
 
-            if request is None or request.status != ApprovalStatus.APPROVED:
-                raise ApprovalTokenError("Associated approval is no longer valid.")
+            if (
+                request is None
+                or request.status != ApprovalStatus.APPROVED
+            ):
+                raise ApprovalTokenError(
+                    "Associated approval is no longer valid."
+                )
 
-            self._consumed_tokens.add(token.token_id)
-            self._tokens.pop(token.token_id, None)
+            if request.expires_at <= now:
+                self._remove_token(token.token_id)
+                self._requests[request.request_id] = self._expire_request(
+                    request
+                )
+                raise ApprovalExpiredError(
+                    "Associated approval request has expired."
+                )
+
+            self._remove_token(token.token_id)
 
             self._requests[request.request_id] = ApprovalRequest(
                 request_id=request.request_id,
@@ -335,14 +399,15 @@ class ApprovalManager:
         """Return a snapshot of approval requests."""
 
         with self._lock:
-            results = []
+            results: list[ApprovalRequest] = []
+            now = datetime.now(UTC)
 
             for request_id in list(self._requests):
                 request = self._requests[request_id]
 
                 if (
                     request.status == ApprovalStatus.PENDING
-                    and request.expires_at <= datetime.now(UTC)
+                    and request.expires_at <= now
                 ):
                     request = self._expire_request(request)
 
@@ -357,13 +422,13 @@ class ApprovalManager:
             return results
 
     def cleanup(self) -> int:
-        """Remove expired requests and obsolete tokens."""
+        """Expire pending requests and remove obsolete tokens."""
 
         now = datetime.now(UTC)
         removed = 0
 
         with self._lock:
-            for request_id, request in list(self._requests.items()):
+            for request in list(self._requests.values()):
                 if (
                     request.status == ApprovalStatus.PENDING
                     and request.expires_at <= now
@@ -372,7 +437,7 @@ class ApprovalManager:
 
             for token_id, token in list(self._tokens.items()):
                 if token.expires_at <= now:
-                    self._tokens.pop(token_id, None)
+                    self._remove_token(token_id)
                     removed += 1
 
             return removed
@@ -392,11 +457,16 @@ class ApprovalManager:
 
         if request.expires_at <= datetime.now(UTC):
             self._expire_request(request)
-            raise ApprovalExpiredError("Approval request has expired.")
+            raise ApprovalExpiredError(
+                "Approval request has expired."
+            )
 
         return request
 
-    def _expire_request(self, request: ApprovalRequest) -> ApprovalRequest:
+    def _expire_request(
+        self,
+        request: ApprovalRequest,
+    ) -> ApprovalRequest:
         """Transition a pending request into the expired state."""
 
         updated = ApprovalRequest(
@@ -419,15 +489,11 @@ class ApprovalManager:
         request: ApprovalRequest,
         now: datetime,
     ) -> ApprovalToken:
-        """Create a cryptographically random one-time token."""
+        """Issue a cryptographically random one-time capability."""
 
         secret = secrets.token_urlsafe(32)
         token_id = str(uuid4())
 
-        secret_hash = hashlib.sha256(secret.encode("utf-8")).hexdigest()
-
-        # The secret is held only in this token object.
-        # Its hash is stored separately for integrity verification.
         token = ApprovalToken(
             token_id=token_id,
             request_id=request.request_id,
@@ -438,13 +504,23 @@ class ApprovalManager:
                 request.expires_at,
                 now + self._token_timeout,
             ),
-            _secret_hash=secret_hash,
+            secret=secret,
         )
 
-        # Keep the actual secret out of repr and normal logs.
+        secret_hash = hashlib.sha256(
+            secret.encode("utf-8")
+        ).hexdigest()
+
         self._tokens[token_id] = token
+        self._token_hashes[token_id] = secret_hash
 
         return token
+
+    def _remove_token(self, token_id: str) -> None:
+        """Remove token material from manager memory."""
+
+        self._tokens.pop(token_id, None)
+        self._token_hashes.pop(token_id, None)
 
     def __len__(self) -> int:
         with self._lock:
