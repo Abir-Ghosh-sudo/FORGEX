@@ -1,10 +1,8 @@
 
-"""FORGEX workspace filesystem tools."""
+"""FORGEX workspace filesystem infrastructure."""
 
 from forgex.tools.filesystem.deleter import (
     FileDeleter,
-    FileDeletionError,
-    FileDeletionResult,
     PermanentDeletionDenied,
     ProtectedDeletionError,
 )
@@ -12,25 +10,22 @@ from forgex.tools.filesystem.directory import (
     DirectoryEntry,
     DirectoryInspector,
     DirectoryListing,
-    DirectoryOperationError,
+)
+from forgex.tools.filesystem.metadata import (
+    FileMetadata,
+    FileMetadataInspector,
+    MetadataInspectionError,
 )
 from forgex.tools.filesystem.operations import (
-    DestinationExistsError,
-    FileOperationError,
-    FileOperationResult,
     FileOperations,
-    InvalidOperationError,
-    ProtectedFileOperationError,
+    FileOperationError,
 )
 from forgex.tools.filesystem.paths import (
-    PathResolutionError,
     ResolvedPath,
     WorkspacePathResolver,
 )
 from forgex.tools.filesystem.protection import (
-    ProtectionError,
-    ProtectionResult,
-    ProtectedPathError,
+    ProtectedFileOperationError,
     WorkspaceProtection,
 )
 from forgex.tools.filesystem.reader import (
@@ -55,16 +50,13 @@ from forgex.tools.filesystem.workspace import (
 )
 
 __all__ = [
-    "DestinationExistsError",
     "DirectoryEntry",
     "DirectoryInspector",
     "DirectoryListing",
-    "DirectoryOperationError",
     "FileDeleter",
-    "FileDeletionError",
-    "FileDeletionResult",
+    "FileMetadata",
+    "FileMetadataInspector",
     "FileOperationError",
-    "FileOperationResult",
     "FileOperations",
     "FileReadError",
     "FileReadResult",
@@ -74,14 +66,10 @@ __all__ = [
     "FileWritePermissionError",
     "FileWriteResult",
     "FileWriter",
-    "InvalidOperationError",
-    "PathResolutionError",
+    "MetadataInspectionError",
     "PermanentDeletionDenied",
-    "ProtectionError",
-    "ProtectionResult",
     "ProtectedDeletionError",
     "ProtectedFileOperationError",
-    "ProtectedPathError",
     "ResolvedPath",
     "SearchMatch",
     "SearchResult",

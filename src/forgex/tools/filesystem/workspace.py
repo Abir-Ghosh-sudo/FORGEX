@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from forgex.tools.filesystem.deleter import FileDeleter
 from forgex.tools.filesystem.directory import DirectoryInspector
+from forgex.tools.filesystem.metadata import FileMetadataInspector
 from forgex.tools.filesystem.operations import FileOperations
 from forgex.tools.filesystem.paths import WorkspacePathResolver
 from forgex.tools.filesystem.protection import WorkspaceProtection
@@ -16,41 +17,50 @@ from forgex.tools.filesystem.search import FileSearch
 from forgex.tools.filesystem.writer import FileWriter
 
 
-@dataclass(frozen=True, slots=True)
 class WorkspaceConfiguration:
-    """Configuration for a FORGEX workspace."""
+    """Validated configuration for a FORGEX workspace."""
 
-    root: Path
-    max_read_size: int = 10 * 1024 * 1024
-    max_write_size: int = 10 * 1024 * 1024
-    max_copy_size: int = 100 * 1024 * 1024
-    max_directory_entries: int = 10_000
-    allow_permanent_delete: bool = False
-    allow_protected_reads: bool = True
-
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "root",
-            Path(self.root).expanduser().resolve(strict=True),
-        )
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        max_read_size: int = 10 * 1024 * 1024,
+        max_write_size: int = 10 * 1024 * 1024,
+        max_copy_size: int = 100 * 1024 * 1024,
+        max_directory_entries: int = 10_000,
+        allow_permanent_delete: bool = False,
+        allow_protected_reads: bool = True,
+    ) -> None:
+        self.root = Path(root).expanduser().resolve(strict=True)
 
         if not self.root.is_dir():
             raise ValueError("Workspace root must be a directory.")
 
         limits = (
-            self.max_read_size,
-            self.max_write_size,
-            self.max_copy_size,
-            self.max_directory_entries,
+            max_read_size,
+            max_write_size,
+            max_copy_size,
+            max_directory_entries,
         )
 
-        if any(value <= 0 for value in limits):
-            raise ValueError("Workspace limits must be positive.")
+        if any(
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value <= 0
+            for value in limits
+        ):
+            raise ValueError("Workspace limits must be positive integers.")
+
+        self.max_read_size = max_read_size
+        self.max_write_size = max_write_size
+        self.max_copy_size = max_copy_size
+        self.max_directory_entries = max_directory_entries
+        self.allow_permanent_delete = allow_permanent_delete
+        self.allow_protected_reads = allow_protected_reads
 
 
 class WorkspaceService:
-    """Unified entry point for workspace filesystem operations."""
+    """Unified filesystem API with shared workspace protection."""
 
     def __init__(
         self,
@@ -105,6 +115,11 @@ class WorkspaceService:
             max_entries=configuration.max_directory_entries,
         )
 
+        self._metadata = FileMetadataInspector(
+            self._resolver,
+            protection=self._protection,
+        )
+
     @property
     def root(self) -> Path:
         return self._configuration.root
@@ -141,22 +156,33 @@ class WorkspaceService:
     def directory(self) -> DirectoryInspector:
         return self._directory
 
-    def inspect(self, path: str | Path = "."):
-        """Inspect a workspace directory."""
+    @property
+    def metadata(self) -> FileMetadataInspector:
+        return self._metadata
 
+    def inspect(self, path: str | Path = "."):
         return self._directory.list_directory(path)
 
-    def read(self, path: str | Path, **kwargs):
-        """Read a workspace file."""
+    def inspect_metadata(
+        self,
+        path: str | Path,
+        *,
+        allow_protected_read: bool = False,
+    ):
+        return self._metadata.inspect(
+            path,
+            allow_protected_read=allow_protected_read,
+        )
 
-        result = self._resolver.resolve(
+    def read(self, path: str | Path, **kwargs: Any):
+        resolved = self._resolver.resolve(
             path,
             must_exist=True,
             expected_type="file",
         )
 
         decision = self._protection.inspect(
-            result.absolute,
+            resolved.absolute,
             operation="read",
         )
 
@@ -169,34 +195,26 @@ class WorkspaceService:
         self,
         path: str | Path,
         content: str,
-        **kwargs,
+        **kwargs: Any,
     ):
-        """Write a workspace file."""
-
         return self._writer.write_text(
             path,
             content,
             **kwargs,
         )
 
-    def delete(self, path: str | Path, **kwargs):
-        """Delete a workspace entry recoverably by default."""
-
+    def delete(self, path: str | Path, **kwargs: Any):
         return self._deleter.delete(path, **kwargs)
 
     def restore(self, deletion_result):
-        """Restore a previously deleted workspace entry."""
-
         return self._deleter.restore(deletion_result)
 
     def copy(
         self,
         source: str | Path,
         destination: str | Path,
-        **kwargs,
+        **kwargs: Any,
     ):
-        """Copy a workspace entry."""
-
         return self._operations.copy(
             source,
             destination,
@@ -207,10 +225,8 @@ class WorkspaceService:
         self,
         source: str | Path,
         destination: str | Path,
-        **kwargs,
+        **kwargs: Any,
     ):
-        """Move a workspace entry."""
-
         return self._operations.move(
             source,
             destination,
@@ -221,27 +237,19 @@ class WorkspaceService:
         self,
         source: str | Path,
         new_name: str,
-        **kwargs,
+        **kwargs: Any,
     ):
-        """Rename a workspace entry."""
-
         return self._operations.rename(
             source,
             new_name,
             **kwargs,
         )
 
-    def find(self, *args, **kwargs):
-        """Search workspace files."""
-
+    def find(self, *args: Any, **kwargs: Any):
         return self._search.search_filenames(*args, **kwargs)
 
-    def search_content(self, *args, **kwargs):
-        """Search file contents."""
-
+    def search_content(self, *args: Any, **kwargs: Any):
         return self._search.search_content(*args, **kwargs)
 
-    def tree(self, path: str | Path = ".", **kwargs) -> str:
-        """Return a directory tree."""
-
+    def tree(self, path: str | Path = ".", **kwargs: Any) -> str:
         return self._directory.tree(path, **kwargs)
