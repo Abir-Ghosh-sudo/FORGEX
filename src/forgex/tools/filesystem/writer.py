@@ -9,9 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from forgex.tools.filesystem.paths import WorkspacePathResolver
-from forgex.tools.filesystem.protection import (
-    WorkspaceProtection,
-)
+from forgex.tools.filesystem.protection import WorkspaceProtection
 
 
 class FileWriteError(Exception):
@@ -57,6 +55,9 @@ class FileWriter:
         if max_write_size <= 0:
             raise ValueError("max_write_size must be positive.")
 
+        if not isinstance(create_parents, bool):
+            raise TypeError("create_parents must be a boolean.")
+
         if protection is not None:
             if not isinstance(protection, WorkspaceProtection):
                 raise TypeError("protection must be WorkspaceProtection.")
@@ -79,7 +80,7 @@ class FileWriter:
         encoding: str = "utf-8",
         overwrite: bool = False,
     ) -> FileWriteResult:
-        """Write UTF-encoded text atomically."""
+        """Write encoded text atomically."""
 
         if not isinstance(content, str):
             raise TypeError("content must be a string.")
@@ -102,11 +103,15 @@ class FileWriter:
         if not isinstance(content, bytes):
             raise TypeError("content must be bytes.")
 
+        if not isinstance(overwrite, bool):
+            raise TypeError("overwrite must be a boolean.")
+
         if len(content) > self._max_write_size:
             raise FileWriteError(
                 f"Content exceeds the {self._max_write_size}-byte limit."
             )
 
+        # Resolve the caller-provided path exactly once initially.
         resolved = self._resolver.resolve(path)
         destination = resolved.absolute
 
@@ -119,32 +124,41 @@ class FileWriter:
 
         if not parent.exists():
             if not self._create_parents:
-                raise FileWriteError(
-                    "Parent directory does not exist."
-                )
+                raise FileWriteError("Parent directory does not exist.")
+
             parent.mkdir(parents=True, exist_ok=True)
-
-        # Revalidate after parent creation.
-        resolved = self._resolver.resolve(destination)
-        destination = resolved.absolute
-        self._check_protection(destination)
-
-        if destination.is_symlink():
-            raise FileWriteError("Writing through symlinks is not permitted.")
-
-        existed = destination.exists()
-
-        if existed and not destination.is_file():
-            raise FileWriteError("Destination is not a regular file.")
-
-        if existed and not overwrite:
-            raise FileWriteError(
-                f"Destination already exists: {destination}"
-            )
 
         temporary_path: Path | None = None
 
         try:
+            # Revalidate using the original path, never the absolute path.
+            resolved = self._resolver.resolve(path)
+            destination = resolved.absolute
+            parent = destination.parent
+
+            self._check_protection(destination)
+
+            if destination == self._resolver.workspace:
+                raise FileWriteError("Cannot write to the workspace root.")
+
+            if not parent.is_dir():
+                raise FileWriteError("Parent directory does not exist.")
+
+            if destination.is_symlink():
+                raise FileWriteError(
+                    "Writing through symlinks is not permitted."
+                )
+
+            existed = destination.exists()
+
+            if existed and not destination.is_file():
+                raise FileWriteError("Destination is not a regular file.")
+
+            if existed and not overwrite:
+                raise FileWriteError(
+                    f"Destination already exists: {destination}"
+                )
+
             with tempfile.NamedTemporaryFile(
                 mode="wb",
                 prefix=".forgex-write-",
@@ -157,8 +171,9 @@ class FileWriter:
                 temporary.flush()
                 os.fsync(temporary.fileno())
 
-            # Revalidate immediately before installing the file.
-            self._resolver.resolve(destination)
+            # Final containment and protection check before installation.
+            latest = self._resolver.resolve(path)
+            destination = latest.absolute
             self._check_protection(destination)
 
             if destination.is_symlink():
@@ -166,10 +181,15 @@ class FileWriter:
                     "Destination became a symlink during writing."
                 )
 
+            if destination.parent != parent:
+                raise FileWriteError(
+                    "Destination parent changed during writing."
+                )
+
             if overwrite:
                 os.replace(temporary_path, destination)
             else:
-                # Hard-link creation fails atomically if destination exists.
+                # Atomic no-overwrite installation.
                 os.link(temporary_path, destination)
                 temporary_path.unlink()
 
