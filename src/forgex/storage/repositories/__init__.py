@@ -1,4 +1,10 @@
 
 """Persistent repository implementations for FORGEX."""
 
-__all__: list[str] = []
+from .memory import SQLiteMemoryRepository
+from .session import SQLiteSessionRepository
+
+__all__ = [
+    "SQLiteMemoryRepository",
+    "SQLiteSessionRepository",
+]
