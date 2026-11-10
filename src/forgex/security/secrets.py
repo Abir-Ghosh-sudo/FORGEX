@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
+
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Iterable
@@ -26,7 +28,7 @@ class SecretType(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class SecretMatch:
-    """A detected secret in a text value."""
+    """A detected secret without exposing its original value."""
 
     secret_type: SecretType
     start: int
@@ -41,10 +43,13 @@ class SecretMatch:
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("Confidence must be between 0 and 1.")
 
+        if not re.fullmatch(r"[a-f0-9]{64}", self.fingerprint):
+            raise ValueError("Fingerprint must be a SHA-256 hex digest.")
+
 
 @dataclass(frozen=True, slots=True)
 class RedactionResult:
-    """Result of scanning and redacting a text value."""
+    """Result of scanning and redacting text."""
 
     original_length: int
     redacted_text: str
@@ -79,23 +84,33 @@ class SecretPattern:
         if not 0.0 <= self.confidence <= 1.0:
             raise ValueError("Confidence must be between 0 and 1.")
 
-        # Validate the regular expression during construction.
         re.compile(self.pattern, self.flags)
 
 
 class SecretScanner:
-    """Detect and redact common credentials and sensitive values.
+    """Detect and redact credentials and sensitive values."""
 
-    The scanner never returns the original secret as part of a match.
-    Fingerprints are one-way SHA-256 digests used for correlation.
-    """
-
-    REDACTION: str = "[REDACTED]"
-
+    REDACTION = "[REDACTED]"
     _MAX_INPUT_LENGTH = 5_000_000
     _MAX_PATTERNS = 256
 
-    _DEFAULT_PATTERNS: tuple[SecretPattern, ...] = (
+    _SENSITIVE_KEY_PATTERN = re.compile(
+        r"(?:^|[_\-.])"
+        r"(?:"
+        r"password|passwd|pwd|"
+        r"secret|client_secret|"
+        r"api_key|apikey|"
+        r"access_token|refresh_token|"
+        r"auth_token|bearer_token|"
+        r"private_key|"
+        r"credential|credentials|"
+        r"aws_secret_access_key"
+        r")"
+        r"(?:$|[_\-.])",
+        re.IGNORECASE,
+    )
+
+    _DEFAULT_PATTERNS = (
         SecretPattern(
             name="private-key",
             pattern=(
@@ -145,14 +160,14 @@ class SecretScanner:
         ),
         SecretPattern(
             name="bearer-token",
-            pattern=r"(?i)\bBearer\s+[A-Za-z0-9._~+/=-]{12,}",
+            pattern=r"\bBearer\s+[A-Za-z0-9._~+/=-]{12,}",
             secret_type=SecretType.ACCESS_TOKEN,
             confidence=0.98,
         ),
         SecretPattern(
             name="authorization-header",
             pattern=(
-                r"(?im)\b(?:authorization|proxy-authorization)"
+                r"\b(?:authorization|proxy-authorization)"
                 r"\s*[:=]\s*(?:Bearer\s+)?[^\s,;]+"
             ),
             secret_type=SecretType.ACCESS_TOKEN,
@@ -161,7 +176,7 @@ class SecretScanner:
         SecretPattern(
             name="api-key-assignment",
             pattern=(
-                r"""(?i)\b(?:api[_-]?key|client[_-]?secret|"""
+                r"""\b(?:api[_-]?key|client[_-]?secret|"""
                 r"""access[_-]?token|refresh[_-]?token)\b"""
                 r"""\s*[:=]\s*["']?"""
                 r"""[A-Za-z0-9_./+=-]{12,}"""
@@ -172,7 +187,7 @@ class SecretScanner:
         SecretPattern(
             name="password-assignment",
             pattern=(
-                r"""(?i)\b(?:password|passwd|pwd)\b"""
+                r"""\b(?:password|passwd|pwd)\b"""
                 r"""\s*[:=]\s*["']?"""
                 r"""[^\s"',;]{4,}"""
             ),
@@ -182,7 +197,7 @@ class SecretScanner:
         SecretPattern(
             name="aws-secret-assignment",
             pattern=(
-                r"""(?i)\baws_secret_access_key\b"""
+                r"""\baws_secret_access_key\b"""
                 r"""\s*[:=]\s*["']?"""
                 r"""[A-Za-z0-9/+=]{30,}"""
             ),
@@ -192,7 +207,7 @@ class SecretScanner:
         SecretPattern(
             name="generic-secret-assignment",
             pattern=(
-                r"""(?i)\b(?:secret|credential|private[_-]?key)\b"""
+                r"""\b(?:secret|credential|private[_-]?key)\b"""
                 r"""\s*[:=]\s*["']?"""
                 r"""[A-Za-z0-9_./+=-]{12,}"""
             ),
@@ -214,9 +229,6 @@ class SecretScanner:
         if max_input_length < 1:
             raise ValueError("Maximum input length must be positive.")
 
-        self._minimum_confidence = minimum_confidence
-        self._max_input_length = max_input_length
-
         selected = list(self._DEFAULT_PATTERNS)
 
         if patterns is not None:
@@ -230,6 +242,10 @@ class SecretScanner:
         if len(names) != len(set(names)):
             raise ValueError("Secret pattern names must be unique.")
 
+        self._minimum_confidence = minimum_confidence
+        self._max_input_length = max_input_length
+        self._pattern_names = set(names)
+
         self._compiled_patterns = [
             (
                 pattern.secret_type,
@@ -241,9 +257,7 @@ class SecretScanner:
 
     @staticmethod
     def _fingerprint(secret: str) -> str:
-        """Return a one-way fingerprint without exposing the secret."""
-
-        import hashlib
+        """Create a SHA-256 fingerprint of a detected value."""
 
         return hashlib.sha256(
             secret.encode("utf-8", errors="replace")
@@ -286,14 +300,14 @@ class SecretScanner:
     def _resolve_overlaps(
         candidates: list[SecretMatch],
     ) -> tuple[SecretMatch, ...]:
-        """Prefer high-confidence and longer matches without overlap."""
+        """Prefer high-confidence, longer matches."""
 
         ordered = sorted(
             candidates,
-            key=lambda match: (
-                -match.confidence,
-                -(match.end - match.start),
-                match.start,
+            key=lambda item: (
+                -item.confidence,
+                -(item.end - item.start),
+                item.start,
             ),
         )
 
@@ -309,7 +323,7 @@ class SecretScanner:
             if not overlaps:
                 accepted.append(candidate)
 
-        accepted.sort(key=lambda match: match.start)
+        accepted.sort(key=lambda item: item.start)
 
         return tuple(accepted)
 
@@ -342,9 +356,14 @@ class SecretScanner:
         )
 
     def contains_secrets(self, text: str) -> bool:
-        """Return whether text contains a detected secret."""
+        """Return whether the text contains detected secrets."""
 
         return bool(self.scan(text))
+
+    def _is_sensitive_key(self, key: str) -> bool:
+        """Check whether a dictionary key represents a secret field."""
+
+        return bool(self._SENSITIVE_KEY_PATTERN.search(key.strip()))
 
     def sanitize(
         self,
@@ -352,17 +371,21 @@ class SecretScanner:
         *,
         max_depth: int = 20,
     ) -> Any:
-        """Recursively sanitize strings in dictionaries and collections.
+        """Recursively sanitize dictionaries and collections.
 
-        Dictionary keys are also scanned and redacted.
-        Unsupported object types are converted to a safe placeholder
-        rather than calling arbitrary object representations.
+        Scalar values under sensitive keys are fully redacted.
+        Nested collections under sensitive keys are preserved and
+        recursively sanitized.
         """
 
         if max_depth < 0:
             raise ValueError("Maximum recursion depth cannot be negative.")
 
-        return self._sanitize_value(value, depth=0, max_depth=max_depth)
+        return self._sanitize_value(
+            value,
+            depth=0,
+            max_depth=max_depth,
+        )
 
     def _sanitize_value(
         self,
@@ -381,11 +404,24 @@ class SecretScanner:
             result: dict[str, Any] = {}
 
             for key, item in value.items():
-                safe_key = (
-                    self.redact(key).redacted_text
-                    if isinstance(key, str)
-                    else "[NON_STRING_KEY]"
-                )
+                if isinstance(key, str):
+                    safe_key = self.redact(key).redacted_text
+
+                    if self._is_sensitive_key(key):
+                        # Preserve nested structures so that their
+                        # individual fields can be sanitized recursively.
+                        if isinstance(item, (dict, list, tuple, set)):
+                            result[safe_key] = self._sanitize_value(
+                                item,
+                                depth=depth + 1,
+                                max_depth=max_depth,
+                            )
+                        else:
+                            result[safe_key] = self.REDACTION
+
+                        continue
+                else:
+                    safe_key = "[NON_STRING_KEY]"
 
                 result[safe_key] = self._sanitize_value(
                     item,
@@ -431,14 +467,10 @@ class SecretScanner:
         return f"[UNSUPPORTED_TYPE:{type(value).__name__}]"
 
     def add_pattern(self, pattern: SecretPattern) -> None:
-        """Register a custom detection pattern."""
+        """Register a custom secret detection pattern."""
 
-        if any(
-            existing_name == pattern.name
-            for _, _, compiled in self._compiled_patterns
-            for existing_name in ()
-        ):
-            raise ValueError(f"Duplicate pattern: {pattern.name}")
+        if pattern.name in self._pattern_names:
+            raise ValueError(f"Duplicate pattern name: {pattern.name}")
 
         if len(self._compiled_patterns) >= self._MAX_PATTERNS:
             raise ValueError("Maximum secret pattern count reached.")
@@ -452,6 +484,8 @@ class SecretScanner:
                 compiled,
             )
         )
+
+        self._pattern_names.add(pattern.name)
 
 
 def redact_secrets(text: str) -> str:

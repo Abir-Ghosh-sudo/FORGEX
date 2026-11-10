@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import threading
@@ -79,6 +80,12 @@ class AuditEvent:
         if not isinstance(self.outcome, AuditOutcome):
             raise TypeError("outcome must be an AuditOutcome.")
 
+        for name in ("resource", "reason", "session_id", "workspace"):
+            value = getattr(self, name)
+
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"{name} must be a string or None.")
+
         try:
             uuid.UUID(self.event_id)
         except (ValueError, TypeError, AttributeError) as exc:
@@ -89,7 +96,7 @@ class AuditEvent:
         except (ValueError, TypeError) as exc:
             raise ValueError("timestamp must be an ISO-8601 datetime.") from exc
 
-        if parsed.tzinfo is None:
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
             raise ValueError("timestamp must include timezone information.")
 
         if not isinstance(self.metadata, dict):
@@ -125,9 +132,15 @@ class AuditLogger:
     - The previous record's hash.
     - Its own SHA-256 hash.
 
-    This detects accidental modification, deletion, insertion and
-    reordering of records. It is not a substitute for externally
-    anchored signatures or write-once storage.
+    The hash chain detects accidental modification, deletion,
+    insertion and reordering of records.
+
+    This is tamper-evident, not tamper-proof. An attacker who can
+    rewrite the entire log can also recompute its hash chain.
+
+    This implementation coordinates threads within one process.
+    It does not provide cross-process write locking or external
+    cryptographic anchoring.
     """
 
     GENESIS_HASH = "0" * 64
@@ -140,13 +153,16 @@ class AuditLogger:
         fsync: bool = True,
         max_record_bytes: int = 1_000_000,
     ) -> None:
+        if max_record_bytes < 1024:
+            raise ValueError("max_record_bytes must be at least 1024.")
+
+        if not isinstance(fsync, bool):
+            raise TypeError("fsync must be a boolean.")
+
         self.log_path = Path(log_path).expanduser().resolve()
         self.scanner = scanner or SecretScanner()
         self.fsync = fsync
         self.max_record_bytes = max_record_bytes
-
-        if max_record_bytes < 1024:
-            raise ValueError("max_record_bytes must be at least 1024.")
 
         self._lock = threading.RLock()
         self._sequence = 0
@@ -159,6 +175,8 @@ class AuditLogger:
 
     @staticmethod
     def _canonical_json(value: dict[str, Any]) -> bytes:
+        """Serialize JSON deterministically."""
+
         return json.dumps(
             value,
             sort_keys=True,
@@ -175,6 +193,8 @@ class AuditLogger:
         sequence: int,
         previous_hash: str,
     ) -> str:
+        """Calculate the SHA-256 hash of one audit record."""
+
         payload = {
             "event": event,
             "sequence": sequence,
@@ -183,13 +203,77 @@ class AuditLogger:
 
         return hashlib.sha256(cls._canonical_json(payload)).hexdigest()
 
+    @staticmethod
+    def _valid_hash(value: Any) -> bool:
+        """Validate a SHA-256 hexadecimal digest."""
+
+        if not isinstance(value, str) or len(value) != 64:
+            return False
+
+        try:
+            bytes.fromhex(value)
+        except ValueError:
+            return False
+
+        return True
+
+    @classmethod
+    def _parse_record(cls, data: Any) -> AuditRecord:
+        """Validate and convert an untrusted JSON record."""
+
+        if not isinstance(data, dict):
+            raise ValueError("Audit record must be a JSON object.")
+
+        required = {
+            "event",
+            "sequence",
+            "previous_hash",
+            "record_hash",
+        }
+
+        if not required.issubset(data):
+            raise ValueError("Audit record is missing required fields.")
+
+        event = data["event"]
+        sequence = data["sequence"]
+        previous_hash = data["previous_hash"]
+        record_hash = data["record_hash"]
+
+        if not isinstance(event, dict):
+            raise ValueError("Audit event must be a JSON object.")
+
+        if isinstance(sequence, bool) or not isinstance(sequence, int):
+            raise ValueError("Audit sequence must be an integer.")
+
+        if sequence < 1:
+            raise ValueError("Audit sequence must be positive.")
+
+        if not cls._valid_hash(previous_hash):
+            raise ValueError("Invalid previous hash.")
+
+        if not cls._valid_hash(record_hash):
+            raise ValueError("Invalid record hash.")
+
+        return AuditRecord(
+            event=event,
+            sequence=sequence,
+            previous_hash=previous_hash,
+            record_hash=record_hash,
+        )
+
     def _initialize_log(self) -> None:
-        """Verify existing records and restore the chain state."""
+        """Verify existing records and restore chain state."""
 
         with self._lock:
             if not self.log_path.exists():
                 self._create_log_file()
                 return
+
+            if self.log_path.is_symlink():
+                raise RuntimeError("Audit log must not be a symbolic link.")
+
+            if not self.log_path.is_file():
+                raise RuntimeError("Audit log path must be a regular file.")
 
             result = self.verify()
 
@@ -210,15 +294,31 @@ class AuditLogger:
             self._previous_hash = last_record.record_hash
 
     def _create_log_file(self) -> None:
+        """Create a private audit log file."""
+
+        flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+
         descriptor = os.open(
             self.log_path,
-            os.O_CREAT | os.O_EXCL | os.O_WRONLY,
+            flags,
             0o600,
         )
 
-        os.close(descriptor)
+        try:
+            if os.name == "posix":
+                os.fchmod(descriptor, 0o600)
+
+            if self.fsync:
+                os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
 
     def _read_last_record(self) -> AuditRecord:
+        """Read the final non-empty record."""
+
         last_line: bytes | None = None
 
         with self.log_path.open("rb") as file:
@@ -229,17 +329,15 @@ class AuditLogger:
         if last_line is None:
             raise RuntimeError("Audit log unexpectedly contains no records.")
 
-        data = json.loads(last_line)
+        try:
+            data = json.loads(last_line)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise RuntimeError("Final audit record is invalid.") from exc
 
-        return AuditRecord(
-            event=data["event"],
-            sequence=data["sequence"],
-            previous_hash=data["previous_hash"],
-            record_hash=data["record_hash"],
-        )
+        return self._parse_record(data)
 
     def _sanitize_event(self, event: AuditEvent) -> dict[str, Any]:
-        """Redact secrets from every user-controlled event field."""
+        """Redact secrets from user-controlled event fields."""
 
         raw = {
             "event_id": event.event_id,
@@ -257,7 +355,9 @@ class AuditLogger:
 
         sanitized = self.scanner.sanitize(raw)
 
-        # Ensure the sanitized structure remains JSON serializable.
+        if not isinstance(sanitized, dict):
+            raise ValueError("Sanitized audit event must be a dictionary.")
+
         encoded = self._canonical_json(sanitized)
 
         if len(encoded) > self.max_record_bytes:
@@ -265,8 +365,21 @@ class AuditLogger:
 
         return sanitized
 
+    def _write_all(self, descriptor: int, data: bytes) -> None:
+        """Write all bytes, handling partial operating-system writes."""
+
+        view = memoryview(data)
+
+        while view:
+            written = os.write(descriptor, view)
+
+            if written <= 0:
+                raise OSError("Audit log write made no progress.")
+
+            view = view[written:]
+
     def record(self, event: AuditEvent) -> AuditRecord:
-        """Append an event to the audit log."""
+        """Append one event to the audit log."""
 
         if not isinstance(event, AuditEvent):
             raise TypeError("record() requires an AuditEvent.")
@@ -298,27 +411,25 @@ class AuditLogger:
             if len(encoded) > self.max_record_bytes:
                 raise ValueError("Serialized audit record is too large.")
 
-            # O_APPEND ensures each write targets the end of the file.
-            descriptor = os.open(
-                self.log_path,
-                os.O_APPEND | os.O_WRONLY,
-            )
+            flags = os.O_APPEND | os.O_WRONLY
+
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+
+            descriptor = os.open(self.log_path, flags)
 
             try:
-                with os.fdopen(descriptor, "ab", closefd=False) as file:
-                    written = file.write(encoded)
+                if not os.path.isfile(self.log_path):
+                    raise OSError("Audit log is not a regular file.")
 
-                    if written != len(encoded):
-                        raise OSError("Incomplete audit record write.")
+                self._write_all(descriptor, encoded)
 
-                    file.flush()
-
-                    if self.fsync:
-                        os.fsync(file.fileno())
+                if self.fsync:
+                    os.fsync(descriptor)
             finally:
                 os.close(descriptor)
 
-            # Advance in-memory chain state only after a successful write.
+            # Update chain state only after the write succeeds.
             self._sequence = next_sequence
             self._previous_hash = record_hash
 
@@ -329,8 +440,15 @@ class AuditLogger:
                 record_hash=record_hash,
             )
 
-    def record_many(self, events: Iterable[AuditEvent]) -> list[AuditRecord]:
-        """Record multiple events sequentially."""
+    def record_many(
+        self,
+        events: Iterable[AuditEvent],
+    ) -> list[AuditRecord]:
+        """Record multiple events sequentially.
+
+        This operation is not atomic: if a later event fails,
+        earlier successfully recorded events remain in the log.
+        """
 
         results: list[AuditRecord] = []
 
@@ -361,26 +479,25 @@ class AuditLogger:
 
                         try:
                             data = json.loads(line)
+                            record = self._parse_record(data)
 
-                            event = data["event"]
-                            sequence = data["sequence"]
-                            previous_hash = data["previous_hash"]
-                            stored_hash = data["record_hash"]
-
-                            if sequence != expected_sequence:
+                            if record.sequence != expected_sequence:
                                 raise ValueError("Sequence discontinuity.")
 
-                            if previous_hash != expected_previous_hash:
+                            if not hmac.compare_digest(
+                                record.previous_hash,
+                                expected_previous_hash,
+                            ):
                                 raise ValueError("Previous hash mismatch.")
 
                             calculated_hash = self._calculate_hash(
-                                event=event,
-                                sequence=sequence,
-                                previous_hash=previous_hash,
+                                event=record.event,
+                                sequence=record.sequence,
+                                previous_hash=record.previous_hash,
                             )
 
-                            if not hashlib.compare_digest(
-                                stored_hash,
+                            if not hmac.compare_digest(
+                                record.record_hash,
                                 calculated_hash,
                             ):
                                 raise ValueError("Record hash mismatch.")
@@ -389,7 +506,13 @@ class AuditLogger:
                             expected_sequence += 1
                             checked += 1
 
-                        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                        except (
+                            KeyError,
+                            TypeError,
+                            ValueError,
+                            json.JSONDecodeError,
+                            UnicodeDecodeError,
+                        ) as exc:
                             return AuditVerificationResult(
                                 valid=False,
                                 records_checked=checked,
@@ -419,7 +542,10 @@ class AuditLogger:
 
     @property
     def is_closed(self) -> bool:
-        return self._closed
+        """Return whether the logger has been closed."""
+
+        with self._lock:
+            return self._closed
 
     def close(self) -> None:
         """Prevent further writes."""
@@ -428,8 +554,9 @@ class AuditLogger:
             self._closed = True
 
     def __enter__(self) -> AuditLogger:
-        if self._closed:
-            raise RuntimeError("AuditLogger is closed.")
+        with self._lock:
+            if self._closed:
+                raise RuntimeError("AuditLogger is closed.")
 
         return self
 
