@@ -24,7 +24,7 @@ class WorkspaceConfiguration:
         self,
         root: str | Path,
         *,
-        max_read_size: int = 10 * 1024 * 1024,
+        max_read_size: int = 5 * 1024 * 1024,
         max_write_size: int = 10 * 1024 * 1024,
         max_copy_size: int = 100 * 1024 * 1024,
         max_directory_entries: int = 10_000,
@@ -49,7 +49,13 @@ class WorkspaceConfiguration:
             or value <= 0
             for value in limits
         ):
-            raise ValueError("Workspace limits must be positive integers.")
+            raise ValueError("All workspace limits must be positive integers.")
+
+        if not isinstance(allow_permanent_delete, bool):
+            raise TypeError("allow_permanent_delete must be bool.")
+
+        if not isinstance(allow_protected_reads, bool):
+            raise TypeError("allow_protected_reads must be bool.")
 
         self.max_read_size = max_read_size
         self.max_write_size = max_write_size
@@ -60,7 +66,7 @@ class WorkspaceConfiguration:
 
 
 class WorkspaceService:
-    """Unified filesystem API with shared workspace protection."""
+    """Unified workspace filesystem API."""
 
     def __init__(
         self,
@@ -74,10 +80,7 @@ class WorkspaceService:
             )
 
         self._configuration = configuration
-
-        self._resolver = WorkspacePathResolver(
-            configuration.root,
-        )
+        self._resolver = WorkspacePathResolver(configuration.root)
 
         self._protection = WorkspaceProtection(
             configuration.root,
@@ -160,8 +163,12 @@ class WorkspaceService:
     def metadata(self) -> FileMetadataInspector:
         return self._metadata
 
-    def inspect(self, path: str | Path = "."):
-        return self._directory.list_directory(path)
+    def inspect(
+        self,
+        path: str | Path = ".",
+        **kwargs: Any,
+    ):
+        return self._directory.list_directory(path, **kwargs)
 
     def inspect_metadata(
         self,
@@ -174,7 +181,11 @@ class WorkspaceService:
             allow_protected_read=allow_protected_read,
         )
 
-    def read(self, path: str | Path, **kwargs: Any):
+    def read(
+        self,
+        path: str | Path,
+        **kwargs: Any,
+    ):
         resolved = self._resolver.resolve(
             path,
             must_exist=True,
@@ -189,7 +200,7 @@ class WorkspaceService:
         if not decision.allowed:
             raise PermissionError(decision.reason)
 
-        return self._reader.read_text(path, **kwargs)
+        return self._reader.read(path, **kwargs)
 
     def write(
         self,
@@ -203,7 +214,11 @@ class WorkspaceService:
             **kwargs,
         )
 
-    def delete(self, path: str | Path, **kwargs: Any):
+    def delete(
+        self,
+        path: str | Path,
+        **kwargs: Any,
+    ):
         return self._deleter.delete(path, **kwargs)
 
     def restore(self, deletion_result):
@@ -251,5 +266,9 @@ class WorkspaceService:
     def search_content(self, *args: Any, **kwargs: Any):
         return self._search.search_content(*args, **kwargs)
 
-    def tree(self, path: str | Path = ".", **kwargs: Any) -> str:
+    def tree(
+        self,
+        path: str | Path = ".",
+        **kwargs: Any,
+    ) -> str:
         return self._directory.tree(path, **kwargs)
