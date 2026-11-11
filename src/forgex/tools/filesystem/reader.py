@@ -1,4 +1,3 @@
-
 """Secure file reading utilities for FORGEX."""
 
 from __future__ import annotations
@@ -78,9 +77,7 @@ class FileReader:
         try:
             codecs.lookup(default_encoding)
         except LookupError as exc:
-            raise UnsupportedEncodingError(
-                f"Unknown encoding: {default_encoding}"
-            ) from exc
+            raise UnsupportedEncodingError(f"Unknown encoding: {default_encoding}") from exc
 
         self._resolver = resolver
         self._max_file_size = max_file_size
@@ -120,11 +117,7 @@ class FileReader:
         if end_line is not None and end_line < 1:
             raise ValueError("end_line must be at least 1.")
 
-        if (
-            start_line is not None
-            and end_line is not None
-            and end_line < start_line
-        ):
+        if start_line is not None and end_line is not None and end_line < start_line:
             raise ValueError("end_line cannot precede start_line.")
 
         try:
@@ -135,9 +128,7 @@ class FileReader:
             )
 
             if self._reject_binary and self._looks_binary(content_bytes):
-                raise BinaryFileError(
-                    f"Binary files cannot be read as text: {resolved.absolute}"
-                )
+                raise BinaryFileError(f"Binary files cannot be read as text: {resolved.absolute}")
 
             selected_encoding = self._select_encoding(
                 content_bytes,
@@ -151,8 +142,7 @@ class FileReader:
                 )
             except UnicodeDecodeError as exc:
                 raise UnsupportedEncodingError(
-                    f"Unable to decode {resolved.absolute} "
-                    f"using {selected_encoding}."
+                    f"Unable to decode {resolved.absolute} using {selected_encoding}."
                 ) from exc
 
             if start_line is not None or end_line is not None:
@@ -174,9 +164,7 @@ class FileReader:
             raise
         except OSError as exc:
             logger.exception("Failed to read file: %s", resolved.absolute)
-            raise FileReadError(
-                f"Could not read file: {resolved.absolute}"
-            ) from exc
+            raise FileReadError(f"Could not read file: {resolved.absolute}") from exc
 
     def _read_bytes(
         self,
@@ -193,8 +181,7 @@ class FileReader:
         if len(data) > limit:
             if not allow_truncation:
                 raise FileTooLargeError(
-                    f"File exceeds the {limit}-byte read limit: "
-                    f"{resolved.absolute}"
+                    f"File exceeds the {limit}-byte read limit: {resolved.absolute}"
                 )
 
             return data[:limit], True
@@ -213,9 +200,7 @@ class FileReader:
             try:
                 return codecs.lookup(requested).name
             except LookupError as exc:
-                raise UnsupportedEncodingError(
-                    f"Unknown encoding: {requested}"
-                ) from exc
+                raise UnsupportedEncodingError(f"Unknown encoding: {requested}") from exc
 
         if self._detect_encoding:
             if data.startswith(codecs.BOM_UTF8):
@@ -242,9 +227,6 @@ class FileReader:
             return True
 
         sample = data[:8192]
-        control_bytes = sum(
-            byte < 32 and byte not in (7, 8, 9, 10, 12, 13, 27)
-            for byte in sample
-        )
+        control_bytes = sum(byte < 32 and byte not in (7, 8, 9, 10, 12, 13, 27) for byte in sample)
 
         return control_bytes / len(sample) > 0.10

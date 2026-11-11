@@ -1,4 +1,3 @@
-
 """Adapter between RuntimeManager commands and ProcessSupervisor."""
 
 from __future__ import annotations

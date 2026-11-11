@@ -1,4 +1,3 @@
-
 """Human-in-the-loop approval management for FORGEX."""
 
 from __future__ import annotations
@@ -83,23 +82,16 @@ class ApprovalRequest:
             raise ValueError("Approval expiration must follow creation time.")
 
         if self.resolved_at is not None and (
-            self.resolved_at.tzinfo is None
-            or self.resolved_at.utcoffset() is None
+            self.resolved_at.tzinfo is None or self.resolved_at.utcoffset() is None
         ):
-            raise ValueError(
-                "Resolution timestamp must be timezone-aware."
-            )
+            raise ValueError("Resolution timestamp must be timezone-aware.")
 
         if self.status == ApprovalStatus.PENDING:
             if self.resolved_at is not None or self.resolved_by is not None:
-                raise ValueError(
-                    "Pending requests cannot have resolution metadata."
-                )
+                raise ValueError("Pending requests cannot have resolution metadata.")
 
         elif self.resolved_at is None:
-            raise ValueError(
-                "Resolved requests must have a resolution timestamp."
-            )
+            raise ValueError("Resolved requests must have a resolution timestamp.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,9 +166,7 @@ class ApprovalManager:
     ) -> ApprovalRequest:
         """Create a pending approval request."""
 
-        duration = (
-            self._default_timeout if timeout is None else timeout
-        )
+        duration = self._default_timeout if timeout is None else timeout
 
         if duration <= timedelta(0):
             raise ValueError("Approval timeout must be positive.")
@@ -284,26 +274,20 @@ class ApprovalManager:
             stored = self._tokens.get(token.token_id)
 
             if stored is None:
-                raise ApprovalTokenError(
-                    "Unknown or already consumed approval token."
-                )
+                raise ApprovalTokenError("Unknown or already consumed approval token.")
 
             expected_hash = self._token_hashes.get(token.token_id)
 
             if expected_hash is None:
                 raise ApprovalTokenError("Token integrity data is missing.")
 
-            supplied_hash = hashlib.sha256(
-                token.secret.encode("utf-8")
-            ).hexdigest()
+            supplied_hash = hashlib.sha256(token.secret.encode("utf-8")).hexdigest()
 
             if not hmac.compare_digest(
                 expected_hash,
                 supplied_hash,
             ):
-                raise ApprovalTokenError(
-                    "Approval token secret verification failed."
-                )
+                raise ApprovalTokenError("Approval token secret verification failed.")
 
             # Validate immutable token metadata independently.
             if (
@@ -313,45 +297,30 @@ class ApprovalManager:
                 or stored.resource != token.resource
                 or stored.expires_at != token.expires_at
             ):
-                raise ApprovalTokenError(
-                    "Approval token metadata does not match."
-                )
+                raise ApprovalTokenError("Approval token metadata does not match.")
 
             now = datetime.now(UTC)
 
             if stored.expires_at <= now:
                 self._remove_token(token.token_id)
-                raise ApprovalExpiredError(
-                    "Approval token has expired."
-                )
+                raise ApprovalExpiredError("Approval token has expired.")
 
             if (
                 stored.subject != subject
                 or stored.operation != operation
                 or stored.resource != resource
             ):
-                raise ApprovalTokenError(
-                    "Approval token is not authorized for this operation."
-                )
+                raise ApprovalTokenError("Approval token is not authorized for this operation.")
 
             request = self._requests.get(stored.request_id)
 
-            if (
-                request is None
-                or request.status != ApprovalStatus.APPROVED
-            ):
-                raise ApprovalTokenError(
-                    "Associated approval is no longer valid."
-                )
+            if request is None or request.status != ApprovalStatus.APPROVED:
+                raise ApprovalTokenError("Associated approval is no longer valid.")
 
             if request.expires_at <= now:
                 self._remove_token(token.token_id)
-                self._requests[request.request_id] = self._expire_request(
-                    request
-                )
-                raise ApprovalExpiredError(
-                    "Associated approval request has expired."
-                )
+                self._requests[request.request_id] = self._expire_request(request)
+                raise ApprovalExpiredError("Associated approval request has expired.")
 
             self._remove_token(token.token_id)
 
@@ -377,14 +346,9 @@ class ApprovalManager:
             request = self._requests.get(request_id)
 
             if request is None:
-                raise ApprovalNotFoundError(
-                    f"Approval request not found: {request_id}"
-                )
+                raise ApprovalNotFoundError(f"Approval request not found: {request_id}")
 
-            if (
-                request.status == ApprovalStatus.PENDING
-                and request.expires_at <= datetime.now(UTC)
-            ):
+            if request.status == ApprovalStatus.PENDING and request.expires_at <= datetime.now(UTC):
                 request = self._expire_request(request)
 
             return request
@@ -404,10 +368,7 @@ class ApprovalManager:
             for request_id in list(self._requests):
                 request = self._requests[request_id]
 
-                if (
-                    request.status == ApprovalStatus.PENDING
-                    and request.expires_at <= now
-                ):
+                if request.status == ApprovalStatus.PENDING and request.expires_at <= now:
                     request = self._expire_request(request)
 
                 if status is not None and request.status != status:
@@ -428,10 +389,7 @@ class ApprovalManager:
 
         with self._lock:
             for request in list(self._requests.values()):
-                if (
-                    request.status == ApprovalStatus.PENDING
-                    and request.expires_at <= now
-                ):
+                if request.status == ApprovalStatus.PENDING and request.expires_at <= now:
                     self._expire_request(request)
 
             for token_id, token in list(self._tokens.items()):
@@ -445,20 +403,14 @@ class ApprovalManager:
         request = self._requests.get(request_id)
 
         if request is None:
-            raise ApprovalNotFoundError(
-                f"Approval request not found: {request_id}"
-            )
+            raise ApprovalNotFoundError(f"Approval request not found: {request_id}")
 
         if request.status != ApprovalStatus.PENDING:
-            raise ApprovalAlreadyResolvedError(
-                f"Request is already {request.status.value}."
-            )
+            raise ApprovalAlreadyResolvedError(f"Request is already {request.status.value}.")
 
         if request.expires_at <= datetime.now(UTC):
             self._expire_request(request)
-            raise ApprovalExpiredError(
-                "Approval request has expired."
-            )
+            raise ApprovalExpiredError("Approval request has expired.")
 
         return request
 
@@ -506,9 +458,7 @@ class ApprovalManager:
             secret=secret,
         )
 
-        secret_hash = hashlib.sha256(
-            secret.encode("utf-8")
-        ).hexdigest()
+        secret_hash = hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
         self._tokens[token_id] = token
         self._token_hashes[token_id] = secret_hash

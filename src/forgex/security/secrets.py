@@ -1,4 +1,3 @@
-
 """Secret detection and redaction engine for FORGEX."""
 
 from __future__ import annotations
@@ -259,9 +258,7 @@ class SecretScanner:
     def _fingerprint(secret: str) -> str:
         """Create a SHA-256 fingerprint of a detected value."""
 
-        return hashlib.sha256(
-            secret.encode("utf-8", errors="replace")
-        ).hexdigest()
+        return hashlib.sha256(secret.encode("utf-8", errors="replace")).hexdigest()
 
     def scan(self, text: str) -> tuple[SecretMatch, ...]:
         """Find sensitive values in text."""
@@ -315,8 +312,7 @@ class SecretScanner:
 
         for candidate in ordered:
             overlaps = any(
-                candidate.start < existing.end
-                and candidate.end > existing.start
+                candidate.start < existing.end and candidate.end > existing.start
                 for existing in accepted
             )
 
@@ -343,7 +339,7 @@ class SecretScanner:
         cursor = 0
 
         for match in matches:
-            parts.append(text[cursor:match.start])
+            parts.append(text[cursor : match.start])
             parts.append(self.REDACTION)
             cursor = match.end
 

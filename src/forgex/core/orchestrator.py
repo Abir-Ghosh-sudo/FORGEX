@@ -58,9 +58,7 @@ class WorkflowOrchestrator:
         self.workspace = workspace.expanduser().resolve()
 
         if not self.workspace.exists() or not self.workspace.is_dir():
-            raise NotADirectoryError(
-                f"Invalid workspace: {self.workspace}"
-            )
+            raise NotADirectoryError(f"Invalid workspace: {self.workspace}")
 
         self.max_concurrency = max_concurrency
         self._semaphore = asyncio.Semaphore(max_concurrency)
@@ -102,9 +100,7 @@ class WorkflowOrchestrator:
             raise ValueError("Reserved graph node name.")
 
         if normalized_name in self._registered_nodes:
-            raise ValueError(
-                f"Workflow node already exists: {normalized_name}"
-            )
+            raise ValueError(f"Workflow node already exists: {normalized_name}")
 
         async def execute_node(
             state: ForgexState,
@@ -116,9 +112,7 @@ class WorkflowOrchestrator:
             task_id = configurable.get("forgex_task_id")
 
             if not isinstance(task_id, str):
-                raise ExecutionError(
-                    "Missing FORGEX task ID in graph configuration."
-                )
+                raise ExecutionError("Missing FORGEX task ID in graph configuration.")
 
             task = await self.task_manager.get_task(task_id)
             task.check_cancelled()
@@ -137,9 +131,7 @@ class WorkflowOrchestrator:
             task.check_cancelled()
 
             if not isinstance(result, Mapping):
-                raise ExecutionError(
-                    f"Node '{normalized_name}' must return a mapping."
-                )
+                raise ExecutionError(f"Node '{normalized_name}' must return a mapping.")
 
             return dict(result)
 
@@ -205,27 +197,19 @@ class WorkflowOrchestrator:
             return
 
         if name not in self._registered_nodes:
-            raise ValueError(
-                f"Workflow node is not registered: {name}"
-            )
+            raise ValueError(f"Workflow node is not registered: {name}")
 
     def compile(self) -> Any:
         """Compile and validate the LangGraph workflow."""
 
         if not self._registered_nodes:
-            raise ExecutionError(
-                "Cannot compile an empty workflow."
-            )
+            raise ExecutionError("Cannot compile an empty workflow.")
 
         if not self._entry_point_set:
-            raise ExecutionError(
-                "Workflow entry point has not been configured."
-            )
+            raise ExecutionError("Workflow entry point has not been configured.")
 
         if not self._finish_points:
-            raise ExecutionError(
-                "Workflow requires at least one finish point."
-            )
+            raise ExecutionError("Workflow requires at least one finish point.")
 
         try:
             self._compiled_graph = self._builder.compile()
@@ -233,9 +217,7 @@ class WorkflowOrchestrator:
         except Exception as exc:
             logger.exception("Workflow compilation failed.")
 
-            raise ExecutionError(
-                f"Could not compile workflow: {exc}"
-            ) from exc
+            raise ExecutionError(f"Could not compile workflow: {exc}") from exc
 
         logger.info(
             "Workflow compiled successfully with %d nodes.",
@@ -261,9 +243,7 @@ class WorkflowOrchestrator:
             TaskStatus.QUEUED,
             TaskStatus.PAUSED,
         }:
-            raise ExecutionError(
-                f"Task cannot be executed from state: {task.status.value}"
-            )
+            raise ExecutionError(f"Task cannot be executed from state: {task.status.value}")
 
         if self._compiled_graph is None:
             self.compile()
@@ -279,9 +259,7 @@ class WorkflowOrchestrator:
                 TaskStatus.QUEUED,
                 TaskStatus.PAUSED,
             }:
-                raise ExecutionError(
-                    f"Task cannot start from state: {task.status.value}"
-                )
+                raise ExecutionError(f"Task cannot start from state: {task.status.value}")
 
             await self.task_manager.transition(
                 task.task_id,
@@ -313,8 +291,7 @@ class WorkflowOrchestrator:
                     )
 
                     raise ExecutionError(
-                        "Initial state cannot override task_id, prompt "
-                        "or workspace."
+                        "Initial state cannot override task_id, prompt or workspace."
                     )
 
                 state.update(initial_state)
@@ -337,9 +314,7 @@ class WorkflowOrchestrator:
                 task.check_cancelled()
 
                 if not isinstance(result, dict):
-                    raise ExecutionError(
-                        "Workflow returned an invalid state."
-                    )
+                    raise ExecutionError("Workflow returned an invalid state.")
 
                 await self.task_manager.complete_task(
                     task.task_id,
@@ -388,9 +363,7 @@ class WorkflowOrchestrator:
                         str(exc),
                     )
 
-                raise ExecutionError(
-                    f"Workflow execution failed: {exc}"
-                ) from exc
+                raise ExecutionError(f"Workflow execution failed: {exc}") from exc
 
 
 __all__ = [

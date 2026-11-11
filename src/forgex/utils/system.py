@@ -82,9 +82,7 @@ def _read_windows_memory() -> tuple[int | None, int | None]:
         status = MEMORYSTATUSEX()
         status.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
 
-        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(
-            ctypes.byref(status)
-        ):
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
             return None, None
 
         return (
@@ -123,20 +121,10 @@ def _read_macos_memory() -> tuple[int | None, int | None]:
 
         for line in page_result.stdout.splitlines():
             if "page size of" in line:
-                page_size = int(
-                    line.split("page size of", 1)[1]
-                    .split("bytes", 1)[0]
-                    .strip()
-                )
+                page_size = int(line.split("page size of", 1)[1].split("bytes", 1)[0].strip())
 
-            if line.startswith(
-                ("Pages free:", "Pages inactive:", "Pages speculative:")
-            ):
-                free_pages += int(
-                    line.split(":", 1)[1]
-                    .strip()
-                    .rstrip(".")
-                )
+            if line.startswith(("Pages free:", "Pages inactive:", "Pages speculative:")):
+                free_pages += int(line.split(":", 1)[1].strip().rstrip("."))
 
         return total, free_pages * page_size
 
@@ -186,11 +174,7 @@ def detect_gpu() -> tuple[bool, str | None]:
             check=True,
         )
 
-        names = [
-            line.strip()
-            for line in result.stdout.splitlines()
-            if line.strip()
-        ]
+        names = [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
         if names:
             return True, ", ".join(names)
@@ -222,22 +206,16 @@ def get_hardware_info() -> HardwareInfo:
     total_memory, available_memory = get_memory_info()
     gpu_available, gpu_name = detect_gpu()
 
-    to_gb = 1024 ** 3
+    to_gb = 1024**3
 
     return HardwareInfo(
         cpu_count=cpu_count,
         logical_cpu_count=cpu_count,
         total_ram_bytes=total_memory,
         available_ram_bytes=available_memory,
-        total_ram_gb=(
-            round(total_memory / to_gb, 2)
-            if total_memory is not None
-            else None
-        ),
+        total_ram_gb=(round(total_memory / to_gb, 2) if total_memory is not None else None),
         available_ram_gb=(
-            round(available_memory / to_gb, 2)
-            if available_memory is not None
-            else None
+            round(available_memory / to_gb, 2) if available_memory is not None else None
         ),
         gpu_available=gpu_available,
         gpu_name=gpu_name,

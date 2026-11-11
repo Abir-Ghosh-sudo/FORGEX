@@ -1,4 +1,3 @@
-
 """Cross-platform runtime adapter interfaces and factory."""
 
 from __future__ import annotations
@@ -97,9 +96,7 @@ def create_runtime_adapter(
 
         return LinuxRuntimeAdapter(detected)
 
-    raise RuntimeError(
-        f"Unsupported operating system: {detected.operating_system}"
-    )
+    raise RuntimeError(f"Unsupported operating system: {detected.operating_system}")
 
 
 __all__ = [

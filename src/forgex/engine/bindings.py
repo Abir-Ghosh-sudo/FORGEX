@@ -43,16 +43,13 @@ def get_native_function(name: str) -> Any:
 
     if module is None:
         raise NativeEngineError(
-            "Native extension is unavailable. "
-            "Build the C++ engine or use the Python fallback."
+            "Native extension is unavailable. Build the C++ engine or use the Python fallback."
         )
 
     function = getattr(module, name, None)
 
     if not callable(function):
-        raise NativeEngineError(
-            f"Native function '{name}' is not available."
-        )
+        raise NativeEngineError(f"Native function '{name}' is not available.")
 
     return function
 
@@ -71,8 +68,7 @@ def native_capabilities() -> dict[str, Any]:
     functions = sorted(
         name
         for name in dir(module)
-        if not name.startswith("_")
-        and callable(getattr(module, name, None))
+        if not name.startswith("_") and callable(getattr(module, name, None))
     )
 
     return {

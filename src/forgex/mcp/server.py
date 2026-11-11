@@ -37,10 +37,7 @@ class MCPServer:
 
     def list_registered_tools(self) -> list[dict[str, Any]]:
         """Return registered tool definitions."""
-        return [
-            {k: v for k, v in tool.items() if k != "handler"}
-            for tool in self._tools.values()
-        ]
+        return [{k: v for k, v in tool.items() if k != "handler"} for tool in self._tools.values()]
 
     async def start(self) -> None:
         """Start the MCP server (placeholder for full stdio/HTTP implementation)."""

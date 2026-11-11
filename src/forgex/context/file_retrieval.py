@@ -75,6 +75,7 @@ class FileRetriever:
             raise ValueError("Non-permanent deletion requires trash handling (not implemented).")
         if full.is_dir():
             import shutil
+
             shutil.rmtree(full)
         else:
             full.unlink()

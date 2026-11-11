@@ -1,4 +1,3 @@
-
 """SQLite-backed session repository for FORGEX."""
 
 from __future__ import annotations
@@ -228,10 +227,7 @@ class SQLiteSessionRepository:
             tuple(parameters),
         ).fetchall()
 
-        return [
-            self._row_to_session(row, include_messages=False)
-            for row in rows
-        ]
+        return [self._row_to_session(row, include_messages=False) for row in rows]
 
     def update(self, session: CodingSession) -> CodingSession:
         """Update session metadata and lifecycle information."""
@@ -400,9 +396,7 @@ class SQLiteSessionRepository:
         """Return the number of stored sessions."""
 
         if workspace is None:
-            row = self.database.execute(
-                "SELECT COUNT(*) AS total FROM sessions"
-            ).fetchone()
+            row = self.database.execute("SELECT COUNT(*) AS total FROM sessions").fetchone()
         else:
             row = self.database.execute(
                 """

@@ -49,12 +49,8 @@ class SQLiteMemoryStore(MemoryStore):
                 )
                 """
             )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items(memory_type)"
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_created_at ON memory_items(created_at)"
-            )
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_items(memory_type)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON memory_items(created_at)")
             conn.commit()
         finally:
             conn.close()

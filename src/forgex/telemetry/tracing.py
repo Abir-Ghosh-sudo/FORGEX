@@ -1,4 +1,3 @@
-
 """Execution tracing and span management for FORGEX."""
 
 from __future__ import annotations
@@ -34,9 +33,7 @@ class Span:
     status: SpanStatus = SpanStatus.RUNNING
     start_time: float = field(default_factory=perf_counter)
     end_time: float | None = None
-    attributes: dict[str, str | int | float | bool] = field(
-        default_factory=dict
-    )
+    attributes: dict[str, str | int | float | bool] = field(default_factory=dict)
     error_type: str | None = None
 
     @property
@@ -121,16 +118,8 @@ class Tracer:
 
         span = Span(
             name=name,
-            trace_id=(
-                active_parent.trace_id
-                if active_parent is not None
-                else str(uuid4())
-            ),
-            parent_span_id=(
-                active_parent.span_id
-                if active_parent is not None
-                else None
-            ),
+            trace_id=(active_parent.trace_id if active_parent is not None else str(uuid4())),
+            parent_span_id=(active_parent.span_id if active_parent is not None else None),
             attributes=dict(attributes or {}),
         )
 
@@ -179,11 +168,7 @@ class Tracer:
             if trace_id is None:
                 return list(self._spans)
 
-            return [
-                span
-                for span in self._spans
-                if span.trace_id == trace_id
-            ]
+            return [span for span in self._spans if span.trace_id == trace_id]
 
     def get_trace(self, trace_id: str) -> list[Span]:
         """Return all spans belonging to one trace."""

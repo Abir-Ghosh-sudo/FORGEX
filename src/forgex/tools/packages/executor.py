@@ -46,9 +46,7 @@ class PackageExecutor:
         workspace = Path(request.workspace).expanduser().resolve()
 
         if not workspace.is_dir():
-            raise PackageExecutionError(
-                f"Workspace does not exist: {workspace}"
-            )
+            raise PackageExecutionError(f"Workspace does not exist: {workspace}")
 
         started = time.monotonic()
         manager = request.manager
@@ -61,9 +59,7 @@ class PackageExecutor:
             command = self.builder.build(request, manager)
 
             if not command:
-                raise PackageExecutionError(
-                    "Package command cannot be empty."
-                )
+                raise PackageExecutionError("Package command cannot be empty.")
 
             if request.dry_run:
                 return PackageResult(
@@ -103,9 +99,7 @@ class PackageExecutor:
                 stderr=self._decode(output.stderr),
                 duration_seconds=time.monotonic() - started,
                 error=(
-                    self._decode(output.stderr).strip()
-                    if status != PackageStatus.SUCCESS
-                    else None
+                    self._decode(output.stderr).strip() if status != PackageStatus.SUCCESS else None
                 ),
             )
 
@@ -116,9 +110,7 @@ class PackageExecutor:
             raise
 
         except Exception as exc:
-            raise PackageExecutionError(
-                f"Package operation failed: {exc}"
-            ) from exc
+            raise PackageExecutionError(f"Package operation failed: {exc}") from exc
 
     @staticmethod
     def _decode(value: bytes | str | None) -> str:
@@ -136,11 +128,7 @@ class PackageExecutor:
         return_code: int,
     ) -> PackageStatus:
         if state == SupervisedProcessState.COMPLETED:
-            return (
-                PackageStatus.SUCCESS
-                if return_code == 0
-                else PackageStatus.FAILED
-            )
+            return PackageStatus.SUCCESS if return_code == 0 else PackageStatus.FAILED
 
         if state == SupervisedProcessState.TIMED_OUT:
             return PackageStatus.TIMEOUT

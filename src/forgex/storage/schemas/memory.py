@@ -1,4 +1,3 @@
-
 """SQLite schema definitions for FORGEX persistent memory."""
 
 from __future__ import annotations

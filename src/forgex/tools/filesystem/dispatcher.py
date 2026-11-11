@@ -1,4 +1,3 @@
-
 """Validated, fail-safe dispatcher for FORGEX filesystem tools."""
 
 from __future__ import annotations
@@ -125,9 +124,7 @@ class FilesystemDispatcher:
             optional_set = frozenset(optional)
 
             if required_set & optional_set:
-                raise RuntimeError(
-                    f"Overlapping arguments in operation '{name}'."
-                )
+                raise RuntimeError(f"Overlapping arguments in operation '{name}'.")
 
             registry[name] = OperationSpec(
                 name=name,
@@ -152,12 +149,8 @@ class FilesystemDispatcher:
             {
                 "name": spec.name,
                 "description": spec.description,
-                "required_arguments": sorted(
-                    spec.required_arguments
-                ),
-                "optional_arguments": sorted(
-                    spec.optional_arguments
-                ),
+                "required_arguments": sorted(spec.required_arguments),
+                "optional_arguments": sorted(spec.optional_arguments),
             }
             for spec in sorted(
                 self._operations.values(),
@@ -173,70 +166,52 @@ class FilesystemDispatcher:
         """Validate and execute a registered filesystem operation."""
 
         if not isinstance(operation, str):
-            raise FilesystemDispatchError(
-                "Operation name must be a string."
-            )
+            raise FilesystemDispatchError("Operation name must be a string.")
 
         operation = operation.strip()
 
         if not operation:
-            raise FilesystemDispatchError(
-                "Operation name cannot be empty."
-            )
+            raise FilesystemDispatchError("Operation name cannot be empty.")
 
         spec = self._operations.get(operation)
 
         if spec is None:
-            raise FilesystemDispatchError(
-                f"Unsupported filesystem operation: {operation!r}."
-            )
+            raise FilesystemDispatchError(f"Unsupported filesystem operation: {operation!r}.")
 
         if arguments is None:
             arguments = {}
 
         if not isinstance(arguments, Mapping):
-            raise FilesystemDispatchError(
-                "Operation arguments must be a mapping."
-            )
+            raise FilesystemDispatchError("Operation arguments must be a mapping.")
 
         supplied = set(arguments.keys())
 
-        invalid_keys = [
-            key for key in supplied
-            if not isinstance(key, str) or not key
-        ]
+        invalid_keys = [key for key in supplied if not isinstance(key, str) or not key]
 
         if invalid_keys:
-            raise FilesystemDispatchError(
-                "All argument names must be non-empty strings."
-            )
+            raise FilesystemDispatchError("All argument names must be non-empty strings.")
 
         missing = spec.required_arguments - supplied
         unknown = supplied - spec.allowed_arguments
 
         if missing:
             raise FilesystemDispatchError(
-                f"Missing required arguments for '{operation}': "
-                f"{sorted(missing)}."
+                f"Missing required arguments for '{operation}': {sorted(missing)}."
             )
 
         if unknown:
             raise FilesystemDispatchError(
-                f"Unsupported arguments for '{operation}': "
-                f"{sorted(unknown)}."
+                f"Unsupported arguments for '{operation}': {sorted(unknown)}."
             )
 
         try:
             result = spec.handler(**dict(arguments))
         except Exception as exc:
             raise FilesystemDispatchError(
-                f"Filesystem operation '{operation}' failed: "
-                f"{type(exc).__name__}: {exc}"
+                f"Filesystem operation '{operation}' failed: {type(exc).__name__}: {exc}"
             ) from exc
 
         if not isinstance(result, FilesystemToolResult):
-            raise FilesystemDispatchError(
-                f"Operation '{operation}' returned an invalid result."
-            )
+            raise FilesystemDispatchError(f"Operation '{operation}' returned an invalid result.")
 
         return result

@@ -1,4 +1,3 @@
-
 """Bounded output buffering for FORGEX subprocess execution."""
 
 from __future__ import annotations
@@ -55,7 +54,7 @@ class _StreamBuffer:
         with self._lock:
             if len(data) >= self.max_bytes:
                 self._chunks.clear()
-                self._chunks.append(data[-self.max_bytes:])
+                self._chunks.append(data[-self.max_bytes :])
                 self._size = self.max_bytes
                 self._truncated = True
                 return

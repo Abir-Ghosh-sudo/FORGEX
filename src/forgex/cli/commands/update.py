@@ -104,8 +104,7 @@ def check_update() -> None:
 
     console.print(
         Panel(
-            f"Installed version: [bold cyan]{installed}[/bold cyan]\n\n"
-            f"{result.stdout.strip()}",
+            f"Installed version: [bold cyan]{installed}[/bold cyan]\n\n{result.stdout.strip()}",
             title="Package Version Information",
             border_style="cyan",
         )

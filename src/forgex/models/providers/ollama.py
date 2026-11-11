@@ -67,9 +67,7 @@ class OllamaProvider(BaseModelProvider):
             "options": {
                 "temperature": kwargs.get("temperature", self.temperature),
                 "top_p": kwargs.get("top_p", self.top_p),
-                "num_predict": kwargs.get(
-                    "max_output_tokens", self.max_output_tokens
-                ),
+                "num_predict": kwargs.get("max_output_tokens", self.max_output_tokens),
                 "num_ctx": kwargs.get("context_window", self.context_window),
             },
         }

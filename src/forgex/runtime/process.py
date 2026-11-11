@@ -1,4 +1,3 @@
-
 """Asynchronous process execution and lifecycle management for FORGEX."""
 
 from __future__ import annotations
@@ -132,17 +131,11 @@ class ProcessManager:
                 self._processes[pid] = process
                 self._statuses[pid] = ProcessStatus.RUNNING
 
-            input_bytes = (
-                input_text.encode(spec.encoding)
-                if input_text is not None
-                else None
-            )
+            input_bytes = input_text.encode(spec.encoding) if input_text is not None else None
 
             try:
                 if spec.timeout_seconds is None:
-                    stdout_bytes, stderr_bytes = await process.communicate(
-                        input_bytes
-                    )
+                    stdout_bytes, stderr_bytes = await process.communicate(input_bytes)
                 else:
                     stdout_bytes, stderr_bytes = await asyncio.wait_for(
                         process.communicate(input_bytes),
@@ -166,11 +159,7 @@ class ProcessManager:
                     started,
                 )
 
-            status = (
-                ProcessStatus.COMPLETED
-                if process.returncode == 0
-                else ProcessStatus.FAILED
-            )
+            status = ProcessStatus.COMPLETED if process.returncode == 0 else ProcessStatus.FAILED
 
             async with self._lock:
                 self._statuses[pid] = status
@@ -194,9 +183,7 @@ class ProcessManager:
             raise
 
         except (OSError, ValueError) as exc:
-            raise ProcessExecutionError(
-                f"Could not execute process: {exc}"
-            ) from exc
+            raise ProcessExecutionError(f"Could not execute process: {exc}") from exc
 
         finally:
             if process is not None:
@@ -255,11 +242,7 @@ class ProcessManager:
         """Return PIDs of currently managed processes."""
 
         async with self._lock:
-            return [
-                pid
-                for pid, process in self._processes.items()
-                if process.returncode is None
-            ]
+            return [pid for pid, process in self._processes.items() if process.returncode is None]
 
     async def _terminate_process(
         self,

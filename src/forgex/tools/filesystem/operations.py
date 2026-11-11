@@ -1,4 +1,3 @@
-
 """Secure workspace file and directory operations."""
 
 from __future__ import annotations
@@ -70,9 +69,7 @@ class FileOperations:
                 raise TypeError("protection must be WorkspaceProtection.")
 
             if protection.workspace != resolver.workspace:
-                raise ValueError(
-                    "Protection workspace must match resolver workspace."
-                )
+                raise ValueError("Protection workspace must match resolver workspace.")
 
         self._resolver = resolver
         self._protection = protection
@@ -101,9 +98,7 @@ class FileOperations:
 
         if not dst.absolute.parent.exists():
             if not create_parents:
-                raise FileOperationError(
-                    "Destination parent directory does not exist."
-                )
+                raise FileOperationError("Destination parent directory does not exist.")
             dst.absolute.parent.mkdir(parents=True, exist_ok=True)
 
         self._resolver.resolve(dst.absolute.parent, must_exist=True)
@@ -113,9 +108,7 @@ class FileOperations:
             size = src.absolute.stat().st_size
 
             if size > self._max_copy_size:
-                raise InvalidOperationError(
-                    f"File exceeds the {self._max_copy_size}-byte limit."
-                )
+                raise InvalidOperationError(f"File exceeds the {self._max_copy_size}-byte limit.")
 
             self._copy_file(
                 src.absolute,
@@ -170,9 +163,7 @@ class FileOperations:
 
         if not dst.absolute.parent.exists():
             if not create_parents:
-                raise FileOperationError(
-                    "Destination parent directory does not exist."
-                )
+                raise FileOperationError("Destination parent directory does not exist.")
             dst.absolute.parent.mkdir(parents=True, exist_ok=True)
 
         self._resolver.resolve(dst.absolute.parent, must_exist=True)
@@ -194,9 +185,7 @@ class FileOperations:
         except FileOperationError:
             raise
         except OSError as exc:
-            raise FileOperationError(
-                f"Could not move {src.absolute} to {dst.absolute}."
-            ) from exc
+            raise FileOperationError(f"Could not move {src.absolute} to {dst.absolute}.") from exc
 
         return FileOperationResult(
             operation="move",
@@ -271,9 +260,7 @@ class FileOperations:
             self._check_protection(destination, "write")
 
             if destination.is_symlink():
-                raise InvalidOperationError(
-                    "Symlink destinations are not permitted."
-                )
+                raise InvalidOperationError("Symlink destinations are not permitted.")
 
             if overwrite:
                 os.replace(temporary, destination)
@@ -285,15 +272,11 @@ class FileOperations:
             temporary = None
 
         except FileExistsError as exc:
-            raise DestinationExistsError(
-                f"Destination already exists: {destination}"
-            ) from exc
+            raise DestinationExistsError(f"Destination already exists: {destination}") from exc
         except (FileOperationError, InvalidOperationError):
             raise
         except OSError as exc:
-            raise FileOperationError(
-                f"Could not copy file: {source}"
-            ) from exc
+            raise FileOperationError(f"Could not copy file: {source}") from exc
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
@@ -308,15 +291,11 @@ class FileOperations:
         """Copy a directory without following symbolic links."""
 
         if destination == source or source in destination.parents:
-            raise InvalidOperationError(
-                "Cannot copy a directory into itself or its descendants."
-            )
+            raise InvalidOperationError("Cannot copy a directory into itself or its descendants.")
 
         if destination.exists():
             if not overwrite:
-                raise DestinationExistsError(
-                    f"Destination already exists: {destination}"
-                )
+                raise DestinationExistsError(f"Destination already exists: {destination}")
             self._remove_existing(destination)
 
         copied_paths: list[Path] = []
@@ -333,9 +312,7 @@ class FileOperations:
                     item = current_path / name
 
                     if item.is_symlink():
-                        raise InvalidOperationError(
-                            f"Symlink directory is not permitted: {item}"
-                        )
+                        raise InvalidOperationError(f"Symlink directory is not permitted: {item}")
 
                     directories.remove(name) if name == ".forgex-trash" else None
 
@@ -343,14 +320,10 @@ class FileOperations:
                     item = current_path / name
 
                     if item.is_symlink():
-                        raise InvalidOperationError(
-                            f"Symlink file is not permitted: {item}"
-                        )
+                        raise InvalidOperationError(f"Symlink file is not permitted: {item}")
 
                     if item.stat().st_size > self._max_copy_size:
-                        raise InvalidOperationError(
-                            f"File exceeds copy size limit: {item}"
-                        )
+                        raise InvalidOperationError(f"File exceeds copy size limit: {item}")
 
         try:
             validate_tree(source)
@@ -387,9 +360,7 @@ class FileOperations:
         operation: str,
     ) -> None:
         if source == self._resolver.workspace:
-            raise InvalidOperationError(
-                "The workspace root cannot be modified."
-            )
+            raise InvalidOperationError("The workspace root cannot be modified.")
 
         if source.is_symlink():
             raise InvalidOperationError("Symlink operations are not permitted.")
@@ -405,29 +376,19 @@ class FileOperations:
         overwrite: bool,
     ) -> None:
         if destination == self._resolver.workspace:
-            raise InvalidOperationError(
-                "The workspace root cannot be a destination."
-            )
+            raise InvalidOperationError("The workspace root cannot be a destination.")
 
         if source == destination:
-            raise InvalidOperationError(
-                "Source and destination are identical."
-            )
+            raise InvalidOperationError("Source and destination are identical.")
 
         if source.is_dir() and source in destination.parents:
-            raise InvalidOperationError(
-                "Destination cannot be inside the source directory."
-            )
+            raise InvalidOperationError("Destination cannot be inside the source directory.")
 
         if destination.is_symlink():
-            raise InvalidOperationError(
-                "Symlink destinations are not permitted."
-            )
+            raise InvalidOperationError("Symlink destinations are not permitted.")
 
         if destination.exists() and not overwrite:
-            raise DestinationExistsError(
-                f"Destination already exists: {destination}"
-            )
+            raise DestinationExistsError(f"Destination already exists: {destination}")
 
         self._resolver.resolve(destination)
         self._check_protection(source, operation)
@@ -458,6 +419,4 @@ class FileOperations:
         elif path.is_dir():
             shutil.rmtree(path)
         else:
-            raise InvalidOperationError(
-                f"Unsupported destination object: {path}"
-            )
+            raise InvalidOperationError(f"Unsupported destination object: {path}")

@@ -144,9 +144,7 @@ class BaseModelProvider(abc.ABC):
 
     def _validate_base_config(self) -> None:
         if not self.model_name and not self.model_path:
-            raise ModelConfigurationError(
-                "Either model_name or model_path must be configured."
-            )
+            raise ModelConfigurationError("Either model_name or model_path must be configured.")
         if self.context_window < 128:
             raise ModelConfigurationError("context_window must be >= 128.")
         if self.max_output_tokens < 1:
@@ -241,9 +239,7 @@ class BaseModelProvider(abc.ABC):
             elif isinstance(item, Mapping):
                 normalized.append(ModelMessage.from_mapping(item))
             else:
-                raise ModelConfigurationError(
-                    "Each message must be a mapping or ModelMessage."
-                )
+                raise ModelConfigurationError("Each message must be a mapping or ModelMessage.")
         if not normalized:
             raise ModelConfigurationError("At least one message is required.")
         return normalized

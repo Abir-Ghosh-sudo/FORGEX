@@ -77,6 +77,7 @@ def build_default_agent_workflow(
     orchestrator.add_conditional_edges("reviewer", route_after_review, review_routes)
 
     if cfg.include_tester:
+
         def route_after_test(state: ForgexState) -> str:
             report = state.get("test_report") or {}
             metadata = state.get("metadata") or {}

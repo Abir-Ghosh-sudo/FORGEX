@@ -1,4 +1,3 @@
-
 """Central runtime manager for FORGEX."""
 
 from __future__ import annotations
@@ -42,9 +41,7 @@ class RuntimeManager:
         self._adapter = adapter or create_runtime_adapter(self._environment)
 
         if self._adapter.environment != self._environment:
-            raise ValueError(
-                "Runtime adapter environment does not match runtime manager."
-            )
+            raise ValueError("Runtime adapter environment does not match runtime manager.")
 
         self._process_manager = process_manager or ProcessManager()
         self._shell_manager = ShellManager(self._adapter)

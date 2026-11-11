@@ -23,9 +23,7 @@ class CoderNode(AgentNode):
         implementation = update.get("implementation") or {}
         update["output"] = implementation
         if implementation.get("blockers"):
-            update["error"] = "; ".join(
-                str(item) for item in implementation["blockers"]
-            )
+            update["error"] = "; ".join(str(item) for item in implementation["blockers"])
         return update
 
 

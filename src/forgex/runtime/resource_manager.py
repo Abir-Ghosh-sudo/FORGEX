@@ -1,4 +1,3 @@
-
 """Central resource management for FORGEX runtime."""
 
 from __future__ import annotations
@@ -40,9 +39,7 @@ class RuntimeResourceManager:
         self.limits = limits or ResourceLimits()
 
         self._budget = ResourceBudget(self.limits)
-        self._semaphore = asyncio.Semaphore(
-            self.limits.max_concurrent_processes
-        )
+        self._semaphore = asyncio.Semaphore(self.limits.max_concurrent_processes)
         self._lock = asyncio.Lock()
         self._active_processes = 0
         self._total_output_bytes = 0
@@ -113,8 +110,7 @@ class RuntimeResourceManager:
                 total_output_bytes=self._total_output_bytes,
                 maximum_output_bytes=self.limits.max_output_bytes,
                 available_process_slots=(
-                    self.limits.max_concurrent_processes
-                    - self._active_processes
+                    self.limits.max_concurrent_processes - self._active_processes
                 ),
             )
 

@@ -167,8 +167,7 @@ def analyze_workspace(
 
     with contextlib.suppress(OSError):
         top_level_entries = sorted(
-            entry.name + ("/" if entry.is_dir() else "")
-            for entry in root.iterdir()
+            entry.name + ("/" if entry.is_dir() else "") for entry in root.iterdir()
         )
 
     def walk_error(_: OSError) -> None:
@@ -245,8 +244,7 @@ def _render_analysis(result: AnalysisResult) -> None:
     console.print()
     console.print(
         Panel(
-            f"[bold cyan]{result.root}[/bold cyan]\n"
-            f"[dim]Platform: {get_platform_name()}[/dim]",
+            f"[bold cyan]{result.root}[/bold cyan]\n[dim]Platform: {get_platform_name()}[/dim]",
             title="FORGEX Project Analysis",
             border_style="cyan",
         )
@@ -297,14 +295,11 @@ def _render_analysis(result: AnalysisResult) -> None:
             console.print(f"  {entry}")
 
         if len(result.top_level_entries) > 30:
-            console.print(
-                f"  [dim]... and {len(result.top_level_entries) - 30} more[/dim]"
-            )
+            console.print(f"  [dim]... and {len(result.top_level_entries) - 30} more[/dim]")
 
     if result.truncated:
         console.print(
-            "\n[yellow]Analysis reached its file limit. "
-            "Some files may not be included.[/yellow]"
+            "\n[yellow]Analysis reached its file limit. Some files may not be included.[/yellow]"
         )
 
 

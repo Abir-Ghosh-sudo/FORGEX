@@ -70,9 +70,7 @@ class CodeSearchEngine:
         self.workspace = Path(workspace).expanduser().resolve()
 
         if not self.workspace.is_dir():
-            raise SearchError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise SearchError(f"Workspace does not exist: {self.workspace}")
 
         if max_file_size <= 0 or max_results <= 0:
             raise ValueError("Search limits must be positive.")
@@ -87,11 +85,7 @@ class CodeSearchEngine:
         extensions: set[str] | None = None,
     ):
         """Iterate through workspace files without following symlinks."""
-        roots = (
-            [self._resolve_path(path) for path in paths]
-            if paths
-            else [self.workspace]
-        )
+        roots = [self._resolve_path(path) for path in paths] if paths else [self.workspace]
 
         for root in roots:
             if root.is_file():
@@ -139,9 +133,7 @@ class CodeSearchEngine:
         try:
             resolved.relative_to(self.workspace)
         except ValueError as exc:
-            raise SearchError(
-                "Search path must remain inside the workspace."
-            ) from exc
+            raise SearchError("Search path must remain inside the workspace.") from exc
 
         return resolved
 

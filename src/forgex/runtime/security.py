@@ -1,4 +1,3 @@
-
 """Security gateway for controlled runtime command execution.
 
 All command execution must pass through this gateway. It fails closed:
@@ -119,8 +118,7 @@ class PolicyEvaluator(Protocol):
     def __call__(
         self,
         request: CommandRequest,
-    ) -> PolicyResult | Awaitable[PolicyResult]:
-        ...
+    ) -> PolicyResult | Awaitable[PolicyResult]: ...
 
 
 class ApprovalHandler(Protocol):
@@ -128,24 +126,21 @@ class ApprovalHandler(Protocol):
         self,
         request: CommandRequest,
         policy: PolicyResult,
-    ) -> ApprovalResult | Awaitable[ApprovalResult]:
-        ...
+    ) -> ApprovalResult | Awaitable[ApprovalResult]: ...
 
 
 class CommandExecutor(Protocol):
     def __call__(
         self,
         request: CommandRequest,
-    ) -> Any | Awaitable[Any]:
-        ...
+    ) -> Any | Awaitable[Any]: ...
 
 
 class AuditHandler(Protocol):
     def __call__(
         self,
         record: ExecutionRecord,
-    ) -> Any | Awaitable[Any]:
-        ...
+    ) -> Any | Awaitable[Any]: ...
 
 
 async def _resolve(value: Any) -> Any:
@@ -176,9 +171,7 @@ class SecurityGateway:
         max_concurrent_commands: int = 4,
     ) -> None:
         if policy_evaluator is None:
-            raise PolicyUnavailableError(
-                "A security policy evaluator is required."
-            )
+            raise PolicyUnavailableError("A security policy evaluator is required.")
 
         if not callable(command_executor):
             raise TypeError("command_executor must be callable.")
@@ -218,14 +211,10 @@ class SecurityGateway:
         error_message: str | None = None
 
         try:
-            policy_result = await _resolve(
-                self._policy_evaluator(request)
-            )
+            policy_result = await _resolve(self._policy_evaluator(request))
 
             if not isinstance(policy_result, PolicyResult):
-                raise PolicyUnavailableError(
-                    "Policy evaluator returned an invalid result."
-                )
+                raise PolicyUnavailableError("Policy evaluator returned an invalid result.")
 
             if not policy_result.allowed:
                 raise CommandDeniedError(
@@ -235,23 +224,16 @@ class SecurityGateway:
             if policy_result.requires_approval:
                 if self._approval_handler is None:
                     raise ApprovalRequiredError(
-                        "This command requires approval, but no approval "
-                        "handler is configured."
+                        "This command requires approval, but no approval handler is configured."
                     )
 
-                approval = await _resolve(
-                    self._approval_handler(request, policy_result)
-                )
+                approval = await _resolve(self._approval_handler(request, policy_result))
 
                 if not isinstance(approval, ApprovalResult):
-                    raise ApprovalRequiredError(
-                        "Approval handler returned an invalid result."
-                    )
+                    raise ApprovalRequiredError("Approval handler returned an invalid result.")
 
                 if not approval.approved:
-                    raise ApprovalRequiredError(
-                        approval.reason or "Command approval was rejected."
-                    )
+                    raise ApprovalRequiredError(approval.reason or "Command approval was rejected.")
 
                 approved = True
 
@@ -273,9 +255,7 @@ class SecurityGateway:
                 "Command execution failed (request_id=%s)",
                 request.request_id,
             )
-            raise CommandExecutionError(
-                f"Command execution failed: {exc}"
-            ) from exc
+            raise CommandExecutionError(f"Command execution failed: {exc}") from exc
 
         finally:
             record = ExecutionRecord(
@@ -298,8 +278,7 @@ class SecurityGateway:
 
         if self._audit_handler is None:
             logger.info(
-                "Command audit: request_id=%s subject=%s risk=%s "
-                "approved=%s success=%s",
+                "Command audit: request_id=%s subject=%s risk=%s approved=%s success=%s",
                 record.request_id,
                 record.subject,
                 record.risk,

@@ -24,10 +24,7 @@ class PackageManagerInfo:
 
     @property
     def available(self) -> bool:
-        return bool(
-            self.executable
-            and shutil.which(self.executable)
-        )
+        return bool(self.executable and shutil.which(self.executable))
 
 
 class PackageManagerDetector:
@@ -41,9 +38,7 @@ class PackageManagerDetector:
         root = Path(workspace).expanduser().resolve()
 
         if not root.is_dir():
-            raise PackageDetectionError(
-                f"Workspace does not exist: {root}"
-            )
+            raise PackageDetectionError(f"Workspace does not exist: {root}")
 
         if preferred != PackageManager.AUTO:
             return self._preferred(root, preferred)
@@ -61,9 +56,7 @@ class PackageManagerDetector:
             if result:
                 return result
 
-        raise PackageDetectionError(
-            f"No supported package manager detected in {root}"
-        )
+        raise PackageDetectionError(f"No supported package manager detected in {root}")
 
     def _preferred(
         self,
@@ -86,9 +79,7 @@ class PackageManagerDetector:
         executable = executables.get(manager)
 
         if not executable:
-            raise PackageDetectionError(
-                f"Unsupported package manager: {manager}"
-            )
+            raise PackageDetectionError(f"Unsupported package manager: {manager}")
 
         return PackageManagerInfo(
             manager=manager,
@@ -103,23 +94,17 @@ class PackageManagerDetector:
         requirements = root / "requirements.txt"
 
         if uv_lock.is_file():
-            return PackageManagerInfo(
-                PackageManager.UV, "uv.lock", "uv"
-            )
+            return PackageManagerInfo(PackageManager.UV, "uv.lock", "uv")
 
         if poetry_lock.is_file():
-            return PackageManagerInfo(
-                PackageManager.POETRY, "poetry.lock", "poetry"
-            )
+            return PackageManagerInfo(PackageManager.POETRY, "poetry.lock", "poetry")
 
         if pyproject.is_file():
             try:
                 with pyproject.open("rb") as file:
                     data = tomllib.load(file)
             except (OSError, tomllib.TOMLDecodeError) as exc:
-                raise PackageDetectionError(
-                    f"Invalid pyproject.toml: {exc}"
-                ) from exc
+                raise PackageDetectionError(f"Invalid pyproject.toml: {exc}") from exc
 
             if "tool" in data and "poetry" in data["tool"]:
                 return PackageManagerInfo(
@@ -151,13 +136,9 @@ class PackageManagerDetector:
             return None
 
         try:
-            data = json.loads(
-                package_file.read_text(encoding="utf-8")
-            )
+            data = json.loads(package_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise PackageDetectionError(
-                f"Invalid package.json: {exc}"
-            ) from exc
+            raise PackageDetectionError(f"Invalid package.json: {exc}") from exc
 
         package_manager = data.get("packageManager", "")
 
@@ -174,9 +155,7 @@ class PackageManagerDetector:
             manager, executable = PackageManager.PNPM, "pnpm"
         elif (root / "yarn.lock").is_file():
             manager, executable = PackageManager.YARN, "yarn"
-        elif (root / "bun.lockb").is_file() or (
-            root / "bun.lock"
-        ).is_file():
+        elif (root / "bun.lockb").is_file() or (root / "bun.lock").is_file():
             manager, executable = PackageManager.BUN, "bun"
         else:
             manager, executable = PackageManager.NPM, "npm"
@@ -206,9 +185,7 @@ class PackageManagerDetector:
         return None
 
     def _dotnet(self, root: Path) -> PackageManagerInfo | None:
-        projects = sorted(
-            (*root.glob("*.csproj"), *root.glob("*.sln"))
-        )
+        projects = sorted((*root.glob("*.csproj"), *root.glob("*.sln")))
 
         if projects:
             return PackageManagerInfo(

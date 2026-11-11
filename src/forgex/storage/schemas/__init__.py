@@ -1,4 +1,3 @@
-
 """Database schema definitions for FORGEX."""
 
 from .memory import (

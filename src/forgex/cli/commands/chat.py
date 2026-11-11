@@ -64,9 +64,7 @@ async def _interactive_session(workspace: Path) -> None:
 
         while True:
             try:
-                instruction = Prompt.ask(
-                    "\n[bold cyan]forgex[/bold cyan]"
-                ).strip()
+                instruction = Prompt.ask("\n[bold cyan]forgex[/bold cyan]").strip()
 
             except (EOFError, KeyboardInterrupt):
                 console.print("\n[yellow]Ending session...[/yellow]")
@@ -114,10 +112,7 @@ async def _interactive_session(workspace: Path) -> None:
                 console.print(f"[red]FORGEX error:[/red] {exc}")
 
             except Exception as exc:
-                console.print(
-                    f"[red]Task failed:[/red] "
-                    f"{type(exc).__name__}: {exc}"
-                )
+                console.print(f"[red]Task failed:[/red] {type(exc).__name__}: {exc}")
 
     finally:
         await application.shutdown()
@@ -141,9 +136,7 @@ def chat_command(
         workspace = workspace.expanduser().resolve(strict=True)
 
         if not workspace.is_dir():
-            raise typer.BadParameter(
-                "Workspace must be a directory."
-            )
+            raise typer.BadParameter("Workspace must be a directory.")
 
         asyncio.run(_interactive_session(workspace))
 
@@ -159,8 +152,5 @@ def chat_command(
         raise
 
     except Exception as exc:
-        console.print(
-            f"[red]Unable to start chat:[/red] "
-            f"{type(exc).__name__}: {exc}"
-        )
+        console.print(f"[red]Unable to start chat:[/red] {type(exc).__name__}: {exc}")
         raise typer.Exit(code=1) from exc

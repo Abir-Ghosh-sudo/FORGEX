@@ -1,4 +1,3 @@
-
 """Real-time subprocess output streaming for FORGEX."""
 
 from __future__ import annotations
@@ -76,9 +75,7 @@ class ProcessOutputStreamer:
         try:
             result = self.callback(stream, text)
 
-            if asyncio.iscoroutine(result) or isinstance(
-                result, asyncio.Future
-            ):
+            if asyncio.iscoroutine(result) or isinstance(result, asyncio.Future):
                 await result
 
         except asyncio.CancelledError:

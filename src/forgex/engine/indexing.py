@@ -47,9 +47,17 @@ class RepositoryIndexer:
     """Build and maintain a searchable repository index."""
 
     EXCLUDED_DIRECTORIES = {
-        ".git", ".venv", "venv", "__pycache__",
-        "node_modules", "dist", "build", ".tox",
-        ".mypy_cache", ".pytest_cache", ".forgex",
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        "node_modules",
+        "dist",
+        "build",
+        ".tox",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".forgex",
     }
 
     def __init__(
@@ -140,11 +148,7 @@ class RepositoryIndexer:
 
                 previous = self._index.get(relative)
 
-                if (
-                    incremental
-                    and previous is not None
-                    and previous.content_hash == content_hash
-                ):
+                if incremental and previous is not None and previous.content_hash == content_hash:
                     return relative, previous, True
 
                 language = self.parser.detect_language(path)
@@ -202,10 +206,7 @@ class RepositoryIndexer:
                 else:
                     indexed += 1
 
-        current_paths = {
-            str(path.relative_to(self.workspace))
-            for path in files
-        }
+        current_paths = {str(path.relative_to(self.workspace)) for path in files}
 
         # Remove entries for deleted or no-longer-supported files.
         for relative in tuple(self._index):
@@ -217,10 +218,7 @@ class RepositoryIndexer:
             indexed_files=indexed,
             skipped_files=skipped,
             failed_files=failed,
-            symbols_found=sum(
-                len(item.symbols)
-                for item in self._index.values()
-            ),
+            symbols_found=sum(len(item.symbols) for item in self._index.values()),
             duration_seconds=time.monotonic() - started,
         )
 
@@ -230,9 +228,7 @@ class RepositoryIndexer:
 
         if candidate.is_absolute():
             try:
-                candidate = candidate.resolve().relative_to(
-                    self.workspace
-                )
+                candidate = candidate.resolve().relative_to(self.workspace)
             except ValueError:
                 return None
 
@@ -243,22 +239,14 @@ class RepositoryIndexer:
         name: str | None = None,
     ) -> tuple[IndexedSymbol, ...]:
         """Return indexed symbols, optionally filtered by name."""
-        symbols = (
-            symbol
-            for item in self._index.values()
-            for symbol in item.symbols
-        )
+        symbols = (symbol for item in self._index.values() for symbol in item.symbols)
 
         if name is None:
             return tuple(symbols)
 
         needle = name.casefold()
 
-        return tuple(
-            symbol
-            for symbol in symbols
-            if needle in symbol.name.casefold()
-        )
+        return tuple(symbol for symbol in symbols if needle in symbol.name.casefold())
 
     def remove_file(self, path: str | Path) -> bool:
         """Remove a file from the index."""
@@ -266,9 +254,7 @@ class RepositoryIndexer:
 
         if candidate.is_absolute():
             try:
-                candidate = candidate.resolve().relative_to(
-                    self.workspace
-                )
+                candidate = candidate.resolve().relative_to(self.workspace)
             except ValueError:
                 return False
 

@@ -23,9 +23,7 @@ def _get_repo(path: Path) -> Repo:
     try:
         return Repo(path.expanduser().resolve(strict=True), search_parent_directories=True)
     except (InvalidGitRepositoryError, NoSuchPathError, OSError) as exc:
-        raise typer.BadParameter(
-            f"No Git repository found for: {path}"
-        ) from exc
+        raise typer.BadParameter(f"No Git repository found for: {path}") from exc
 
 
 def _relative_path(repo: Repo) -> str:
@@ -231,9 +229,7 @@ def create_branch(
 
     try:
         if not repo.head.is_valid():
-            raise typer.BadParameter(
-                "Cannot create a branch before the first commit."
-            )
+            raise typer.BadParameter("Cannot create a branch before the first commit.")
 
         if not repo.git.check_ref_format(f"refs/heads/{name}"):
             raise typer.BadParameter("Invalid Git branch name.")
@@ -244,9 +240,7 @@ def create_branch(
         branch = repo.create_head(name)
         branch.checkout()
 
-        console.print(
-            f"[green]Created and switched to branch:[/green] {name}"
-        )
+        console.print(f"[green]Created and switched to branch:[/green] {name}")
 
     except GitCommandError as exc:
         console.print(f"[red]Branch creation failed:[/red] {exc}")

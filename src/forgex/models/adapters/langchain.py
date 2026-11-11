@@ -15,10 +15,7 @@ def build_langchain_messages(
     try:
         from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
     except Exception:
-        return [
-            m.to_dict() if isinstance(m, ModelMessage) else dict(m)
-            for m in messages
-        ]
+        return [m.to_dict() if isinstance(m, ModelMessage) else dict(m) for m in messages]
 
     converted: list[Any] = []
     for item in messages:

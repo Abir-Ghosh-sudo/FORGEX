@@ -1,4 +1,3 @@
-
 """Runtime environment detection for FORGEX."""
 
 from __future__ import annotations
@@ -113,9 +112,7 @@ class RuntimeEnvironment:
             discovered = shutil.which(executable)
 
             if discovered:
-                return name or Path(discovered).name, Path(
-                    discovered
-                ).resolve(strict=False)
+                return name or Path(discovered).name, Path(discovered).resolve(strict=False)
 
         return "unknown", None
 
@@ -153,10 +150,14 @@ class RuntimeEnvironment:
             return True
 
         try:
-            cgroup = Path("/proc/1/cgroup").read_text(
-                encoding="utf-8",
-                errors="replace",
-            ).lower()
+            cgroup = (
+                Path("/proc/1/cgroup")
+                .read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                .lower()
+            )
         except OSError:
             return False
 
@@ -213,9 +214,7 @@ class RuntimeEnvironment:
             "working_directory": str(self.working_directory),
             "shell_name": self.shell_name,
             "shell_executable": (
-                str(self.shell_executable)
-                if self.shell_executable is not None
-                else None
+                str(self.shell_executable) if self.shell_executable is not None else None
             ),
             "path_separator": self.path_separator,
             "is_wsl": self.is_wsl,

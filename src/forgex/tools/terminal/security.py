@@ -1,4 +1,3 @@
-
 """Security authorization adapter for FORGEX terminal execution."""
 
 from __future__ import annotations
@@ -45,17 +44,12 @@ class TerminalSecurityDecision:
             raise TypeError("requires_approval must be bool.")
 
         if self.allowed and self.requires_approval:
-            raise ValueError(
-                "A decision requiring approval cannot be immediately allowed."
-            )
+            raise ValueError("A decision requiring approval cannot be immediately allowed.")
 
         if not isinstance(self.reason, str):
             raise TypeError("reason must be a string.")
 
-        if (
-            not isinstance(self.risk_level, str)
-            or not self.risk_level.strip()
-        ):
+        if not isinstance(self.risk_level, str) or not self.risk_level.strip():
             raise ValueError("risk_level must be a non-empty string.")
 
 
@@ -90,26 +84,17 @@ class PolicyTerminalAuthorizer:
         if not callable(policy_evaluator):
             raise TypeError("policy_evaluator must be callable.")
 
-        if (
-            approval_handler is not None
-            and not callable(approval_handler)
-        ):
+        if approval_handler is not None and not callable(approval_handler):
             raise TypeError("approval_handler must be callable.")
 
         if workspace is not None:
             try:
-                resolved_workspace = (
-                    Path(workspace).expanduser().resolve(strict=True)
-                )
+                resolved_workspace = Path(workspace).expanduser().resolve(strict=True)
             except (OSError, RuntimeError) as exc:
-                raise ValueError(
-                    "Configured workspace must exist."
-                ) from exc
+                raise ValueError("Configured workspace must exist.") from exc
 
             if not resolved_workspace.is_dir():
-                raise ValueError(
-                    "Configured workspace must be a directory."
-                )
+                raise ValueError("Configured workspace must be a directory.")
         else:
             resolved_workspace = None
 
@@ -127,19 +112,13 @@ class PolicyTerminalAuthorizer:
         command_text = self._format_command(request.argv)
 
         try:
-            decision = await self._resolve(
-                self._policy_evaluator(request, command_text)
-            )
+            decision = await self._resolve(self._policy_evaluator(request, command_text))
         except Exception as exc:
             logger.exception("Terminal policy evaluation failed.")
-            raise TerminalPolicyError(
-                "Policy evaluation failed; execution denied."
-            ) from exc
+            raise TerminalPolicyError("Policy evaluation failed; execution denied.") from exc
 
         if not isinstance(decision, TerminalSecurityDecision):
-            raise TerminalPolicyError(
-                "Policy evaluator returned an invalid decision."
-            )
+            raise TerminalPolicyError("Policy evaluator returned an invalid decision.")
 
         if not decision.allowed and not decision.requires_approval:
             logger.warning(
@@ -162,14 +141,11 @@ class PolicyTerminalAuthorizer:
     ) -> bool:
         if self._approval_handler is None:
             raise TerminalApprovalError(
-                "Command requires explicit approval, but no approval "
-                "handler is configured."
+                "Command requires explicit approval, but no approval handler is configured."
             )
 
         try:
-            approved = await self._resolve(
-                self._approval_handler(request, decision)
-            )
+            approved = await self._resolve(self._approval_handler(request, decision))
         except Exception as exc:
             logger.exception("Terminal approval failed.")
             raise TerminalApprovalError(
@@ -177,9 +153,7 @@ class PolicyTerminalAuthorizer:
             ) from exc
 
         if not isinstance(approved, bool):
-            raise TerminalApprovalError(
-                "Approval handler must return a boolean."
-            )
+            raise TerminalApprovalError("Approval handler must return a boolean.")
 
         if not approved:
             logger.info(
@@ -196,9 +170,7 @@ class PolicyTerminalAuthorizer:
             return
 
         try:
-            requested_path = request.working_directory.resolve(
-                strict=True
-            )
+            requested_path = request.working_directory.resolve(strict=True)
             requested_path.relative_to(self._workspace)
         except (OSError, ValueError, RuntimeError) as exc:
             raise TerminalPolicyError(
@@ -206,26 +178,17 @@ class PolicyTerminalAuthorizer:
             ) from exc
 
         if not requested_path.is_dir():
-            raise TerminalPolicyError(
-                "Working directory is not a valid directory."
-            )
+            raise TerminalPolicyError("Working directory is not a valid directory.")
 
     @staticmethod
     def _format_command(argv: tuple[str, ...]) -> str:
         """Format argv for policy inspection only."""
 
         if not argv:
-            raise TerminalPolicyError(
-                "Empty commands are not permitted."
-            )
+            raise TerminalPolicyError("Empty commands are not permitted.")
 
-        if any(
-            not isinstance(argument, str) or "\x00" in argument
-            for argument in argv
-        ):
-            raise TerminalPolicyError(
-                "Invalid command argument."
-            )
+        if any(not isinstance(argument, str) or "\x00" in argument for argument in argv):
+            raise TerminalPolicyError("Invalid command argument.")
 
         return shlex.join(argv)
 

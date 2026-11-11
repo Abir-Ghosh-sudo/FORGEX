@@ -24,9 +24,7 @@ def normalize_path(
     try:
         return Path(path).expanduser().resolve(strict=strict)
     except (OSError, RuntimeError, ValueError) as exc:
-        raise PathValidationError(
-            f"Unable to normalize path: {path}"
-        ) from exc
+        raise PathValidationError(f"Unable to normalize path: {path}") from exc
 
 
 def validate_directory(
@@ -39,22 +37,16 @@ def validate_directory(
     directory = normalize_path(path)
 
     if directory.exists() and not directory.is_dir():
-        raise PathValidationError(
-            f"Path exists but is not a directory: {directory}"
-        )
+        raise PathValidationError(f"Path exists but is not a directory: {directory}")
 
     if not directory.exists():
         if not create:
-            raise PathValidationError(
-                f"Directory does not exist: {directory}"
-            )
+            raise PathValidationError(f"Directory does not exist: {directory}")
 
         try:
             directory.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            raise PathValidationError(
-                f"Unable to create directory: {directory}"
-            ) from exc
+            raise PathValidationError(f"Unable to create directory: {directory}") from exc
 
     return directory
 
@@ -69,14 +61,10 @@ def validate_file(
     file_path = normalize_path(path)
 
     if must_exist and not file_path.is_file():
-        raise PathValidationError(
-            f"File does not exist: {file_path}"
-        )
+        raise PathValidationError(f"File does not exist: {file_path}")
 
     if file_path.exists() and not file_path.is_file():
-        raise PathValidationError(
-            f"Path is not a file: {file_path}"
-        )
+        raise PathValidationError(f"Path is not a file: {file_path}")
 
     return file_path
 
@@ -113,9 +101,7 @@ def resolve_workspace_path(
     candidate = Path(relative_path).expanduser()
 
     if candidate.is_absolute() and not allow_absolute:
-        raise PathValidationError(
-            "Absolute paths are not allowed."
-        )
+        raise PathValidationError("Absolute paths are not allowed.")
 
     if not candidate.is_absolute():
         candidate = root / candidate
@@ -123,9 +109,7 @@ def resolve_workspace_path(
     resolved = normalize_path(candidate)
 
     if not is_within_directory(resolved, root):
-        raise PathValidationError(
-            f"Path escapes the workspace: {relative_path}"
-        )
+        raise PathValidationError(f"Path escapes the workspace: {relative_path}")
 
     return resolved
 
@@ -138,9 +122,7 @@ def ensure_parent_directory(path: str | Path) -> Path:
     try:
         file_path.parent.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
-        raise PathValidationError(
-            f"Unable to create parent directory: {file_path.parent}"
-        ) from exc
+        raise PathValidationError(f"Unable to create parent directory: {file_path.parent}") from exc
 
     return file_path
 
@@ -157,9 +139,7 @@ def safe_relative_path(
     try:
         return target.relative_to(base).as_posix()
     except ValueError as exc:
-        raise PathValidationError(
-            f"Path is outside the specified root: {target}"
-        ) from exc
+        raise PathValidationError(f"Path is outside the specified root: {target}") from exc
 
 
 def find_files(

@@ -42,9 +42,7 @@ class TestingToolkit:
         self.workspace = Path(workspace).expanduser().resolve()
 
         if not self.workspace.is_dir():
-            raise TestingToolkitError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise TestingToolkitError(f"Workspace does not exist: {self.workspace}")
 
         self.detector = FrameworkDetector()
         self.resolver = TestCommandResolver(self.detector)
@@ -94,21 +92,15 @@ class TestingToolkit:
             request = self.build_request(**options)
 
         if request.workspace.resolve() != self.workspace:
-            raise TestingToolkitError(
-                "Test request workspace does not match toolkit workspace."
-            )
+            raise TestingToolkitError("Test request workspace does not match toolkit workspace.")
 
         try:
             result = await self.runner.run(request)
 
             if result.framework == TestFramework.PYTEST:
-                cases = self.parser.parse_pytest(
-                    result.stdout + "\n" + result.stderr
-                )
+                cases = self.parser.parse_pytest(result.stdout + "\n" + result.stderr)
             elif result.framework == TestFramework.UNITTEST:
-                cases = self.parser.parse_unittest(
-                    result.stdout + "\n" + result.stderr
-                )
+                cases = self.parser.parse_unittest(result.stdout + "\n" + result.stderr)
             else:
                 cases = ()
 

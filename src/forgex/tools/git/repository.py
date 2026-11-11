@@ -1,4 +1,3 @@
-
 """Git repository discovery and validation for FORGEX."""
 
 from __future__ import annotations
@@ -41,9 +40,7 @@ class RepositoryInfo:
     def __post_init__(self) -> None:
         object.__setattr__(self, "root", Path(self.root).resolve())
         object.__setattr__(self, "git_dir", Path(self.git_dir).resolve())
-        object.__setattr__(
-            self, "working_tree", Path(self.working_tree).resolve()
-        )
+        object.__setattr__(self, "working_tree", Path(self.working_tree).resolve())
 
 
 class GitRepositoryManager:
@@ -64,9 +61,7 @@ class GitRepositoryManager:
             ) from exc
 
         if not root.is_dir():
-            raise GitRepositorySecurityError(
-                "Workspace must be a directory."
-            )
+            raise GitRepositorySecurityError("Workspace must be a directory.")
 
         self.workspace = root
         self.search_parent_directories = search_parent_directories
@@ -83,9 +78,7 @@ class GitRepositoryManager:
                 search_parent_directories=self.search_parent_directories,
             )
         except (InvalidGitRepositoryError, NoSuchPathError, OSError) as exc:
-            raise GitRepositoryNotFoundError(
-                f"No Git repository found for: {target}"
-            ) from exc
+            raise GitRepositoryNotFoundError(f"No Git repository found for: {target}") from exc
 
         self._validate_repository(repo)
         return repo
@@ -99,11 +92,7 @@ class GitRepositoryManager:
             working_tree = Path(repo.working_tree_dir).resolve()
             git_dir = Path(repo.git_dir).resolve()
 
-            branch = (
-                repo.active_branch.name
-                if not repo.head.is_detached
-                else None
-            )
+            branch = repo.active_branch.name if not repo.head.is_detached else None
 
             return RepositoryInfo(
                 root=working_tree,
@@ -114,9 +103,7 @@ class GitRepositoryManager:
                 is_dirty=repo.is_dirty(untracked_files=True),
             )
         except (GitCommandError, TypeError, ValueError) as exc:
-            raise GitRepositoryError(
-                "Unable to inspect Git repository."
-            ) from exc
+            raise GitRepositoryError("Unable to inspect Git repository.") from exc
 
     def initialize(
         self,
@@ -132,9 +119,7 @@ class GitRepositoryManager:
             raise ValueError("Invalid initial branch name.")
 
         if target.exists() and not target.is_dir():
-            raise GitRepositoryInitializationError(
-                "Repository target must be a directory."
-            )
+            raise GitRepositoryInitializationError("Repository target must be a directory.")
 
         if (target / ".git").exists():
             raise GitRepositoryInitializationError(
@@ -190,15 +175,11 @@ class GitRepositoryManager:
 
         if repo.bare:
             if not self.allow_bare:
-                raise GitRepositorySecurityError(
-                    "Bare repositories are not allowed."
-                )
+                raise GitRepositorySecurityError("Bare repositories are not allowed.")
             return
 
         if repo.working_tree_dir is None:
-            raise GitRepositorySecurityError(
-                "Repository has no working tree."
-            )
+            raise GitRepositorySecurityError("Repository has no working tree.")
 
         try:
             working_tree = Path(repo.working_tree_dir).resolve(strict=True)

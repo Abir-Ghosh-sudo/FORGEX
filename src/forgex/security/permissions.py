@@ -1,4 +1,3 @@
-
 """Permission management and authorization policies for FORGEX."""
 
 from __future__ import annotations
@@ -234,16 +233,10 @@ class PermissionManager:
             level=level,
             scope=scope,
             workspace=(
-                workspace.expanduser().resolve(strict=False)
-                if workspace is not None
-                else None
+                workspace.expanduser().resolve(strict=False) if workspace is not None else None
             ),
             created_at=now,
-            expires_at=(
-                now + expires_in
-                if expires_in is not None
-                else None
-            ),
+            expires_at=(now + expires_in if expires_in is not None else None),
         )
 
         with self._lock:
@@ -320,9 +313,7 @@ class PermissionManager:
         """Evaluate a permission request."""
 
         if request.action == PermissionLevel.NONE:
-            return PermissionDecision.deny(
-                "NONE-level operations cannot be authorized."
-            )
+            return PermissionDecision.deny("NONE-level operations cannot be authorized.")
 
         if request.risk == RiskLevel.CRITICAL:
             return PermissionDecision.ask(
@@ -345,13 +336,9 @@ class PermissionManager:
 
         if not candidates:
             if self._default_action == PermissionAction.ASK:
-                return PermissionDecision.ask(
-                    "No matching permission grant exists."
-                )
+                return PermissionDecision.ask("No matching permission grant exists.")
 
-            return PermissionDecision.deny(
-                "No matching permission grant exists. Access denied."
-            )
+            return PermissionDecision.deny("No matching permission grant exists. Access denied.")
 
         candidates.sort(
             key=lambda grant: (

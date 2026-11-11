@@ -1,4 +1,3 @@
-
 """Session lifecycle and message management for FORGEX."""
 
 from __future__ import annotations
@@ -71,9 +70,7 @@ class InMemorySessionRepository:
 
         with self._lock:
             if session_id in self._sessions:
-                raise SessionAlreadyExistsError(
-                    f"Session '{session_id}' already exists."
-                )
+                raise SessionAlreadyExistsError(f"Session '{session_id}' already exists.")
 
             self._sessions[session_id] = deepcopy(session)
 
@@ -100,18 +97,10 @@ class InMemorySessionRepository:
             sessions = list(self._sessions.values())
 
             if workspace is not None:
-                sessions = [
-                    item
-                    for item in sessions
-                    if item.workspace == workspace
-                ]
+                sessions = [item for item in sessions if item.workspace == workspace]
 
             if status is not None:
-                sessions = [
-                    item
-                    for item in sessions
-                    if item.status == status
-                ]
+                sessions = [item for item in sessions if item.status == status]
 
             sessions.sort(
                 key=lambda item: item.updated_at,
@@ -130,9 +119,7 @@ class InMemorySessionRepository:
 
         with self._lock:
             if session_id not in self._sessions:
-                raise SessionNotFoundError(
-                    f"Session '{session_id}' does not exist."
-                )
+                raise SessionNotFoundError(f"Session '{session_id}' does not exist.")
 
             self._sessions[session_id] = deepcopy(session)
 
@@ -158,9 +145,7 @@ class SessionManager:
         try:
             return str(UUID(str(session_id)))
         except (ValueError, TypeError, AttributeError) as exc:
-            raise SessionNotFoundError(
-                f"Invalid session ID: '{session_id}'."
-            ) from exc
+            raise SessionNotFoundError(f"Invalid session ID: '{session_id}'.") from exc
 
     def create_session(
         self,
@@ -199,9 +184,7 @@ class SessionManager:
         session = self._repository.get(normalized_id)
 
         if session is None:
-            raise SessionNotFoundError(
-                f"Session '{normalized_id}' was not found."
-            )
+            raise SessionNotFoundError(f"Session '{normalized_id}' was not found.")
 
         return session
 
@@ -263,14 +246,9 @@ class SessionManager:
                 str(session.metadata),
             ]
 
-            searchable_text.extend(
-                message.content for message in session.messages
-            )
+            searchable_text.extend(message.content for message in session.messages)
 
-            if any(
-                normalized_query in text.casefold()
-                for text in searchable_text
-            ):
+            if any(normalized_query in text.casefold() for text in searchable_text):
                 matches.append(session)
 
                 if limit is not None and len(matches) >= limit:
@@ -287,9 +265,7 @@ class SessionManager:
         existing = self.get_session(session.id)
 
         if existing.id != session.id:
-            raise SessionNotFoundError(
-                f"Session '{session.id}' was not found."
-            )
+            raise SessionNotFoundError(f"Session '{session.id}' was not found.")
 
         session.touch()
         self._repository.save(session)
@@ -440,8 +416,7 @@ class SessionManager:
                 SessionStatus.PAUSED,
             }:
                 raise InvalidSessionOperationError(
-                    "Messages cannot be added to a "
-                    f"{session.status.value} session."
+                    f"Messages cannot be added to a {session.status.value} session."
                 )
 
             message = SessionMessage(
@@ -492,9 +467,7 @@ class SessionManager:
                 self.update_session(session)
                 return deepcopy(message)
 
-        raise SessionError(
-            f"Message '{normalized_message_id}' was not found."
-        )
+        raise SessionError(f"Message '{normalized_message_id}' was not found.")
 
     def clear_messages(
         self,

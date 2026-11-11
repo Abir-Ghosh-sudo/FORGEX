@@ -41,11 +41,7 @@ class ContextBudgeter:
 
     @property
     def prompt_budget_tokens(self) -> int:
-        budget = (
-            self.context_window
-            - self.reserved_output_tokens
-            - self.safety_margin_tokens
-        )
+        budget = self.context_window - self.reserved_output_tokens - self.safety_margin_tokens
         return max(128, budget)
 
     def estimate_tokens(self, text: str) -> int:

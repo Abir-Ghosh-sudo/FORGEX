@@ -1,4 +1,3 @@
-
 """Secure workspace file writing utilities."""
 
 from __future__ import annotations
@@ -63,9 +62,7 @@ class FileWriter:
                 raise TypeError("protection must be WorkspaceProtection.")
 
             if protection.workspace != resolver.workspace:
-                raise ValueError(
-                    "Protection workspace must match resolver workspace."
-                )
+                raise ValueError("Protection workspace must match resolver workspace.")
 
         self._resolver = resolver
         self._protection = protection
@@ -107,9 +104,7 @@ class FileWriter:
             raise TypeError("overwrite must be a boolean.")
 
         if len(content) > self._max_write_size:
-            raise FileWriteError(
-                f"Content exceeds the {self._max_write_size}-byte limit."
-            )
+            raise FileWriteError(f"Content exceeds the {self._max_write_size}-byte limit.")
 
         # Resolve the caller-provided path exactly once initially.
         resolved = self._resolver.resolve(path)
@@ -145,9 +140,7 @@ class FileWriter:
                 raise FileWriteError("Parent directory does not exist.")
 
             if destination.is_symlink():
-                raise FileWriteError(
-                    "Writing through symlinks is not permitted."
-                )
+                raise FileWriteError("Writing through symlinks is not permitted.")
 
             existed = destination.exists()
 
@@ -155,9 +148,7 @@ class FileWriter:
                 raise FileWriteError("Destination is not a regular file.")
 
             if existed and not overwrite:
-                raise FileWriteError(
-                    f"Destination already exists: {destination}"
-                )
+                raise FileWriteError(f"Destination already exists: {destination}")
 
             with tempfile.NamedTemporaryFile(
                 mode="wb",
@@ -177,14 +168,10 @@ class FileWriter:
             self._check_protection(destination)
 
             if destination.is_symlink():
-                raise FileWriteError(
-                    "Destination became a symlink during writing."
-                )
+                raise FileWriteError("Destination became a symlink during writing.")
 
             if destination.parent != parent:
-                raise FileWriteError(
-                    "Destination parent changed during writing."
-                )
+                raise FileWriteError("Destination parent changed during writing.")
 
             if overwrite:
                 os.replace(temporary_path, destination)
@@ -205,13 +192,9 @@ class FileWriter:
         except FileWriteError:
             raise
         except FileExistsError as exc:
-            raise FileWriteError(
-                f"Destination already exists: {destination}"
-            ) from exc
+            raise FileWriteError(f"Destination already exists: {destination}") from exc
         except OSError as exc:
-            raise FileWriteError(
-                f"Could not write file: {destination}"
-            ) from exc
+            raise FileWriteError(f"Could not write file: {destination}") from exc
         finally:
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)

@@ -37,10 +37,7 @@ class ForgexLogger:
             root_logger.propagate = False
 
             formatter = logging.Formatter(
-                fmt=(
-                    "%(asctime)s | %(levelname)-8s | "
-                    "%(name)s | %(message)s"
-                ),
+                fmt=("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"),
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
 
@@ -55,14 +52,12 @@ class ForgexLogger:
                     exist_ok=True,
                 )
 
-                file_handler = (
-                    logging.handlers.RotatingFileHandler(
-                        filename=settings.log_dir / "forgex.log",
-                        maxBytes=settings.max_file_size_mb * 1024 * 1024,
-                        backupCount=settings.backup_count,
-                        encoding="utf-8",
-                        delay=True,
-                    )
+                file_handler = logging.handlers.RotatingFileHandler(
+                    filename=settings.log_dir / "forgex.log",
+                    maxBytes=settings.max_file_size_mb * 1024 * 1024,
+                    backupCount=settings.backup_count,
+                    encoding="utf-8",
+                    delay=True,
                 )
 
                 file_handler.setFormatter(formatter)

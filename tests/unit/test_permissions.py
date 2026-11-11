@@ -90,9 +90,10 @@ def _make_grant(
     resource_pattern: str = "src/*",
     level: PermissionLevel = PermissionLevel.READ,
     scope: PermissionScope = PermissionScope.WORKSPACE,
-    expires_at: datetime | None = None,
+    expires_in: timedelta | None = None,
     workspace: Path | None = TEST_WORKSPACE,
 ) -> PermissionGrant:
+    now = datetime.now(timezone.utc)
     return PermissionGrant(
         grant_id="test-grant",
         subject=subject,
@@ -100,8 +101,10 @@ def _make_grant(
         level=level,
         scope=scope,
         workspace=workspace,
-        created_at=datetime.now(timezone.utc),
-        expires_at=expires_at,
+        created_at=now,
+        expires_at=(
+            now + expires_in if expires_in is not None else None
+        ),
     )
 
 
@@ -114,9 +117,7 @@ class TestPermissionGrant:
         assert not grant.is_expired()
 
     def test_grant_expiry(self) -> None:
-        expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
-        grant = _make_grant(expires_at=expires_at)
-
+        grant = _make_grant(expires_in=timedelta(seconds=-1))
         assert grant.is_expired()
 
 

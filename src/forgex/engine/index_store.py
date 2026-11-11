@@ -69,9 +69,7 @@ class IndexStore:
                     """
                 )
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to initialize index database: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to initialize index database: {exc}") from exc
 
     def save_file(self, item: IndexedFile) -> None:
         """Insert or replace a file and its symbols."""
@@ -123,9 +121,7 @@ class IndexStore:
                     ],
                 )
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to save indexed file: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to save indexed file: {exc}") from exc
 
     def save_many(self, files: tuple[IndexedFile, ...]) -> None:
         """Save multiple indexed files atomically."""
@@ -178,17 +174,13 @@ class IndexStore:
                         ],
                     )
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to save repository index: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to save repository index: {exc}") from exc
 
     def load_all(self) -> tuple[IndexedFile, ...]:
         """Load all indexed files and their symbols."""
         try:
             with self._connect() as connection:
-                rows = connection.execute(
-                    "SELECT * FROM indexed_files ORDER BY path"
-                ).fetchall()
+                rows = connection.execute("SELECT * FROM indexed_files ORDER BY path").fetchall()
 
                 results = []
 
@@ -227,9 +219,7 @@ class IndexStore:
 
                 return tuple(results)
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to load repository index: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to load repository index: {exc}") from exc
 
     def search_symbols(
         self,
@@ -270,9 +260,7 @@ class IndexStore:
                 for row in rows
             )
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to search indexed symbols: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to search indexed symbols: {exc}") from exc
 
     def remove_file(self, path: str) -> bool:
         """Remove a file and its symbols."""
@@ -284,9 +272,7 @@ class IndexStore:
                 )
                 return cursor.rowcount > 0
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to remove indexed file: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to remove indexed file: {exc}") from exc
 
     def clear(self) -> None:
         """Clear all indexed files and symbols."""
@@ -295,14 +281,8 @@ class IndexStore:
                 connection.execute("DELETE FROM indexed_symbols")
                 connection.execute("DELETE FROM indexed_files")
         except sqlite3.Error as exc:
-            raise IndexStoreError(
-                f"Unable to clear index: {exc}"
-            ) from exc
+            raise IndexStoreError(f"Unable to clear index: {exc}") from exc
 
     @staticmethod
     def _escape_like(value: str) -> str:
-        return (
-            value.replace("\\", "\\\\")
-            .replace("%", "\\%")
-            .replace("_", "\\_")
-        )
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

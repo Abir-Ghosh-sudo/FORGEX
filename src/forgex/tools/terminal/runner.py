@@ -1,4 +1,3 @@
-
 """Runtime supervisor adapter for FORGEX terminal execution."""
 
 from __future__ import annotations
@@ -30,9 +29,7 @@ class SupervisorTerminalRunner:
 
     def __init__(self, supervisor: ProcessSupervisor) -> None:
         if not isinstance(supervisor, ProcessSupervisor):
-            raise TypeError(
-                "supervisor must be a ProcessSupervisor instance."
-            )
+            raise TypeError("supervisor must be a ProcessSupervisor instance.")
 
         self._supervisor = supervisor
 
@@ -60,9 +57,7 @@ class SupervisorTerminalRunner:
                 raw_result = await raw_result
 
             if not isinstance(raw_result, SupervisedProcessResult):
-                raise TerminalRunnerError(
-                    "ProcessSupervisor returned an invalid result."
-                )
+                raise TerminalRunnerError("ProcessSupervisor returned an invalid result.")
 
             return self._convert_result(request, raw_result)
 
@@ -86,9 +81,7 @@ class SupervisorTerminalRunner:
                 "Terminal execution failed: command=%s",
                 request.argv[0] if request.argv else "<empty>",
             )
-            raise TerminalRunnerError(
-                "Terminal process execution failed."
-            ) from exc
+            raise TerminalRunnerError("Terminal process execution failed.") from exc
 
     def _convert_result(
         self,
@@ -97,9 +90,7 @@ class SupervisorTerminalRunner:
     ) -> TerminalResult:
         """Convert runtime output into the terminal result model."""
 
-        stdout, stderr, already_truncated = self._extract_output(
-            result.output
-        )
+        stdout, stderr, already_truncated = self._extract_output(result.output)
 
         stdout, stderr, truncated = self._apply_output_limit(
             stdout,
@@ -142,9 +133,7 @@ class SupervisorTerminalRunner:
         """Extract stdout/stderr from an OutputSnapshot."""
 
         if snapshot is None:
-            raise TerminalRunnerError(
-                "ProcessSupervisor returned no output snapshot."
-            )
+            raise TerminalRunnerError("ProcessSupervisor returned no output snapshot.")
 
         stdout = getattr(snapshot, "stdout", b"")
         stderr = getattr(snapshot, "stderr", b"")
@@ -171,9 +160,7 @@ class SupervisorTerminalRunner:
         if isinstance(value, bytes):
             return value.decode("utf-8", errors="replace")
 
-        raise TerminalRunnerError(
-            "Process output must be bytes, string, or None."
-        )
+        raise TerminalRunnerError("Process output must be bytes, string, or None.")
 
     @staticmethod
     def _apply_output_limit(
@@ -184,9 +171,7 @@ class SupervisorTerminalRunner:
         """Apply the request-level output limit after capture."""
 
         if max_bytes < 1:
-            raise TerminalRunnerError(
-                "max_output_bytes must be positive."
-            )
+            raise TerminalRunnerError("max_output_bytes must be positive.")
 
         stdout_bytes = stdout.encode("utf-8")
         stderr_bytes = stderr.encode("utf-8")

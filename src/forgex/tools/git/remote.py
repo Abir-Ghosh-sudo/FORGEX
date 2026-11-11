@@ -1,4 +1,3 @@
-
 """Git remote and network operations for FORGEX."""
 
 from __future__ import annotations
@@ -41,10 +40,7 @@ class GitRemoteOperations:
     ) -> dict[str, str]:
         repo = self.repositories.discover(path)
 
-        return {
-            remote.name: remote.url
-            for remote in repo.remotes
-        }
+        return {remote.name: remote.url for remote in repo.remotes}
 
     def add_remote(
         self,
@@ -89,9 +85,7 @@ class GitRemoteOperations:
                 repo,
             )
         except (ValueError, GitCommandError) as exc:
-            raise GitRemoteError(
-                f"Could not remove remote: {name}"
-            ) from exc
+            raise GitRemoteError(f"Could not remove remote: {name}") from exc
 
     def fetch(
         self,
@@ -118,9 +112,7 @@ class GitRemoteOperations:
                 repo,
             )
         except (ValueError, GitCommandError) as exc:
-            raise GitRemoteError(
-                f"Fetch failed for remote '{selected}'."
-            ) from exc
+            raise GitRemoteError(f"Fetch failed for remote '{selected}'.") from exc
 
     def pull(
         self,
@@ -134,14 +126,10 @@ class GitRemoteOperations:
         selected = remote or self.default_remote
 
         if repo.is_dirty(untracked_files=True):
-            raise GitRemoteError(
-                "Pull blocked: commit or stash local changes first."
-            )
+            raise GitRemoteError("Pull blocked: commit or stash local changes first.")
 
         if repo.head.is_detached:
-            raise GitRemoteError(
-                "Pull is unavailable in detached HEAD state."
-            )
+            raise GitRemoteError("Pull is unavailable in detached HEAD state.")
 
         try:
             target = repo.remote(selected)
@@ -174,19 +162,14 @@ class GitRemoteOperations:
         selected = remote or self.default_remote
 
         if repo.head.is_detached:
-            raise GitRemoteError(
-                "Push is unavailable in detached HEAD state."
-            )
+            raise GitRemoteError("Push is unavailable in detached HEAD state.")
 
         if repo.is_dirty(untracked_files=True):
-            raise GitRemoteError(
-                "Push blocked: working tree has uncommitted changes."
-            )
+            raise GitRemoteError("Push blocked: working tree has uncommitted changes.")
 
         if force:
             raise GitRemoteError(
-                "Force push is disabled for safety. "
-                "Use an explicit reviewed Git workflow instead."
+                "Force push is disabled for safety. Use an explicit reviewed Git workflow instead."
             )
 
         try:
@@ -223,9 +206,7 @@ class GitRemoteOperations:
         target = self.repositories._resolve_workspace_path(destination)
 
         if target.exists() and any(target.iterdir()):
-            raise GitRemoteError(
-                "Clone destination must be empty or nonexistent."
-            )
+            raise GitRemoteError("Clone destination must be empty or nonexistent.")
 
         if depth is not None and depth < 1:
             raise ValueError("Clone depth must be positive.")
@@ -233,11 +214,7 @@ class GitRemoteOperations:
         kwargs = {}
 
         if branch:
-            if (
-                not branch.strip()
-                or branch.startswith("-")
-                or "\x00" in branch
-            ):
+            if not branch.strip() or branch.startswith("-") or "\x00" in branch:
                 raise ValueError("Invalid branch name.")
             kwargs["branch"] = branch
 
@@ -291,9 +268,7 @@ class GitRemoteOperations:
                 raise ValueError("Invalid SSH Git URL.")
             return
 
-        raise ValueError(
-            "Only HTTP(S), SSH, and Git protocol URLs are supported."
-        )
+        raise ValueError("Only HTTP(S), SSH, and Git protocol URLs are supported.")
 
     @staticmethod
     def _result(

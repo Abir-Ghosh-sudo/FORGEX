@@ -32,9 +32,7 @@ def register_migrations(
 
     for migration in combined:
         if migration.version in versions:
-            raise ValueError(
-                f"Duplicate migration version: {migration.version}"
-            )
+            raise ValueError(f"Duplicate migration version: {migration.version}")
         versions.add(migration.version)
 
     return combined

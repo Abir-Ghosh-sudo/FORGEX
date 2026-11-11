@@ -1,4 +1,3 @@
-
 """Database migration management for FORGEX."""
 
 from __future__ import annotations
@@ -35,14 +34,8 @@ class Migration:
     down: MigrationOperation | None = None
 
     def __post_init__(self) -> None:
-        if (
-            not isinstance(self.version, int)
-            or isinstance(self.version, bool)
-            or self.version <= 0
-        ):
-            raise ValueError(
-                "Migration version must be a positive integer."
-            )
+        if not isinstance(self.version, int) or isinstance(self.version, bool) or self.version <= 0:
+            raise ValueError("Migration version must be a positive integer.")
 
         if not isinstance(self.name, str):
             raise ValueError("Migration name must be a string.")
@@ -55,14 +48,10 @@ class Migration:
             )
 
         if not callable(self.up):
-            raise ValueError(
-                "Migration up operation must be callable."
-            )
+            raise ValueError("Migration up operation must be callable.")
 
         if self.down is not None and not callable(self.down):
-            raise ValueError(
-                "Migration down operation must be callable."
-            )
+            raise ValueError("Migration down operation must be callable.")
 
     @staticmethod
     def _operation_fingerprint(
@@ -80,12 +69,8 @@ class Migration:
         if code is not None:
             digest.update(marshal.dumps(code))
 
-            defaults = repr(
-                getattr(operation, "__defaults__", None)
-            )
-            keyword_defaults = repr(
-                getattr(operation, "__kwdefaults__", None)
-            )
+            defaults = repr(getattr(operation, "__defaults__", None))
+            keyword_defaults = repr(getattr(operation, "__kwdefaults__", None))
 
             digest.update(defaults.encode("utf-8"))
             digest.update(keyword_defaults.encode("utf-8"))
@@ -102,10 +87,7 @@ class Migration:
                     digest.update(value.encode("utf-8"))
 
         else:
-            identity = (
-                f"{type(operation).__module__}."
-                f"{type(operation).__qualname__}"
-            )
+            identity = f"{type(operation).__module__}.{type(operation).__qualname__}"
             digest.update(identity.encode("utf-8"))
 
         return digest.hexdigest()
@@ -123,9 +105,7 @@ class Migration:
             )
         )
 
-        return hashlib.sha256(
-            payload.encode("utf-8")
-        ).hexdigest()
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 class MigrationManager:
@@ -156,9 +136,7 @@ class MigrationManager:
         except StorageError:
             raise
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Cannot initialize migration table: {exc}"
-            ) from exc
+            raise StorageError(f"Cannot initialize migration table: {exc}") from exc
 
     def register(self, migration: Migration) -> None:
         """Register one migration."""
@@ -167,10 +145,7 @@ class MigrationManager:
             raise TypeError("Expected a Migration instance.")
 
         if migration.version in self._migrations:
-            raise StorageError(
-                f"Migration version {migration.version} "
-                "is already registered."
-            )
+            raise StorageError(f"Migration version {migration.version} is already registered.")
 
         self._migrations[migration.version] = migration
 
@@ -182,24 +157,18 @@ class MigrationManager:
 
         for migration in migrations:
             if not isinstance(migration, Migration):
-                raise TypeError(
-                    "All entries must be Migration instances."
-                )
+                raise TypeError("All entries must be Migration instances.")
 
         versions = [migration.version for migration in migrations]
 
         if len(versions) != len(set(versions)):
-            raise StorageError(
-                "Duplicate migration versions detected."
-            )
+            raise StorageError("Duplicate migration versions detected.")
 
         duplicates = set(versions).intersection(self._migrations)
 
         if duplicates:
             version = min(duplicates)
-            raise StorageError(
-                f"Migration version {version} is already registered."
-            )
+            raise StorageError(f"Migration version {version} is already registered.")
 
         for migration in migrations:
             self._migrations[migration.version] = migration
@@ -219,9 +188,7 @@ class MigrationManager:
             return [dict(row) for row in rows]
 
         except (sqlite3.Error, StorageError) as exc:
-            raise StorageError(
-                f"Cannot read migration history: {exc}"
-            ) from exc
+            raise StorageError(f"Cannot read migration history: {exc}") from exc
 
     def current_version(self) -> int:
         """Return the latest successfully applied migration version."""
@@ -237,9 +204,7 @@ class MigrationManager:
             return int(row[0]) if row else 0
 
         except (sqlite3.Error, StorageError) as exc:
-            raise StorageError(
-                f"Cannot determine current migration version: {exc}"
-            ) from exc
+            raise StorageError(f"Cannot determine current migration version: {exc}") from exc
 
     def _validate_applied_migrations(self) -> None:
         """Ensure applied migration definitions have not changed."""
@@ -251,14 +216,10 @@ class MigrationManager:
             migration = self._migrations.get(version)
 
             if migration is None:
-                raise StorageError(
-                    f"Applied migration {version} is not registered."
-                )
+                raise StorageError(f"Applied migration {version} is not registered.")
 
             if migration.name != item["name"]:
-                raise StorageError(
-                    f"Migration {version} name has changed."
-                )
+                raise StorageError(f"Migration {version} name has changed.")
 
             if migration.checksum != item["checksum"]:
                 raise StorageError(
@@ -271,16 +232,11 @@ class MigrationManager:
 
         self._validate_applied_migrations()
 
-        applied_versions = {
-            item["version"]
-            for item in self.applied_migrations()
-        }
+        applied_versions = {item["version"] for item in self.applied_migrations()}
 
         return [
             migration
-            for version, migration in sorted(
-                self._migrations.items()
-            )
+            for version, migration in sorted(self._migrations.items())
             if version not in applied_versions
         ]
 
@@ -291,27 +247,16 @@ class MigrationManager:
         """Apply pending migrations sequentially."""
 
         if target_version is not None:
-            if (
-                not isinstance(target_version, int)
-                or isinstance(target_version, bool)
-            ):
-                raise ValueError(
-                    "target_version must be an integer."
-                )
+            if not isinstance(target_version, int) or isinstance(target_version, bool):
+                raise ValueError("target_version must be an integer.")
 
             if target_version < 0:
-                raise ValueError(
-                    "target_version cannot be negative."
-                )
+                raise ValueError("target_version cannot be negative.")
 
         pending = self.pending_migrations()
 
         if target_version is not None:
-            pending = [
-                migration
-                for migration in pending
-                if migration.version <= target_version
-            ]
+            pending = [migration for migration in pending if migration.version <= target_version]
 
         applied_versions: list[int] = []
 
@@ -325,10 +270,7 @@ class MigrationManager:
                 )
 
             try:
-                with self.database.transaction(
-                    immediate=True
-                ) as connection:
-
+                with self.database.transaction(immediate=True) as connection:
                     migration.up(connection)
 
                     connection.execute(
@@ -352,8 +294,7 @@ class MigrationManager:
                 )
 
                 raise StorageError(
-                    f"Migration {migration.version} "
-                    f"({migration.name}) failed: {exc}"
+                    f"Migration {migration.version} ({migration.name}) failed: {exc}"
                 ) from exc
 
             applied_versions.append(migration.version)
@@ -372,24 +313,15 @@ class MigrationManager:
     ) -> list[int]:
         """Rollback the latest applied migrations."""
 
-        if (
-            not isinstance(steps, int)
-            or isinstance(steps, bool)
-            or steps <= 0
-        ):
-            raise ValueError(
-                "steps must be a positive integer."
-            )
+        if not isinstance(steps, int) or isinstance(steps, bool) or steps <= 0:
+            raise ValueError("steps must be a positive integer.")
 
         self._validate_applied_migrations()
 
         history = self.applied_migrations()
 
         if steps > len(history):
-            raise StorageError(
-                "Cannot rollback more migrations than "
-                "have been applied."
-            )
+            raise StorageError("Cannot rollback more migrations than have been applied.")
 
         rolled_back: list[int] = []
 
@@ -398,25 +330,16 @@ class MigrationManager:
             migration = self._migrations.get(version)
 
             if migration is None:
-                raise StorageError(
-                    f"Migration {version} is not registered."
-                )
+                raise StorageError(f"Migration {version} is not registered.")
 
             if migration.down is None:
-                raise StorageError(
-                    f"Migration {version} does not support rollback."
-                )
+                raise StorageError(f"Migration {version} does not support rollback.")
 
             if migration.checksum != item["checksum"]:
-                raise StorageError(
-                    f"Migration {version} checksum mismatch."
-                )
+                raise StorageError(f"Migration {version} checksum mismatch.")
 
             try:
-                with self.database.transaction(
-                    immediate=True
-                ) as connection:
-
+                with self.database.transaction(immediate=True) as connection:
                     migration.down(connection)
 
                     cursor = connection.execute(
@@ -429,8 +352,7 @@ class MigrationManager:
 
                     if cursor.rowcount != 1:
                         raise StorageError(
-                            f"Migration history entry {version} "
-                            "could not be removed."
+                            f"Migration history entry {version} could not be removed."
                         )
 
             except Exception as exc:
@@ -440,8 +362,7 @@ class MigrationManager:
                 )
 
                 raise StorageError(
-                    f"Rollback of migration {version} "
-                    f"({migration.name}) failed: {exc}"
+                    f"Rollback of migration {version} ({migration.name}) failed: {exc}"
                 ) from exc
 
             rolled_back.append(version)

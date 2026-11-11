@@ -80,6 +80,7 @@ class GitManager:
                 self._repo_manager.init()
             else:
                 import subprocess
+
                 subprocess.run(
                     ["git", "init"],
                     cwd=self.workspace,
@@ -100,6 +101,7 @@ class GitManager:
                     True, "status", "Git status retrieved.", data={"status": str(status)}
                 )
             import subprocess
+
             result = subprocess.run(
                 ["git", "status", "--porcelain"],
                 cwd=self.workspace,
@@ -121,6 +123,7 @@ class GitManager:
             )
         try:
             import subprocess
+
             subprocess.run(
                 ["git", "checkout", "-b", branch_name],
                 cwd=self.workspace,
@@ -138,6 +141,7 @@ class GitManager:
             return GitOperationResult(False, "commit", "Unsafe commit message.")
         try:
             import subprocess
+
             if files:
                 for f in files:
                     if not self.safety.is_path_within_workspace(f):
@@ -172,6 +176,7 @@ class GitManager:
         """Rollback to a previous commit."""
         try:
             import subprocess
+
             subprocess.run(
                 ["git", "reset", "--hard", commit_ref],
                 cwd=self.workspace,
@@ -187,6 +192,7 @@ class GitManager:
         """Get working tree diff."""
         try:
             import subprocess
+
             result = subprocess.run(
                 ["git", "diff"],
                 cwd=self.workspace,

@@ -1,4 +1,3 @@
-
 """Workspace-safe file metadata inspection."""
 
 from __future__ import annotations
@@ -74,9 +73,7 @@ class FileMetadataInspector:
                 raise TypeError("protection must be WorkspaceProtection.")
 
             if protection.workspace != resolver.workspace:
-                raise ValueError(
-                    "Protection workspace must match resolver workspace."
-                )
+                raise ValueError("Protection workspace must match resolver workspace.")
 
         self._resolver = resolver
         self._protection = protection
@@ -97,9 +94,7 @@ class FileMetadataInspector:
         target = resolved.absolute
 
         if target.is_symlink():
-            raise MetadataInspectionError(
-                "Symbolic link metadata inspection is not permitted."
-            )
+            raise MetadataInspectionError("Symbolic link metadata inspection is not permitted.")
 
         if self._protection is not None and not allow_protected_read:
             decision = self._protection.inspect(
@@ -120,13 +115,9 @@ class FileMetadataInspector:
                 entry_type = "directory"
                 size = 0
             else:
-                raise MetadataInspectionError(
-                    "Unsupported filesystem entry type."
-                )
+                raise MetadataInspectionError("Unsupported filesystem entry type.")
 
-            relative = target.relative_to(
-                self._resolver.workspace
-            ).as_posix()
+            relative = target.relative_to(self._resolver.workspace).as_posix()
 
             return FileMetadata(
                 name=target.name,
@@ -135,9 +126,7 @@ class FileMetadataInspector:
                 entry_type=entry_type,
                 size_bytes=size,
                 extension=(
-                    target.suffix.lower()
-                    if entry_type == "file" and target.suffix
-                    else None
+                    target.suffix.lower() if entry_type == "file" and target.suffix else None
                 ),
                 created_at=self._timestamp(metadata.st_ctime),
                 modified_at=self._timestamp(metadata.st_mtime),
@@ -151,9 +140,7 @@ class FileMetadataInspector:
             )
 
         except OSError as exc:
-            raise MetadataInspectionError(
-                f"Could not inspect metadata: {target}"
-            ) from exc
+            raise MetadataInspectionError(f"Could not inspect metadata: {target}") from exc
 
     @staticmethod
     def _timestamp(value: float) -> datetime:

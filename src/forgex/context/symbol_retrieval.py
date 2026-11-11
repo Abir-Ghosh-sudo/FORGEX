@@ -18,13 +18,21 @@ class SymbolRetriever:
     """Extracts symbols from source files within the workspace."""
 
     EXTENSIONS = {
-        ".py", ".js", ".ts", ".tsx", ".jsx", ".cpp",
-        ".c", ".h", ".rs", ".go", ".java", ".rb",
+        ".py",
+        ".js",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".cpp",
+        ".c",
+        ".h",
+        ".rs",
+        ".go",
+        ".java",
+        ".rb",
     }
 
-    PY_SYMBOL_RE = re.compile(
-        r"(?:^\s*(?:def|class|async\s+def)\s+([A-Za-z_][A-Za-z0-9_]*))"
-    )
+    PY_SYMBOL_RE = re.compile(r"(?:^\s*(?:def|class|async\s+def)\s+([A-Za-z_][A-Za-z0-9_]*))")
     IMPORT_RE = re.compile(r"(?:^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_.]*))")
 
     def __init__(self, workspace: Path) -> None:
@@ -35,6 +43,7 @@ class SymbolRetriever:
         try:
             import tree_sitter  # noqa: F401
             import tree_sitter_language_pack  # noqa: F401
+
             return True
         except Exception:
             return False
@@ -44,7 +53,8 @@ class SymbolRetriever:
         symbols: dict[str, list[dict[str, Any]]] = {}
         try:
             files = [
-                p for p in self.workspace.rglob("*")
+                p
+                for p in self.workspace.rglob("*")
                 if p.is_file() and p.suffix.lower() in self.EXTENSIONS
             ]
         except Exception:

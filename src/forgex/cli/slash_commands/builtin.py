@@ -1,4 +1,3 @@
-
 """Built-in slash commands for FORGEX interactive sessions."""
 
 from __future__ import annotations

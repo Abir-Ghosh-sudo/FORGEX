@@ -79,9 +79,7 @@ class ModelRouter:
         self._validate_provider(provider)
 
         if not model_name and not model_path:
-            raise ModelRoutingError(
-                "No model configured. Set a model name or local model path."
-            )
+            raise ModelRoutingError("No model configured. Set a model name or local model path.")
 
         context_window = int(settings.context_window)
         if settings.context_window == 8192 and provider in {"llama_cpp", "transformers"}:

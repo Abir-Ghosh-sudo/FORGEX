@@ -80,8 +80,7 @@ def list_models() -> None:
 
     if result.returncode != 0:
         console.print(
-            f"[red]Ollama returned an error:[/red] "
-            f"{result.stderr.strip() or 'Unknown error'}"
+            f"[red]Ollama returned an error:[/red] {result.stderr.strip() or 'Unknown error'}"
         )
         raise typer.Exit(code=1)
 
@@ -174,8 +173,7 @@ def inspect_model(
 
     if result.returncode != 0:
         console.print(
-            f"[red]Model inspection failed:[/red] "
-            f"{result.stderr.strip() or 'Unknown error'}"
+            f"[red]Model inspection failed:[/red] {result.stderr.strip() or 'Unknown error'}"
         )
         raise typer.Exit(code=1)
 
@@ -199,8 +197,7 @@ def inspect_model_json(
 
     if result.returncode != 0:
         console.print(
-            f"[red]Model inspection failed:[/red] "
-            f"{result.stderr.strip() or 'Unknown error'}"
+            f"[red]Model inspection failed:[/red] {result.stderr.strip() or 'Unknown error'}"
         )
         raise typer.Exit(code=1)
 

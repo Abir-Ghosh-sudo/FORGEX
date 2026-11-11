@@ -183,9 +183,7 @@ class GitOperationResult:
             "success": self.success,
             "message": self.message,
             "repository_root": (
-                str(self.repository_root)
-                if self.repository_root is not None
-                else None
+                str(self.repository_root) if self.repository_root is not None else None
             ),
             "data": self.data,
             "error": self.error,

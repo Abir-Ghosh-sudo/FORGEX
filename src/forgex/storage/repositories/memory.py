@@ -1,4 +1,3 @@
-
 """SQLite-backed persistent memory repository for FORGEX."""
 
 from __future__ import annotations
@@ -34,9 +33,7 @@ class SQLiteMemoryRepository:
                 separators=(",", ":"),
             )
         except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"Metadata is not JSON serializable: {exc}"
-            ) from exc
+            raise ValueError(f"Metadata is not JSON serializable: {exc}") from exc
 
     @staticmethod
     def _parse_metadata(value: str | None) -> dict[str, Any]:
@@ -55,21 +52,15 @@ class SQLiteMemoryRepository:
 
     @staticmethod
     def _content_hash(content: str) -> str:
-        return hashlib.sha256(
-            content.encode("utf-8")
-        ).hexdigest()
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _validate_importance(importance: float) -> None:
-        if isinstance(importance, bool) or not isinstance(
-            importance, (int, float)
-        ):
+        if isinstance(importance, bool) or not isinstance(importance, (int, float)):
             raise ValueError("importance must be a number")
 
         if not 0.0 <= importance <= 1.0:
-            raise ValueError(
-                "importance must be between 0.0 and 1.0"
-            )
+            raise ValueError("importance must be between 0.0 and 1.0")
 
     @staticmethod
     def _validate_text(value: str, field: str) -> None:
@@ -79,11 +70,7 @@ class SQLiteMemoryRepository:
     @staticmethod
     def _escape_like(value: str) -> str:
         """Escape SQL LIKE wildcard characters."""
-        return (
-            value.replace("\\", "\\\\")
-            .replace("%", "\\%")
-            .replace("_", "\\_")
-        )
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     def _row_to_entry(self, row: Any) -> dict[str, Any]:
         return {
@@ -100,9 +87,7 @@ class SQLiteMemoryRepository:
             "updated_at": row["updated_at"],
             "last_accessed_at": row["last_accessed_at"],
             "expires_at": row["expires_at"],
-            "metadata": self._parse_metadata(
-                row["metadata_json"]
-            ),
+            "metadata": self._parse_metadata(row["metadata_json"]),
         }
 
     def create(
@@ -181,9 +166,7 @@ class SQLiteMemoryRepository:
         ).fetchone()
 
         if row is None:
-            raise KeyError(
-                f"Memory entry not found: {memory_id}"
-            )
+            raise KeyError(f"Memory entry not found: {memory_id}")
 
         return self._row_to_entry(row)
 
@@ -222,27 +205,11 @@ class SQLiteMemoryRepository:
 
         current = self.get(memory_id)
 
-        new_content = (
-            current["content"] if content is None else content
-        )
-        new_category = (
-            current["category"] if category is None else category
-        )
-        new_importance = (
-            current["importance"]
-            if importance is None
-            else importance
-        )
-        new_metadata = (
-            current["metadata"]
-            if metadata is None
-            else metadata
-        )
-        new_expiry = (
-            current["expires_at"]
-            if expires_at is _UNSET
-            else expires_at
-        )
+        new_content = current["content"] if content is None else content
+        new_category = current["category"] if category is None else category
+        new_importance = current["importance"] if importance is None else importance
+        new_metadata = current["metadata"] if metadata is None else metadata
+        new_expiry = current["expires_at"] if expires_at is _UNSET else expires_at
 
         self._validate_text(new_content, "content")
         self._validate_text(new_category, "category")
@@ -251,9 +218,7 @@ class SQLiteMemoryRepository:
         if not isinstance(new_metadata, dict):
             raise ValueError("metadata must be a dictionary")
 
-        if new_expiry is not None and not isinstance(
-            new_expiry, str
-        ):
+        if new_expiry is not None and not isinstance(new_expiry, str):
             raise ValueError("expires_at must be a string or None")
 
         self.database.execute(
@@ -307,13 +272,9 @@ class SQLiteMemoryRepository:
         """List non-expired memories with optional filters."""
 
         if limit < 0 or offset < 0:
-            raise ValueError(
-                "limit and offset cannot be negative"
-            )
+            raise ValueError("limit and offset cannot be negative")
 
-        conditions = [
-            "(expires_at IS NULL OR expires_at > ?)"
-        ]
+        conditions = ["(expires_at IS NULL OR expires_at > ?)"]
         parameters: list[Any] = [self._now()]
 
         if workspace is not None:
@@ -339,10 +300,7 @@ class SQLiteMemoryRepository:
             tuple(parameters),
         ).fetchall()
 
-        return [
-            self._row_to_entry(row)
-            for row in rows
-        ]
+        return [self._row_to_entry(row) for row in rows]
 
     def search(
         self,
@@ -402,10 +360,7 @@ class SQLiteMemoryRepository:
             tuple(parameters),
         ).fetchall()
 
-        return [
-            self._row_to_entry(row)
-            for row in rows
-        ]
+        return [self._row_to_entry(row) for row in rows]
 
     def record_access(self, memory_id: str) -> None:
         """Update memory access statistics."""
@@ -422,9 +377,7 @@ class SQLiteMemoryRepository:
         )
 
         if cursor.rowcount == 0:
-            raise KeyError(
-                f"Memory entry not found: {memory_id}"
-            )
+            raise KeyError(f"Memory entry not found: {memory_id}")
 
     def add_chunk(
         self,
@@ -443,19 +396,11 @@ class SQLiteMemoryRepository:
         self._validate_text(memory_id, "memory_id")
         self._validate_text(content, "content")
 
-        if isinstance(chunk_index, bool) or not isinstance(
-            chunk_index, int
-        ) or chunk_index < 0:
-            raise ValueError(
-                "chunk_index must be a non-negative integer"
-            )
+        if isinstance(chunk_index, bool) or not isinstance(chunk_index, int) or chunk_index < 0:
+            raise ValueError("chunk_index must be a non-negative integer")
 
-        if isinstance(token_count, bool) or not isinstance(
-            token_count, int
-        ) or token_count < 0:
-            raise ValueError(
-                "token_count must be a non-negative integer"
-            )
+        if isinstance(token_count, bool) or not isinstance(token_count, int) or token_count < 0:
+            raise ValueError("token_count must be a non-negative integer")
 
         if metadata is not None and not isinstance(metadata, dict):
             raise ValueError("metadata must be a dictionary")
@@ -505,9 +450,7 @@ class SQLiteMemoryRepository:
         ).fetchone()
 
         if row is None:
-            raise KeyError(
-                f"Memory chunk not found: {chunk_id}"
-            )
+            raise KeyError(f"Memory chunk not found: {chunk_id}")
 
         return {
             "id": row["id"],
@@ -518,9 +461,7 @@ class SQLiteMemoryRepository:
             "embedding_ref": row["embedding_ref"],
             "content_hash": row["content_hash"],
             "created_at": row["created_at"],
-            "metadata": self._parse_metadata(
-                row["metadata_json"]
-            ),
+            "metadata": self._parse_metadata(row["metadata_json"]),
         }
 
     def get_chunks(
@@ -539,10 +480,7 @@ class SQLiteMemoryRepository:
             (memory_id,),
         ).fetchall()
 
-        return [
-            self.get_chunk(row["id"])
-            for row in rows
-        ]
+        return [self.get_chunk(row["id"]) for row in rows]
 
     def delete_chunk(self, chunk_id: str) -> bool:
         """Delete one memory chunk."""

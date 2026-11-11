@@ -120,15 +120,9 @@ class SourceParser:
     ) -> ParseResult:
         """Parse source text and return a serializable syntax tree."""
         if get_parser is None:
-            raise ParserError(
-                "Tree-sitter language pack is not installed."
-            )
+            raise ParserError("Tree-sitter language pack is not installed.")
 
-        source_bytes = (
-            source.encode("utf-8")
-            if isinstance(source, str)
-            else source
-        )
+        source_bytes = source.encode("utf-8") if isinstance(source, str) else source
 
         try:
             parser = get_parser(language)
@@ -147,9 +141,7 @@ class SourceParser:
         except Exception as exc:
             if isinstance(exc, ParserError):
                 raise
-            raise ParserError(
-                f"Failed to parse {language} source: {exc}"
-            ) from exc
+            raise ParserError(f"Failed to parse {language} source: {exc}") from exc
 
     def _convert_node(
         self,
@@ -157,7 +149,7 @@ class SourceParser:
         source: bytes,
     ) -> SyntaxNode:
         """Convert Tree-sitter nodes into immutable Python objects."""
-        text = source[node.start_byte:node.end_byte].decode(
+        text = source[node.start_byte : node.end_byte].decode(
             "utf-8",
             errors="replace",
         )
@@ -170,10 +162,7 @@ class SourceParser:
             end_byte=node.end_byte,
             text=text,
             named=node.is_named,
-            children=tuple(
-                self._convert_node(child, source)
-                for child in node.children
-            ),
+            children=tuple(self._convert_node(child, source) for child in node.children),
         )
 
     def _collect_errors(
@@ -186,9 +175,7 @@ class SourceParser:
 
         def visit(current: Any) -> None:
             if current.type == "ERROR" or current.is_missing:
-                errors.append(
-                    self._convert_node(current, source)
-                )
+                errors.append(self._convert_node(current, source))
 
             for child in current.children:
                 visit(child)

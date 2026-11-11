@@ -27,9 +27,7 @@ def _find_test_runner(workspace: Path) -> str:
 
     if (workspace / "pyproject.toml").is_file():
         try:
-            content = (workspace / "pyproject.toml").read_text(
-                encoding="utf-8"
-            )
+            content = (workspace / "pyproject.toml").read_text(encoding="utf-8")
             if "[tool.pytest.ini_options]" in content:
                 return "pytest"
         except OSError:
@@ -97,9 +95,7 @@ def run_tests(
     runner = _find_test_runner(workspace)
 
     if runner == "unavailable":
-        console.print(
-            "[red]pytest is not installed or available in PATH.[/red]"
-        )
+        console.print("[red]pytest is not installed or available in PATH.[/red]")
         raise typer.Exit(code=1)
 
     command = ["pytest", target]
@@ -123,9 +119,7 @@ def run_tests(
         result = _run_process(command, workspace, timeout)
 
     except subprocess.TimeoutExpired:
-        console.print(
-            f"[red]Tests exceeded the {timeout}-second timeout.[/red]"
-        )
+        console.print(f"[red]Tests exceeded the {timeout}-second timeout.[/red]")
         raise typer.Exit(code=124) from None
 
     except OSError as exc:
@@ -148,9 +142,7 @@ def run_tests(
     table.add_row("Exit Code", str(result.returncode))
     table.add_row(
         "Status",
-        "[green]PASSED[/green]"
-        if result.returncode == 0
-        else "[red]FAILED[/red]",
+        "[green]PASSED[/green]" if result.returncode == 0 else "[red]FAILED[/red]",
     )
     table.add_row("Runner", "pytest")
 
@@ -191,24 +183,16 @@ def discover_tests(
 
     discovered: list[Path] = []
 
-    for current_root, directories, filenames in __import__("os").walk(
-        workspace
-    ):
+    for current_root, directories, filenames in __import__("os").walk(workspace):
         directories[:] = [
             directory
             for directory in directories
-            if directory not in ignored
-            and not (Path(current_root) / directory).is_symlink()
+            if directory not in ignored and not (Path(current_root) / directory).is_symlink()
         ]
 
         for filename in filenames:
-            if (
-                filename.startswith("test_")
-                or filename.endswith("_test.py")
-            ):
-                discovered.append(
-                    Path(current_root) / filename
-                )
+            if filename.startswith("test_") or filename.endswith("_test.py"):
+                discovered.append(Path(current_root) / filename)
 
     table = Table(title="Discovered Python Tests")
     table.add_column("Test File", style="cyan")

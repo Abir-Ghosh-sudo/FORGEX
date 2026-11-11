@@ -22,8 +22,7 @@ _JSON_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```", re.DOTALL
 class AgentModelProtocol(Protocol):
     """Minimal async/sync model interface expected by agent roles."""
 
-    def generate(self, messages: list[dict[str, str]], **kwargs: Any) -> Any:
-        ...
+    def generate(self, messages: list[dict[str, str]], **kwargs: Any) -> Any: ...
 
 
 @dataclass(slots=True)

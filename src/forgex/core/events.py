@@ -133,9 +133,7 @@ class EventBus:
             raise RuntimeError("Cannot publish to a closed event bus.")
 
         async with self._lock:
-            handlers = tuple(
-                self._handlers.get(event.event_type, ())
-            )
+            handlers = tuple(self._handlers.get(event.event_type, ()))
 
         for handler in handlers:
             try:

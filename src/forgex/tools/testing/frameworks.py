@@ -30,9 +30,7 @@ class FrameworkDetector:
         root = Path(workspace).expanduser().resolve()
 
         if not root.is_dir():
-            raise FrameworkDetectionError(
-                f"Workspace does not exist: {root}"
-            )
+            raise FrameworkDetectionError(f"Workspace does not exist: {root}")
 
         checks = (
             self._python,
@@ -47,9 +45,7 @@ class FrameworkDetector:
             if result is not None:
                 return result
 
-        raise FrameworkDetectionError(
-            f"No supported test framework detected in {root}"
-        )
+        raise FrameworkDetectionError(f"No supported test framework detected in {root}")
 
     def _python(self, root: Path) -> FrameworkInfo | None:
         pyproject = root / "pyproject.toml"
@@ -59,15 +55,10 @@ class FrameworkDetector:
                 with pyproject.open("rb") as file:
                     data = tomllib.load(file)
             except (OSError, tomllib.TOMLDecodeError) as exc:
-                raise FrameworkDetectionError(
-                    f"Invalid pyproject.toml: {exc}"
-                ) from exc
+                raise FrameworkDetectionError(f"Invalid pyproject.toml: {exc}") from exc
 
-            if (
-                "pytest" in data.get("tool", {})
-                or "pytest" in data.get("project", {}).get(
-                    "optional-dependencies", {}
-                )
+            if "pytest" in data.get("tool", {}) or "pytest" in data.get("project", {}).get(
+                "optional-dependencies", {}
             ):
                 return FrameworkInfo(
                     TestFramework.PYTEST,
@@ -75,17 +66,13 @@ class FrameworkDetector:
                     "pyproject.toml",
                 )
 
-        if (root / "pytest.ini").is_file() or (
-            root / "conftest.py"
-        ).is_file():
+        if (root / "pytest.ini").is_file() or (root / "conftest.py").is_file():
             return FrameworkInfo(
                 TestFramework.PYTEST,
                 ("pytest",),
             )
 
-        if (root / "tests").is_dir() and any(
-            root.glob("test_*.py")
-        ):
+        if (root / "tests").is_dir() and any(root.glob("test_*.py")):
             return FrameworkInfo(
                 TestFramework.PYTEST,
                 ("pytest",),
@@ -115,9 +102,7 @@ class FrameworkDetector:
         try:
             data = json.loads(package_json.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise FrameworkDetectionError(
-                f"Invalid package.json: {exc}"
-            ) from exc
+            raise FrameworkDetectionError(f"Invalid package.json: {exc}") from exc
 
         dependencies = {
             **data.get("dependencies", {}),
@@ -176,9 +161,7 @@ class FrameworkDetector:
         return None
 
     def _dotnet(self, root: Path) -> FrameworkInfo | None:
-        project_files = sorted(
-            (*root.glob("*.sln"), *root.glob("*.csproj"))
-        )
+        project_files = sorted((*root.glob("*.sln"), *root.glob("*.csproj")))
 
         if project_files:
             return FrameworkInfo(
@@ -206,9 +189,7 @@ class TestCommandResolver:
             command = self._default_command(framework, request.workspace)
 
         if not command:
-            raise FrameworkDetectionError(
-                f"Unsupported test framework: {framework}"
-            )
+            raise FrameworkDetectionError(f"Unsupported test framework: {framework}")
 
         args = list(command)
 
@@ -239,21 +220,13 @@ class TestCommandResolver:
     ) -> tuple[str, ...]:
         commands = {
             TestFramework.PYTEST: ("pytest",),
-            TestFramework.UNITTEST: (
-                "python", "-m", "unittest", "discover"
-            ),
+            TestFramework.UNITTEST: ("python", "-m", "unittest", "discover"),
             TestFramework.NODE: ("npm", "test", "--"),
-            TestFramework.JEST: (
-                "npx", "--no-install", "jest", "--runInBand"
-            ),
-            TestFramework.VITEST: (
-                "npx", "--no-install", "vitest", "run"
-            ),
+            TestFramework.JEST: ("npx", "--no-install", "jest", "--runInBand"),
+            TestFramework.VITEST: ("npx", "--no-install", "vitest", "run"),
             TestFramework.CARGO: ("cargo", "test"),
             TestFramework.GO: ("go", "test", "./..."),
-            TestFramework.DOTNET: (
-                "dotnet", "test", str(workspace)
-            ),
+            TestFramework.DOTNET: ("dotnet", "test", str(workspace)),
         }
 
         return commands.get(framework, ())

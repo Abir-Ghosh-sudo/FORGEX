@@ -22,9 +22,7 @@ class TestOutputParser:
         re.IGNORECASE | re.MULTILINE,
     )
 
-    PYTEST_LOCATION = re.compile(
-        r"^(.+?):(\d+):\s*(.*)$"
-    )
+    PYTEST_LOCATION = re.compile(r"^(.+?):(\d+):\s*(.*)$")
 
     UNITTEST_PATTERN = re.compile(
         r"^(test_\w+)\s+\(([^)]+)\)\s+\.\.\.\s+(ok|FAIL|ERROR|skipped.*)$",
@@ -80,11 +78,7 @@ class TestOutputParser:
                 TestCaseResult(
                     name=f"{module}.{name}",
                     status=status,
-                    message=(
-                        raw_status
-                        if status != TestStatus.PASSED
-                        else None
-                    ),
+                    message=(raw_status if status != TestStatus.PASSED else None),
                 )
             )
 
@@ -103,9 +97,7 @@ class TestOutputParser:
         try:
             root = ET.parse(path).getroot()
         except (OSError, ET.ParseError) as exc:
-            raise ValueError(
-                f"Unable to parse JUnit XML: {exc}"
-            ) from exc
+            raise ValueError(f"Unable to parse JUnit XML: {exc}") from exc
 
         results: list[TestCaseResult] = []
 
@@ -113,9 +105,7 @@ class TestOutputParser:
             name = case.attrib.get("name", "unknown")
             classname = case.attrib.get("classname", "")
             file_path = case.attrib.get("file")
-            duration = self._float(
-                case.attrib.get("time", "0")
-            )
+            duration = self._float(case.attrib.get("time", "0"))
 
             failure = case.find("failure")
             error = case.find("error")
@@ -207,9 +197,7 @@ class TestOutputParser:
                         file_path=file_path,
                         message=messages[0] if messages else None,
                         traceback="\n".join(messages) if messages else None,
-                        duration_seconds=self._float(
-                            assertion.get("duration", 0)
-                        ) / 1000,
+                        duration_seconds=self._float(assertion.get("duration", 0)) / 1000,
                     )
                 )
 

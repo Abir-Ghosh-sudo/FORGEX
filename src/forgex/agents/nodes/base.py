@@ -56,9 +56,7 @@ class AgentNode:
             "implementation": self._format_value(
                 state.get("implementation") or state.get("coder_output")
             ),
-            "review": self._format_value(
-                state.get("review") or state.get("reviewer_output")
-            ),
+            "review": self._format_value(state.get("review") or state.get("reviewer_output")),
         }
 
     @staticmethod

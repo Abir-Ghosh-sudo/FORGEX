@@ -22,9 +22,7 @@ class ApplicationContext:
     session_id: str = field(default_factory=lambda: str(uuid4()))
     event_bus: EventBus = field(default_factory=EventBus)
 
-    started_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -40,14 +38,10 @@ class ApplicationContext:
         self.workspace = self.workspace.expanduser().resolve()
 
         if not self.workspace.exists():
-            raise FileNotFoundError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise FileNotFoundError(f"Workspace does not exist: {self.workspace}")
 
         if not self.workspace.is_dir():
-            raise NotADirectoryError(
-                f"Workspace is not a directory: {self.workspace}"
-            )
+            raise NotADirectoryError(f"Workspace is not a directory: {self.workspace}")
 
         logger.debug(
             "Application context initialized: workspace=%s session=%s",
@@ -82,9 +76,7 @@ class ApplicationContext:
             raise ValueError("Service name cannot be empty.")
 
         if normalized_name in self._services and not replace:
-            raise ValueError(
-                f"Service already registered: {normalized_name}"
-            )
+            raise ValueError(f"Service already registered: {normalized_name}")
 
         self._services[normalized_name] = service
 
@@ -95,9 +87,7 @@ class ApplicationContext:
         try:
             return self._services[name]
         except KeyError as exc:
-            raise LookupError(
-                f"Service not registered: {name}"
-            ) from exc
+            raise LookupError(f"Service not registered: {name}") from exc
 
     def has_service(self, name: str) -> bool:
         """Check whether a service is registered."""

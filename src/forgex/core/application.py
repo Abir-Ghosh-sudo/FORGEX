@@ -42,14 +42,10 @@ class ForgexApplication:
         workspace_path = Path(workspace).expanduser().resolve()
 
         if not workspace_path.exists():
-            raise FileNotFoundError(
-                f"Workspace does not exist: {workspace_path}"
-            )
+            raise FileNotFoundError(f"Workspace does not exist: {workspace_path}")
 
         if not workspace_path.is_dir():
-            raise NotADirectoryError(
-                f"Workspace is not a directory: {workspace_path}"
-            )
+            raise NotADirectoryError(f"Workspace is not a directory: {workspace_path}")
 
         self.context = ApplicationContext(
             workspace=workspace_path,
@@ -119,8 +115,7 @@ class ForgexApplication:
 
         if not self.is_running:
             raise RuntimeError(
-                "FORGEX application is not running. "
-                "Call 'await application.start()' first."
+                "FORGEX application is not running. Call 'await application.start()' first."
             )
 
     async def start(self) -> None:
@@ -176,9 +171,7 @@ class ForgexApplication:
         if not self._started:
             self._shutdown = True
             await self.context.close()
-            logger.debug(
-                "Unstarted FORGEX application resources closed."
-            )
+            logger.debug("Unstarted FORGEX application resources closed.")
             return
 
         try:

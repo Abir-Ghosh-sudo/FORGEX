@@ -55,9 +55,7 @@ class ApplicationLifecycle:
     def add_startup_hook(self, hook: LifecycleHook) -> None:
         """Register an asynchronous or synchronous startup hook."""
         if self._state != ApplicationState.CREATED:
-            raise RuntimeError(
-                "Startup hooks cannot be added after initialization."
-            )
+            raise RuntimeError("Startup hooks cannot be added after initialization.")
 
         self._startup_hooks.append(hook)
 
@@ -67,9 +65,7 @@ class ApplicationLifecycle:
             ApplicationState.STOPPING,
             ApplicationState.STOPPED,
         }:
-            raise RuntimeError(
-                "Shutdown hooks cannot be added during shutdown."
-            )
+            raise RuntimeError("Shutdown hooks cannot be added during shutdown.")
 
         self._shutdown_hooks.append(hook)
 
@@ -90,15 +86,11 @@ class ApplicationLifecycle:
                 return
 
             if self._state != ApplicationState.CREATED:
-                raise InitializationError(
-                    f"Cannot start application from state: {self._state}"
-                )
+                raise InitializationError(f"Cannot start application from state: {self._state}")
 
             if self.context.closed:
                 self._state = ApplicationState.FAILED
-                raise InitializationError(
-                    "Cannot start with a closed application context."
-                )
+                raise InitializationError("Cannot start with a closed application context.")
 
             self._state = ApplicationState.INITIALIZING
 
@@ -129,13 +121,9 @@ class ApplicationLifecycle:
                 try:
                     await self.context.close()
                 except Exception:
-                    logger.exception(
-                        "Failed to clean up after startup failure."
-                    )
+                    logger.exception("Failed to clean up after startup failure.")
 
-                raise InitializationError(
-                    f"Application startup failed: {exc}"
-                ) from exc
+                raise InitializationError(f"Application startup failed: {exc}") from exc
 
     async def shutdown(self) -> None:
         """Gracefully stop application services."""

@@ -1,4 +1,3 @@
-
 """Benchmark result models for FORGEX engine."""
 
 from __future__ import annotations
@@ -61,7 +60,5 @@ class BenchmarkReport:
             "failed": self.failed,
             "total_duration": self.total_duration,
             "environment": self.environment,
-            "results": [
-                result.to_dict() for result in self.results
-            ],
+            "results": [result.to_dict() for result in self.results],
         }

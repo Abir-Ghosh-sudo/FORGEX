@@ -1,4 +1,3 @@
-
 """Subprocess supervision and lifecycle coordination for FORGEX."""
 
 from __future__ import annotations
@@ -72,9 +71,7 @@ class ProcessSupervisor:
             raise ValueError("read_chunk_size must be positive.")
 
         self.limits = limits or ResourceLimits()
-        self.resources = resource_manager or RuntimeResourceManager(
-            self.limits
-        )
+        self.resources = resource_manager or RuntimeResourceManager(self.limits)
         self.terminate_grace_period = terminate_grace_period
         self.read_chunk_size = read_chunk_size
 
@@ -125,8 +122,7 @@ class ProcessSupervisor:
             )
 
             output = ProcessOutputBuffer(
-                max_bytes_per_stream=self.limits.max_output_bytes // 2
-                or 1
+                max_bytes_per_stream=self.limits.max_output_bytes // 2 or 1
             )
 
             entry = _ProcessEntry(
@@ -171,9 +167,7 @@ class ProcessSupervisor:
                 return SupervisedProcessResult(
                     process_id=process_id,
                     pid=process.pid,
-                    return_code=process.returncode
-                    if process.returncode is not None
-                    else -1,
+                    return_code=process.returncode if process.returncode is not None else -1,
                     state=SupervisedProcessState.TIMED_OUT,
                     output=output.snapshot(),
                     duration_seconds=time.monotonic() - started,

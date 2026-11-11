@@ -1,4 +1,3 @@
-
 """TOML configuration loader for FORGEX runtime."""
 
 from __future__ import annotations
@@ -50,9 +49,7 @@ class RuntimeConfigLoader:
         config_path: Path | str | None = None,
     ) -> None:
         self.config_path = (
-            Path(config_path).expanduser().resolve()
-            if config_path is not None
-            else None
+            Path(config_path).expanduser().resolve() if config_path is not None else None
         )
 
     def load(self, *, strict: bool = True) -> RuntimeConfig:
@@ -65,9 +62,7 @@ class RuntimeConfigLoader:
             return RuntimeConfig()
 
         if not self.config_path.is_file():
-            raise RuntimeConfigError(
-                f"Configuration path is not a file: {self.config_path}"
-            )
+            raise RuntimeConfigError(f"Configuration path is not a file: {self.config_path}")
 
         try:
             with self.config_path.open("rb") as file:
@@ -76,22 +71,14 @@ class RuntimeConfigLoader:
             section = document.get(self.SECTION, {})
 
             if not isinstance(section, dict):
-                raise RuntimeConfigError(
-                    "The [runtime] section must be a TOML table."
-                )
+                raise RuntimeConfigError("The [runtime] section must be a TOML table.")
 
             unknown = set(section) - self._ALLOWED_KEYS
 
             if strict and unknown:
-                raise RuntimeConfigError(
-                    f"Unknown runtime settings: {', '.join(sorted(unknown))}"
-                )
+                raise RuntimeConfigError(f"Unknown runtime settings: {', '.join(sorted(unknown))}")
 
-            values = {
-                key: value
-                for key, value in section.items()
-                if key in self._ALLOWED_KEYS
-            }
+            values = {key: value for key, value in section.items() if key in self._ALLOWED_KEYS}
 
             if "workspace" in values and values["workspace"] is not None:
                 workspace = Path(values["workspace"]).expanduser()
@@ -107,17 +94,13 @@ class RuntimeConfigLoader:
             raise
 
         except (OSError, ValueError, TypeError, tomllib.TOMLDecodeError) as exc:
-            raise RuntimeConfigError(
-                f"Failed to load runtime configuration: {exc}"
-            ) from exc
+            raise RuntimeConfigError(f"Failed to load runtime configuration: {exc}") from exc
 
     def save(self, config: RuntimeConfig) -> Path:
         """Atomically save runtime configuration as TOML."""
 
         if self.config_path is None:
-            raise RuntimeConfigError(
-                "A configuration path is required for saving."
-            )
+            raise RuntimeConfigError("A configuration path is required for saving.")
 
         if not isinstance(config, RuntimeConfig):
             raise TypeError("config must be a RuntimeConfig instance.")
@@ -125,9 +108,7 @@ class RuntimeConfigLoader:
         path = self.config_path
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        document = {
-            self.SECTION: self._serialize(config)
-        }
+        document = {self.SECTION: self._serialize(config)}
 
         content = self._to_toml(document)
 
@@ -156,9 +137,7 @@ class RuntimeConfigLoader:
             if temporary_path is not None:
                 temporary_path.unlink(missing_ok=True)
 
-            raise RuntimeConfigError(
-                f"Failed to save runtime configuration: {exc}"
-            ) from exc
+            raise RuntimeConfigError(f"Failed to save runtime configuration: {exc}") from exc
 
     @staticmethod
     def _serialize(config: RuntimeConfig) -> dict[str, Any]:
@@ -178,12 +157,8 @@ class RuntimeConfigLoader:
             "process_tree_termination": config.process_tree_termination,
             "capture_stdout": config.capture_stdout,
             "capture_stderr": config.capture_stderr,
-            "allowed_environment_variables": list(
-                config.allowed_environment_variables
-            ),
-            "blocked_environment_variables": list(
-                config.blocked_environment_variables
-            ),
+            "allowed_environment_variables": list(config.allowed_environment_variables),
+            "blocked_environment_variables": list(config.blocked_environment_variables),
             "platform": config.platform,
             "metadata": config.metadata,
         }
@@ -200,9 +175,7 @@ class RuntimeConfigLoader:
         lines = ["[runtime]"]
 
         for key, value in document["runtime"].items():
-            lines.append(
-                f"{key} = {RuntimeConfigLoader._format_value(value)}"
-            )
+            lines.append(f"{key} = {RuntimeConfigLoader._format_value(value)}")
 
         lines.append("")
         return "\n".join(lines)
@@ -231,21 +204,20 @@ class RuntimeConfigLoader:
             return f'"{escaped}"'
 
         if isinstance(value, list):
-            return "[" + ", ".join(
-                RuntimeConfigLoader._format_value(item)
-                for item in value
-            ) + "]"
+            return "[" + ", ".join(RuntimeConfigLoader._format_value(item) for item in value) + "]"
 
         if isinstance(value, dict):
-            return "{ " + ", ".join(
-                f"{RuntimeConfigLoader._format_value(str(key))} = "
-                f"{RuntimeConfigLoader._format_value(item)}"
-                for key, item in value.items()
-            ) + " }"
+            return (
+                "{ "
+                + ", ".join(
+                    f"{RuntimeConfigLoader._format_value(str(key))} = "
+                    f"{RuntimeConfigLoader._format_value(item)}"
+                    for key, item in value.items()
+                )
+                + " }"
+            )
 
-        raise TypeError(
-            f"Unsupported TOML value type: {type(value).__name__}"
-        )
+        raise TypeError(f"Unsupported TOML value type: {type(value).__name__}")
 
 
 __all__ = ["RuntimeConfigLoader", "RuntimeConfigError"]

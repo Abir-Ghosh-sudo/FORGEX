@@ -11,6 +11,7 @@ try:
         load_native_engine,
     )
 except ImportError:
+
     def is_native_available() -> bool:
         """Return whether native acceleration is available."""
         return False

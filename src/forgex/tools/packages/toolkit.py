@@ -43,9 +43,7 @@ class PackageToolkit:
         self.workspace = Path(workspace).expanduser().resolve()
 
         if not self.workspace.is_dir():
-            raise PackageToolkitError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise PackageToolkitError(f"Workspace does not exist: {self.workspace}")
 
         self.detector = PackageManagerDetector()
         self.builder = PackageCommandBuilder()
@@ -140,9 +138,7 @@ class PackageToolkit:
         )
 
         if not result.success:
-            raise PackageToolkitError(
-                result.error or "Unable to list packages."
-            )
+            raise PackageToolkitError(result.error or "Unable to list packages.")
 
         return self.parser.parse(
             result.stdout,

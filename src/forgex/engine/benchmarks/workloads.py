@@ -1,4 +1,3 @@
-
 """Standard benchmark workloads for the FORGEX native engine."""
 
 from __future__ import annotations
@@ -16,10 +15,7 @@ class EngineBenchmarks:
         self.runner = runner or BenchmarkRunner()
 
     def run_core(self, engine: Any) -> None:
-        text = (
-            "FORGEX autonomous coding engine "
-            "build beyond code\n"
-        ) * 100
+        text = ("FORGEX autonomous coding engine build beyond code\n") * 100
 
         self.runner.run(
             "core.normalize_whitespace",
@@ -46,7 +42,8 @@ class EngineBenchmarks:
         )
 
     def run_parser(self, parser: Any) -> None:
-        source = """
+        source = (
+            """
 def calculate_total(items):
     total = 0
     for item in items:
@@ -56,7 +53,9 @@ def calculate_total(items):
 class Calculator:
     def add(self, first, second):
         return first + second
-""" * 20
+"""
+            * 20
+        )
 
         self.runner.run(
             "parser.tokenize",
@@ -71,10 +70,7 @@ class Calculator:
         )
 
     def run_search(self, search_engine: Any) -> None:
-        content = (
-            "def forgex_engine():\n"
-            "    return 'Build Beyond Code'\n\n"
-        ) * 500
+        content = ("def forgex_engine():\n    return 'Build Beyond Code'\n\n") * 500
 
         self.runner.run(
             "search.text",

@@ -30,14 +30,9 @@ class PackageCommandBuilder:
         selected = manager or request.manager
 
         if selected == PackageManager.AUTO:
-            raise PackageCommandError(
-                "A concrete package manager must be selected."
-            )
+            raise PackageCommandError("A concrete package manager must be selected.")
 
-        packages = tuple(
-            self._format_package(package, selected)
-            for package in request.packages
-        )
+        packages = tuple(self._format_package(package, selected) for package in request.packages)
 
         builders = {
             PackageManager.PIP: self._pip,
@@ -55,9 +50,7 @@ class PackageCommandBuilder:
         builder = builders.get(selected)
 
         if builder is None:
-            raise PackageCommandError(
-                f"Unsupported package manager: {selected}"
-            )
+            raise PackageCommandError(f"Unsupported package manager: {selected}")
 
         command = builder(request, packages)
 
@@ -77,8 +70,7 @@ class PackageCommandBuilder:
                 return (*command, "--dry-run")
 
             raise PackageCommandError(
-                f"Dry-run is not supported for {selected.value} "
-                "by this command builder."
+                f"Dry-run is not supported for {selected.value} by this command builder."
             )
 
         return command
@@ -91,17 +83,13 @@ class PackageCommandBuilder:
         name = package.name.strip()
 
         if not self._PACKAGE_NAME.fullmatch(name):
-            raise PackageCommandError(
-                f"Invalid package name: {name!r}"
-            )
+            raise PackageCommandError(f"Invalid package name: {name!r}")
 
         if package.version is not None:
             version = package.version.strip()
 
             if not self._VERSION.fullmatch(version):
-                raise PackageCommandError(
-                    f"Invalid package version: {version!r}"
-                )
+                raise PackageCommandError(f"Invalid package version: {version!r}")
         else:
             version = None
 
@@ -121,8 +109,7 @@ class PackageCommandBuilder:
                 PackageManager.DOTNET,
             ):
                 raise PackageCommandError(
-                    f"Custom package sources are not supported "
-                    f"for {manager.value}."
+                    f"Custom package sources are not supported for {manager.value}."
                 )
 
             return source
@@ -145,11 +132,7 @@ class PackageCommandBuilder:
         if manager == PackageManager.DOTNET:
             return f"{name} --version {version}" if version else name
 
-        extras = (
-            f"[{','.join(package.extras)}]"
-            if package.extras
-            else ""
-        )
+        extras = f"[{','.join(package.extras)}]" if package.extras else ""
         return f"{name}{extras}=={version}" if version else f"{name}{extras}"
 
     def _pip(self, request, packages):
@@ -160,9 +143,7 @@ class PackageCommandBuilder:
         if request.operation == PackageOperation.UNINSTALL:
             return (*base, "uninstall", "-y", *packages)
         if request.operation == PackageOperation.UPDATE:
-            return (
-                *base, "install", "--upgrade", *packages
-            )
+            return (*base, "install", "--upgrade", *packages)
         if request.operation == PackageOperation.LIST:
             return (*base, "list", "--format=json")
         if request.operation == PackageOperation.FREEZE:
@@ -184,9 +165,7 @@ class PackageCommandBuilder:
         if request.operation == PackageOperation.UNINSTALL:
             return (*base, "pip", "uninstall", *packages)
         if request.operation == PackageOperation.UPDATE:
-            return (
-                *base, "pip", "install", "--upgrade", *packages
-            )
+            return (*base, "pip", "install", "--upgrade", *packages)
         if request.operation == PackageOperation.LIST:
             return (*base, "pip", "list", "--format=json")
         if request.operation == PackageOperation.FREEZE:
@@ -308,9 +287,7 @@ class PackageCommandBuilder:
         if request.operation == PackageOperation.INSTALL:
             return (*base, "get", *packages)
         if request.operation == PackageOperation.UNINSTALL:
-            raise PackageCommandError(
-                "Go modules do not support direct package uninstall."
-            )
+            raise PackageCommandError("Go modules do not support direct package uninstall.")
         if request.operation == PackageOperation.UPDATE:
             return (*base, "get", *(f"{p}@latest" for p in packages))
         if request.operation == PackageOperation.LIST:

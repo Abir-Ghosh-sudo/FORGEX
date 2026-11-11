@@ -26,9 +26,7 @@ class ApplicationSettings(BaseSettings):
 
     name: str = "FORGEX"
     version: str = "1.0.0"
-    environment: Literal["development", "testing", "production"] = (
-        "development"
-    )
+    environment: Literal["development", "testing", "production"] = "development"
     debug: bool = False
     workspace: Path | None = None
 
@@ -135,9 +133,7 @@ class SecuritySettings(BaseSettings):
 
     restrict_workspace_access: bool = True
 
-    allowed_workspace_roots: list[Path] = Field(
-        default_factory=list
-    )
+    allowed_workspace_roots: list[Path] = Field(default_factory=list)
 
     @field_validator("allowed_workspace_roots")
     @classmethod
@@ -145,20 +141,13 @@ class SecuritySettings(BaseSettings):
         cls,
         values: list[Path],
     ) -> list[Path]:
-        return [
-            path.expanduser().resolve()
-            for path in values
-        ]
+        return [path.expanduser().resolve() for path in values]
 
 
 class StorageSettings(BaseSettings):
     """Persistent storage configuration."""
 
-    data_dir: Path = Field(
-        default_factory=lambda: Path(
-            user_data_dir("FORGEX", "FORGEX")
-        )
-    )
+    data_dir: Path = Field(default_factory=lambda: Path(user_data_dir("FORGEX", "FORGEX")))
 
     database_name: str = "forgex.db"
 
@@ -196,11 +185,7 @@ class LoggingSettings(BaseSettings):
     console_enabled: bool = True
     file_enabled: bool = True
 
-    log_dir: Path = Field(
-        default_factory=lambda: Path(
-            user_cache_dir("FORGEX", "FORGEX")
-        ) / "logs"
-    )
+    log_dir: Path = Field(default_factory=lambda: Path(user_cache_dir("FORGEX", "FORGEX")) / "logs")
 
     max_file_size_mb: int = Field(default=10, ge=1, le=500)
     backup_count: int = Field(default=5, ge=0, le=100)
@@ -246,37 +231,21 @@ class ForgexSettings(BaseSettings):
         validate_assignment=True,
     )
 
-    app: ApplicationSettings = Field(
-        default_factory=ApplicationSettings
-    )
+    app: ApplicationSettings = Field(default_factory=ApplicationSettings)
 
-    model: ModelSettings = Field(
-        default_factory=ModelSettings
-    )
+    model: ModelSettings = Field(default_factory=ModelSettings)
 
-    runtime: RuntimeSettings = Field(
-        default_factory=RuntimeSettings
-    )
+    runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
 
-    security: SecuritySettings = Field(
-        default_factory=SecuritySettings
-    )
+    security: SecuritySettings = Field(default_factory=SecuritySettings)
 
-    storage: StorageSettings = Field(
-        default_factory=StorageSettings
-    )
+    storage: StorageSettings = Field(default_factory=StorageSettings)
 
-    logging: LoggingSettings = Field(
-        default_factory=LoggingSettings
-    )
+    logging: LoggingSettings = Field(default_factory=LoggingSettings)
 
-    mcp: MCPSettings = Field(
-        default_factory=MCPSettings
-    )
+    mcp: MCPSettings = Field(default_factory=MCPSettings)
 
-    telemetry: TelemetrySettings = Field(
-        default_factory=TelemetrySettings
-    )
+    telemetry: TelemetrySettings = Field(default_factory=TelemetrySettings)
 
 
 @lru_cache(maxsize=1)

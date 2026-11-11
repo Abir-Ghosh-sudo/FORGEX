@@ -103,9 +103,7 @@ def show_session(
             "workspace": str(session.workspace),
             "status": str(session.status),
             "created_at": _format_datetime(session.created_at),
-            "updated_at": _format_datetime(
-                getattr(session, "updated_at", None)
-            ),
+            "updated_at": _format_datetime(getattr(session, "updated_at", None)),
             "metadata": getattr(session, "metadata", {}),
         }
 
@@ -150,9 +148,7 @@ def delete_session(
             console.print(f"[yellow]Session not found: {session_id}[/yellow]")
             raise typer.Exit(code=1)
 
-        console.print(
-            f"[green]Session deleted:[/green] {session_id}"
-        )
+        console.print(f"[green]Session deleted:[/green] {session_id}")
 
     except typer.Exit:
         raise

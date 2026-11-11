@@ -110,9 +110,7 @@ class ContextManager:
 
     def _detect_root_files(self) -> list[str]:
         return sorted(
-            p.name
-            for p in self.workspace.iterdir()
-            if p.is_file() and not p.name.startswith(".")
+            p.name for p in self.workspace.iterdir() if p.is_file() and not p.name.startswith(".")
         )[:50]
 
     def _detect_languages(self) -> list[str]:

@@ -1,4 +1,3 @@
-
 """Workspace sandbox and resource isolation primitives for FORGEX.
 
 This module provides workspace path validation, bounded subprocess output
@@ -196,34 +195,31 @@ class SandboxManager:
         try:
             relative = resolved.relative_to(self.workspace)
         except ValueError as exc:
-            raise SandboxPathError(
-                f"Path escapes sandbox workspace: {path}"
-            ) from exc
+            raise SandboxPathError(f"Path escapes sandbox workspace: {path}") from exc
 
         if not self._config.allow_hidden_files and any(
             part.startswith(".") for part in relative.parts
         ):
-            raise SandboxPermissionError(
-                f"Hidden file access is disabled: {relative}"
-            )
+            raise SandboxPermissionError(f"Hidden file access is disabled: {relative}")
 
         if not self._config.allow_symlinks:
             self._reject_symlink_components(candidate)
 
         self._check_protected_path(relative, operation)
 
-        if operation in {
-            FilesystemOperation.WRITE,
-            FilesystemOperation.DELETE,
-        } and self._config.read_only:
-            raise SandboxPermissionError(
-                "Sandbox is configured as read-only."
-            )
+        if (
+            operation
+            in {
+                FilesystemOperation.WRITE,
+                FilesystemOperation.DELETE,
+            }
+            and self._config.read_only
+        ):
+            raise SandboxPermissionError("Sandbox is configured as read-only.")
 
         if operation == FilesystemOperation.EXECUTE:
             raise SandboxPermissionError(
-                "Direct file execution is disabled. "
-                "Use approved process execution."
+                "Direct file execution is disabled. Use approved process execution."
             )
 
         return resolved
@@ -234,9 +230,7 @@ class SandboxManager:
         try:
             relative = candidate.relative_to(self.workspace)
         except ValueError as exc:
-            raise SandboxPathError(
-                "Candidate path is outside the sandbox workspace."
-            ) from exc
+            raise SandboxPathError("Candidate path is outside the sandbox workspace.") from exc
 
         current = self.workspace
 
@@ -248,13 +242,9 @@ class SandboxManager:
 
             try:
                 if current.is_symlink():
-                    raise SandboxPathError(
-                        f"Symbolic links are disabled: {current}"
-                    )
+                    raise SandboxPathError(f"Symbolic links are disabled: {current}")
             except OSError as exc:
-                raise SandboxPathError(
-                    f"Unable to inspect path component: {current}"
-                ) from exc
+                raise SandboxPathError(f"Unable to inspect path component: {current}") from exc
 
     def _check_protected_path(
         self,
@@ -272,22 +262,17 @@ class SandboxManager:
             FilesystemOperation.DELETE,
         }:
             raise SandboxPermissionError(
-                "Modifying Git metadata through the filesystem sandbox "
-                "is not permitted."
+                "Modifying Git metadata through the filesystem sandbox is not permitted."
             )
 
         for pattern in self._config.protected_paths:
             if Path(normalized).match(pattern.lower()):
-                raise SandboxPermissionError(
-                    f"Protected path access denied: {relative}"
-                )
+                raise SandboxPermissionError(f"Protected path access denied: {relative}")
 
         if operation == FilesystemOperation.DELETE and (
             normalized == ".git" or normalized.startswith(".git/")
         ):
-            raise SandboxPermissionError(
-                "Deleting Git metadata is not permitted."
-            )
+            raise SandboxPermissionError("Deleting Git metadata is not permitted.")
 
     def read_bytes(self, path: str | Path) -> bytes:
         """Read a regular file within the configured size limit."""
@@ -300,30 +285,22 @@ class SandboxManager:
                 file_stat = os.fstat(file.fileno())
 
                 if not stat.S_ISREG(file_stat.st_mode):
-                    raise SandboxPermissionError(
-                        "Only regular files can be read."
-                    )
+                    raise SandboxPermissionError("Only regular files can be read.")
 
                 if file_stat.st_size > max_size:
-                    raise SandboxPermissionError(
-                        "File exceeds the configured size limit."
-                    )
+                    raise SandboxPermissionError("File exceeds the configured size limit.")
 
                 data = file.read(max_size + 1)
 
             if len(data) > max_size:
-                raise SandboxPermissionError(
-                    "File exceeds the configured size limit."
-                )
+                raise SandboxPermissionError("File exceeds the configured size limit.")
 
             return data
 
         except FileNotFoundError:
             raise
         except OSError as exc:
-            raise SandboxError(
-                f"Unable to read file: {target}"
-            ) from exc
+            raise SandboxError(f"Unable to read file: {target}") from exc
 
     def read_text(
         self,
@@ -336,9 +313,7 @@ class SandboxManager:
         try:
             return self.read_bytes(path).decode(encoding)
         except UnicodeDecodeError as exc:
-            raise SandboxError(
-                "File is not valid text in the requested encoding."
-            ) from exc
+            raise SandboxError("File is not valid text in the requested encoding.") from exc
 
     def write_bytes(
         self,
@@ -353,9 +328,7 @@ class SandboxManager:
             raise TypeError("Data must be bytes.")
 
         if len(data) > self._config.limits.max_file_size_bytes:
-            raise SandboxPermissionError(
-                "Data exceeds the configured file size limit."
-            )
+            raise SandboxPermissionError("Data exceeds the configured file size limit.")
 
         target = self.validate_path(path, FilesystemOperation.WRITE)
 
@@ -368,9 +341,7 @@ class SandboxManager:
                 raise SandboxError("Parent directory does not exist.")
 
             if target.exists() and target.is_dir():
-                raise SandboxPermissionError(
-                    "Cannot overwrite a directory."
-                )
+                raise SandboxPermissionError("Cannot overwrite a directory.")
 
             temporary_path: Path | None = None
 
@@ -391,9 +362,7 @@ class SandboxManager:
                 target = self.validate_path(path, FilesystemOperation.WRITE)
 
                 if target.exists() and target.is_dir():
-                    raise SandboxPermissionError(
-                        "Cannot overwrite a directory."
-                    )
+                    raise SandboxPermissionError("Cannot overwrite a directory.")
 
                 os.replace(temporary_path, target)
                 temporary_path = None
@@ -408,9 +377,7 @@ class SandboxManager:
         except (SandboxError, TypeError, ValueError):
             raise
         except OSError as exc:
-            raise SandboxError(
-                f"Unable to write file: {target}"
-            ) from exc
+            raise SandboxError(f"Unable to write file: {target}") from exc
 
     def write_text(
         self,
@@ -440,14 +407,10 @@ class SandboxManager:
             file_stat = target.lstat()
 
             if stat.S_ISLNK(file_stat.st_mode):
-                raise SandboxPathError(
-                    "Deleting symbolic links is not permitted."
-                )
+                raise SandboxPathError("Deleting symbolic links is not permitted.")
 
             if not stat.S_ISREG(file_stat.st_mode):
-                raise SandboxPermissionError(
-                    "Only regular files can be deleted."
-                )
+                raise SandboxPermissionError("Only regular files can be deleted.")
 
             target.unlink()
 
@@ -456,9 +419,7 @@ class SandboxManager:
         except (SandboxError, TypeError, ValueError):
             raise
         except OSError as exc:
-            raise SandboxError(
-                f"Unable to delete file: {target}"
-            ) from exc
+            raise SandboxError(f"Unable to delete file: {target}") from exc
 
     def create_directory(
         self,
@@ -477,9 +438,7 @@ class SandboxManager:
         except (SandboxError, TypeError, ValueError):
             raise
         except OSError as exc:
-            raise SandboxError(
-                f"Unable to create directory: {target}"
-            ) from exc
+            raise SandboxError(f"Unable to create directory: {target}") from exc
 
     def _build_environment(
         self,
@@ -502,39 +461,25 @@ class SandboxManager:
             raise TypeError("Environment must be a dictionary.")
 
         if len(environment) > self._config.limits.max_environment_variables:
-            raise SandboxPermissionError(
-                "Too many environment variables."
-            )
+            raise SandboxPermissionError("Too many environment variables.")
 
         normalized_keys: set[str] = set()
 
         for key, value in environment.items():
             if not isinstance(key, str) or not isinstance(value, str):
-                raise TypeError(
-                    "Environment keys and values must be strings."
-                )
+                raise TypeError("Environment keys and values must be strings.")
 
-            if (
-                not key
-                or "=" in key
-                or "\x00" in key
-                or "\x00" in value
-            ):
+            if not key or "=" in key or "\x00" in key or "\x00" in value:
                 raise ValueError("Invalid environment variable.")
 
             normalized_key = key.upper()
 
             if normalized_key in normalized_keys:
-                raise ValueError(
-                    f"Duplicate environment variable: {key}"
-                )
+                raise ValueError(f"Duplicate environment variable: {key}")
 
             normalized_keys.add(normalized_key)
 
-            if any(
-                pattern.search(key)
-                for pattern in self._SENSITIVE_ENV_PATTERNS
-            ):
+            if any(pattern.search(key) for pattern in self._SENSITIVE_ENV_PATTERNS):
                 raise SandboxPermissionError(
                     f"Passing sensitive environment variable is blocked: {key}"
                 )
@@ -595,21 +540,15 @@ class SandboxManager:
         """
 
         if isinstance(command, (str, bytes)) or not command:
-            raise ValueError(
-                "Command must be a non-empty sequence of executable arguments."
-            )
+            raise ValueError("Command must be a non-empty sequence of executable arguments.")
 
         arguments = tuple(command)
 
         if any(
-            not isinstance(argument, str)
-            or not argument
-            or "\x00" in argument
+            not isinstance(argument, str) or not argument or "\x00" in argument
             for argument in arguments
         ):
-            raise ValueError(
-                "Command arguments must be non-empty strings without NUL."
-            )
+            raise ValueError("Command arguments must be non-empty strings without NUL.")
 
         if len(arguments) > 256:
             raise SandboxPermissionError("Too many command arguments.")
@@ -620,23 +559,15 @@ class SandboxManager:
         )
 
         if not selected_cwd.is_dir():
-            raise SandboxPathError(
-                "Execution directory must be a directory."
-            )
+            raise SandboxPathError("Execution directory must be a directory.")
 
-        selected_timeout = (
-            timeout
-            if timeout is not None
-            else self._config.limits.timeout_seconds
-        )
+        selected_timeout = timeout if timeout is not None else self._config.limits.timeout_seconds
 
         if selected_timeout <= 0:
             raise ValueError("Execution timeout must be positive.")
 
         if selected_timeout > self._config.limits.timeout_seconds:
-            raise SandboxPermissionError(
-                "Requested timeout exceeds sandbox limits."
-            )
+            raise SandboxPermissionError("Requested timeout exceeds sandbox limits.")
 
         child_environment = self._build_environment(environment)
 
@@ -647,17 +578,13 @@ class SandboxManager:
         # same lock. This prevents concurrent callers from exceeding the cap.
         with self._lock:
             if len(self._active_processes) >= self._config.limits.max_processes:
-                raise SandboxPermissionError(
-                    "Maximum concurrent process limit reached."
-                )
+                raise SandboxPermissionError("Maximum concurrent process limit reached.")
 
             try:
                 popen_options: dict[str, object] = {}
 
                 if os.name == "nt":
-                    popen_options["creationflags"] = (
-                        subprocess.CREATE_NEW_PROCESS_GROUP
-                    )
+                    popen_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
                 else:
                     popen_options["start_new_session"] = True
 
@@ -676,9 +603,7 @@ class SandboxManager:
                 self._active_processes.add(process)
 
             except OSError as exc:
-                raise SandboxExecutionError(
-                    f"Unable to execute process: {arguments[0]}"
-                ) from exc
+                raise SandboxExecutionError(f"Unable to execute process: {arguments[0]}") from exc
 
         assert process.stdout is not None
         assert process.stderr is not None
@@ -742,28 +667,18 @@ class SandboxManager:
 
             return SandboxExecutionResult(
                 command=arguments,
-                return_code=(
-                    process.returncode
-                    if process.returncode is not None
-                    else -1
-                ),
+                return_code=(process.returncode if process.returncode is not None else -1),
                 stdout=stdout_bytes.decode("utf-8", errors="replace"),
                 stderr=stderr_bytes.decode("utf-8", errors="replace"),
                 duration_seconds=duration,
                 timed_out=timed_out,
-                stdout_truncated=bool(
-                    stdout_result.get("stdout_truncated", False)
-                ),
-                stderr_truncated=bool(
-                    stderr_result.get("stderr_truncated", False)
-                ),
+                stdout_truncated=bool(stdout_result.get("stdout_truncated", False)),
+                stderr_truncated=bool(stderr_result.get("stderr_truncated", False)),
             )
 
         except OSError as exc:
             self._terminate_process(process)
-            raise SandboxExecutionError(
-                f"Unable to execute process: {arguments[0]}"
-            ) from exc
+            raise SandboxExecutionError(f"Unable to execute process: {arguments[0]}") from exc
 
         finally:
             if process.poll() is None:

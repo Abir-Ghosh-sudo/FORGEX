@@ -22,9 +22,7 @@ class CoverageAnalyzer:
         self.workspace = Path(workspace).expanduser().resolve()
 
         if not self.workspace.is_dir():
-            raise CoverageError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise CoverageError(f"Workspace does not exist: {self.workspace}")
 
     def collect(self) -> CoverageSummary:
         """Collect coverage from the default coverage database."""
@@ -33,15 +31,12 @@ class CoverageAnalyzer:
 
         if executable is None:
             raise CoverageError(
-                "coverage.py is not installed. Install it with "
-                "'pip install coverage'."
+                "coverage.py is not installed. Install it with 'pip install coverage'."
             )
 
         report = self.workspace / ".coverage"
         if not report.exists():
-            raise CoverageError(
-                "Coverage data not found. Run tests with coverage enabled."
-            )
+            raise CoverageError("Coverage data not found. Run tests with coverage enabled.")
 
         output_path = self.workspace / ".forgex-coverage.json"
 
@@ -62,42 +57,27 @@ class CoverageAnalyzer:
                 check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
-            raise CoverageError(
-                f"Coverage report generation failed: {exc}"
-            ) from exc
+            raise CoverageError(f"Coverage report generation failed: {exc}") from exc
 
         if result.returncode != 0:
-            raise CoverageError(
-                result.stderr.strip()
-                or "Unable to generate coverage JSON."
-            )
+            raise CoverageError(result.stderr.strip() or "Unable to generate coverage JSON.")
 
         try:
             data = json.loads(output_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise CoverageError(
-                f"Invalid coverage JSON: {exc}"
-            ) from exc
+            raise CoverageError(f"Invalid coverage JSON: {exc}") from exc
         finally:
             output_path.unlink(missing_ok=True)
 
         totals = data.get("totals", {})
 
         return CoverageSummary(
-            line_percent=self._percentage(
-                totals.get("percent_covered")
-            ),
-            branch_percent=self._percentage(
-                totals.get("percent_branches_covered")
-            ),
+            line_percent=self._percentage(totals.get("percent_covered")),
+            branch_percent=self._percentage(totals.get("percent_branches_covered")),
             statements=int(totals.get("num_statements", 0)),
-            statements_covered=int(
-                totals.get("covered_lines", 0)
-            ),
+            statements_covered=int(totals.get("covered_lines", 0)),
             branches=int(totals.get("num_branches", 0)),
-            branches_covered=int(
-                totals.get("covered_branches", 0)
-            ),
+            branches_covered=int(totals.get("covered_branches", 0)),
             report_path=report,
         )
 
@@ -135,14 +115,9 @@ class CoverageAnalyzer:
             )
 
             if result.returncode != 0:
-                raise CoverageError(
-                    result.stderr.strip()
-                    or "Coverage analysis failed."
-                )
+                raise CoverageError(result.stderr.strip() or "Coverage analysis failed.")
 
-            data = json.loads(
-                output_path.read_text(encoding="utf-8")
-            )
+            data = json.loads(output_path.read_text(encoding="utf-8"))
 
             relative = target.relative_to(self.workspace).as_posix()
             files = data.get("files", {})
@@ -150,40 +125,28 @@ class CoverageAnalyzer:
 
             if file_data is None:
                 file_data = next(
-                    (
-                        value
-                        for name, value in files.items()
-                        if Path(name).name == target.name
-                    ),
+                    (value for name, value in files.items() if Path(name).name == target.name),
                     None,
                 )
 
             if file_data is None:
-                raise CoverageError(
-                    f"No coverage data found for {relative}"
-                )
+                raise CoverageError(f"No coverage data found for {relative}")
 
             summary = file_data.get("summary", {})
 
             return {
                 "file": relative,
-                "percent_covered": self._percentage(
-                    summary.get("percent_covered")
-                ),
+                "percent_covered": self._percentage(summary.get("percent_covered")),
                 "statements": summary.get("num_statements", 0),
                 "covered_lines": summary.get("covered_lines", 0),
                 "missing_lines": file_data.get("missing_lines", []),
                 "excluded_lines": file_data.get("excluded_lines", []),
                 "executed_lines": file_data.get("executed_lines", []),
-                "missing_branches": file_data.get(
-                    "missing_branches", []
-                ),
+                "missing_branches": file_data.get("missing_branches", []),
             }
 
         except (OSError, json.JSONDecodeError) as exc:
-            raise CoverageError(
-                f"Unable to analyze coverage: {exc}"
-            ) from exc
+            raise CoverageError(f"Unable to analyze coverage: {exc}") from exc
 
         finally:
             output_path.unlink(missing_ok=True)

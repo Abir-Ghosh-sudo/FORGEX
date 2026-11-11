@@ -1,4 +1,3 @@
-
 """Secure orchestration layer for FORGEX terminal execution."""
 
 from __future__ import annotations
@@ -86,14 +85,10 @@ class TerminalExecutor:
         try:
             self._validate_workspace(request)
 
-            authorized = await self._resolve(
-                self._authorizer.authorize(request)
-            )
+            authorized = await self._resolve(self._authorizer.authorize(request))
 
             if not isinstance(authorized, bool):
-                raise TerminalExecutionError(
-                    "Authorizer must return a boolean decision."
-                )
+                raise TerminalExecutionError("Authorizer must return a boolean decision.")
 
             if not authorized:
                 result = self._make_result(
@@ -145,9 +140,7 @@ class TerminalExecutor:
     async def _register_execution(self) -> None:
         async with self._state_lock:
             if self._closed:
-                raise TerminalExecutionError(
-                    "Terminal executor is closed."
-                )
+                raise TerminalExecutionError("Terminal executor is closed.")
 
             self._active_executions += 1
             self._idle.clear()
@@ -172,9 +165,7 @@ class TerminalExecutor:
             ) from exc
 
         if not workspace.is_dir():
-            raise TerminalExecutionError(
-                f"Working directory is not a directory: {workspace}"
-            )
+            raise TerminalExecutionError(f"Working directory is not a directory: {workspace}")
 
     @staticmethod
     def _validate_result(
@@ -182,14 +173,10 @@ class TerminalExecutor:
         result: TerminalResult,
     ) -> None:
         if not isinstance(result, TerminalResult):
-            raise TerminalExecutionError(
-                "Terminal runner returned an invalid result."
-            )
+            raise TerminalExecutionError("Terminal runner returned an invalid result.")
 
         if result.argv != request.argv:
-            raise TerminalExecutionError(
-                "Runner argv differs from the authorized request."
-            )
+            raise TerminalExecutionError("Runner argv differs from the authorized request.")
 
         try:
             actual = result.working_directory.resolve(strict=True)
@@ -200,9 +187,7 @@ class TerminalExecutor:
             ) from exc
 
         if actual != expected:
-            raise TerminalExecutionError(
-                "Runner used an unexpected working directory."
-            )
+            raise TerminalExecutionError("Runner used an unexpected working directory.")
 
     async def _audit(self, result: TerminalResult) -> None:
         """Record an execution result without masking its outcome."""

@@ -1,4 +1,3 @@
-
 """Centralized security policy engine for FORGEX.
 
 Security policy enforcement for filesystem, terminal, Git, network,
@@ -91,10 +90,7 @@ class SecurityRule:
 
         patterns = tuple(self.resource_patterns)
 
-        if any(
-            not isinstance(pattern, str) or not pattern.strip()
-            for pattern in patterns
-        ):
+        if any(not isinstance(pattern, str) or not pattern.strip() for pattern in patterns):
             raise ValueError("Resource patterns must be non-empty strings.")
 
         object.__setattr__(
@@ -179,12 +175,10 @@ class SecurityPolicyConfig:
         protected = tuple(self.protected_paths)
         blocked = tuple(self.blocked_commands)
 
-        if any(not isinstance(item, str) or not item.strip()
-               for item in protected):
+        if any(not isinstance(item, str) or not item.strip() for item in protected):
             raise ValueError("Protected paths must be non-empty strings.")
 
-        if any(not isinstance(item, str) or not item.strip()
-               for item in blocked):
+        if any(not isinstance(item, str) or not item.strip() for item in blocked):
             raise ValueError("Blocked commands must be non-empty strings.")
 
         object.__setattr__(self, "protected_paths", protected)
@@ -219,45 +213,49 @@ class SecurityPolicy:
 
     _SHELL_META = re.compile(r"[;&|`$<>]")
 
-    _DESTRUCTIVE_COMMANDS = frozenset({
-        "remove-item",
-        "remove-itemproperty",
-        "clear-content",
-        "clear-item",
-        "stop-computer",
-        "restart-computer",
-        "stop-service",
-        "restart-service",
-        "format",
-        "diskpart",
-        "reg",
-        "regedit",
-        "del",
-        "erase",
-        "rmdir",
-        "rd",
-        "rm",
-        "mkfs",
-        "dd",
-        "shred",
-    })
+    _DESTRUCTIVE_COMMANDS = frozenset(
+        {
+            "remove-item",
+            "remove-itemproperty",
+            "clear-content",
+            "clear-item",
+            "stop-computer",
+            "restart-computer",
+            "stop-service",
+            "restart-service",
+            "format",
+            "diskpart",
+            "reg",
+            "regedit",
+            "del",
+            "erase",
+            "rmdir",
+            "rd",
+            "rm",
+            "mkfs",
+            "dd",
+            "shred",
+        }
+    )
 
-    _SHELL_EXECUTABLES = frozenset({
-        "powershell",
-        "powershell.exe",
-        "pwsh",
-        "pwsh.exe",
-        "cmd",
-        "cmd.exe",
-        "bash",
-        "bash.exe",
-        "sh",
-        "sh.exe",
-        "zsh",
-        "zsh.exe",
-        "wsl",
-        "wsl.exe",
-    })
+    _SHELL_EXECUTABLES = frozenset(
+        {
+            "powershell",
+            "powershell.exe",
+            "pwsh",
+            "pwsh.exe",
+            "cmd",
+            "cmd.exe",
+            "bash",
+            "bash.exe",
+            "sh",
+            "sh.exe",
+            "zsh",
+            "zsh.exe",
+            "wsl",
+            "wsl.exe",
+        }
+    )
 
     _DANGEROUS_PATTERNS = (
         re.compile(r"(?i)\brm\s+-[a-z]*r[a-z]*f[a-z]*\s+/"),
@@ -308,11 +306,7 @@ class SecurityPolicy:
 
         self._lock = threading.RLock()
 
-        supplied_rules = (
-            list(rules)
-            if rules is not None
-            else self._default_rules()
-        )
+        supplied_rules = list(rules) if rules is not None else self._default_rules()
 
         self._rules = supplied_rules
         self._validate_rules()
@@ -334,9 +328,7 @@ class SecurityPolicy:
 
         with self._lock:
             if any(item.name == rule.name for item in self._rules):
-                raise ValueError(
-                    f"Security rule already exists: {rule.name}"
-                )
+                raise ValueError(f"Security rule already exists: {rule.name}")
 
             self._rules.append(rule)
 
@@ -346,10 +338,7 @@ class SecurityPolicy:
         with self._lock:
             original_length = len(self._rules)
 
-            self._rules = [
-                rule for rule in self._rules
-                if rule.name != name
-            ]
+            self._rules = [rule for rule in self._rules if rule.name != name]
 
             return len(self._rules) != original_length
 
@@ -422,9 +411,7 @@ class SecurityPolicy:
 
         if matched_rule is not None:
             if matched_rule.action == PermissionAction.DENY:
-                reason = (
-                    f"Blocked by security rule: {matched_rule.name}"
-                )
+                reason = f"Blocked by security rule: {matched_rule.name}"
 
                 return self._result(
                     operation,
@@ -434,10 +421,7 @@ class SecurityPolicy:
                 )
 
             if matched_rule.action == PermissionAction.ASK:
-                reason = (
-                    f"Approval required by security rule: "
-                    f"{matched_rule.name}"
-                )
+                reason = f"Approval required by security rule: {matched_rule.name}"
 
                 return self._result(
                     operation,
@@ -446,11 +430,7 @@ class SecurityPolicy:
                     matched_rule.name,
                 )
 
-        risk = (
-            matched_rule.risk
-            if matched_rule is not None
-            else self._infer_risk(operation)
-        )
+        risk = matched_rule.risk if matched_rule is not None else self._infer_risk(operation)
 
         restriction = self._check_config_restrictions(
             operation,
@@ -481,20 +461,13 @@ class SecurityPolicy:
             return self._result(
                 operation,
                 RiskLevel.CRITICAL,
-                PermissionDecision.deny(
-                    f"Invalid permission request: {exc}"
-                ),
+                PermissionDecision.deny(f"Invalid permission request: {exc}"),
             )
 
         warnings: list[str] = []
 
-        if (
-            decision.action == PermissionAction.DENY
-            and self._config.mode == PolicyMode.PERMISSIVE
-        ):
-            warnings.append(
-                "Permissive mode never overrides an explicit permission denial."
-            )
+        if decision.action == PermissionAction.DENY and self._config.mode == PolicyMode.PERMISSIVE:
+            warnings.append("Permissive mode never overrides an explicit permission denial.")
 
         return self._result(
             operation,
@@ -714,27 +687,17 @@ class SecurityPolicy:
                 try:
                     relative = resolved.relative_to(workspace)
                 except ValueError:
-                    return (
-                        "Resource is outside the authorized workspace."
-                    )
+                    return "Resource is outside the authorized workspace."
             else:
                 relative = resolved
 
-            path_parts = tuple(
-                part.casefold()
-                for part in relative.parts
-            )
+            path_parts = tuple(part.casefold() for part in relative.parts)
 
             for protected in self._config.protected_paths:
                 pattern = protected.casefold()
 
-                if any(
-                    fnmatch.fnmatchcase(part, pattern)
-                    for part in path_parts
-                ):
-                    return (
-                        f"Access to protected path is blocked: {protected}"
-                    )
+                if any(fnmatch.fnmatchcase(part, pattern) for part in path_parts):
+                    return f"Access to protected path is blocked: {protected}"
 
             return None
 
@@ -758,38 +721,27 @@ class SecurityPolicy:
                 )
 
             if self._config.require_network_approval:
-                return PermissionDecision.ask(
-                    "Network access requires explicit approval."
-                )
-
-        if operation in {
-            OperationType.TERMINAL_EXECUTE,
-            OperationType.FILE_EXECUTE,
-        } and self._config.require_terminal_approval:
-            return PermissionDecision.ask(
-                "Execution requires explicit terminal approval."
-            )
+                return PermissionDecision.ask("Network access requires explicit approval.")
 
         if (
-            operation == OperationType.PACKAGE_INSTALL
-            and not self._config.allow_package_install
+            operation
+            in {
+                OperationType.TERMINAL_EXECUTE,
+                OperationType.FILE_EXECUTE,
+            }
+            and self._config.require_terminal_approval
         ):
+            return PermissionDecision.ask("Execution requires explicit terminal approval.")
+
+        if operation == OperationType.PACKAGE_INSTALL and not self._config.allow_package_install:
             return PermissionDecision.deny(
                 "Package installation is disabled by security configuration."
             )
 
-        if (
-            self._config.mode == PolicyMode.STRICT
-            and risk in {RiskLevel.HIGH, RiskLevel.CRITICAL}
-        ):
-            return PermissionDecision.ask(
-                "High-risk operation requires approval in strict mode."
-            )
+        if self._config.mode == PolicyMode.STRICT and risk in {RiskLevel.HIGH, RiskLevel.CRITICAL}:
+            return PermissionDecision.ask("High-risk operation requires approval in strict mode.")
 
-        if (
-            self._config.mode == PolicyMode.BALANCED
-            and risk == RiskLevel.CRITICAL
-        ):
+        if self._config.mode == PolicyMode.BALANCED and risk == RiskLevel.CRITICAL:
             return PermissionDecision.ask(
                 "Critical-risk operation requires approval in balanced mode."
             )

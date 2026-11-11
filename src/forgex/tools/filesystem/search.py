@@ -1,4 +1,3 @@
-
 """Workspace file and content search for FORGEX."""
 
 from __future__ import annotations
@@ -152,9 +151,7 @@ class FileSearch:
         try:
             expression = re.compile(query if regex else re.escape(query), flags)
         except re.error as exc:
-            raise InvalidSearchPatternError(
-                f"Invalid regular expression: {exc}"
-            ) from exc
+            raise InvalidSearchPatternError(f"Invalid regular expression: {exc}") from exc
 
         matches: list[SearchMatch] = []
         files_scanned = 0
@@ -245,15 +242,11 @@ class FileSearch:
                 name
                 for name in directories
                 if not (current_path / name).is_symlink()
-                and not self._is_ignored(
-                    (current_path / name).relative_to(root).as_posix()
-                )
+                and not self._is_ignored((current_path / name).relative_to(root).as_posix())
             ]
 
             candidates = (
-                [(current_path / name) for name in directories]
-                if include_directories
-                else []
+                [(current_path / name) for name in directories] if include_directories else []
             )
             candidates.extend(current_path / name for name in files)
 
@@ -290,10 +283,7 @@ class FileSearch:
 
             if pattern.endswith("/**"):
                 directory = pattern[:-3]
-                if (
-                    normalized == directory
-                    or normalized.startswith(directory + "/")
-                ):
+                if normalized == directory or normalized.startswith(directory + "/"):
                     return True
 
         return False
@@ -312,11 +302,7 @@ class FileSearch:
             raise TypeError("Search pattern must be a string.")
 
         if not pattern.strip():
-            raise InvalidSearchPatternError(
-                "Search pattern cannot be empty."
-            )
+            raise InvalidSearchPatternError("Search pattern cannot be empty.")
 
         if "\x00" in pattern:
-            raise InvalidSearchPatternError(
-                "Search pattern cannot contain null bytes."
-            )
+            raise InvalidSearchPatternError("Search pattern cannot contain null bytes.")

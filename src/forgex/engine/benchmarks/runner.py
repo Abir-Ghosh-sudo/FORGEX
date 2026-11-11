@@ -1,4 +1,3 @@
-
 """Benchmark execution engine."""
 
 from __future__ import annotations
@@ -74,9 +73,7 @@ class BenchmarkRunner:
                 average_seconds=average,
                 minimum_seconds=min(timings),
                 maximum_seconds=max(timings),
-                operations_per_second=(
-                    count / total if total > 0 else 0.0
-                ),
+                operations_per_second=(count / total if total > 0 else 0.0),
                 metadata=metadata or {},
             )
 

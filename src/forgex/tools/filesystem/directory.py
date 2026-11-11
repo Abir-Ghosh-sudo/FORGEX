@@ -1,4 +1,3 @@
-
 """Workspace directory inspection utilities for FORGEX."""
 
 from __future__ import annotations
@@ -139,9 +138,7 @@ class DirectoryInspector:
                     ),
                 )
             except OSError as exc:
-                raise DirectoryOperationError(
-                    f"Cannot inspect directory: {directory}"
-                ) from exc
+                raise DirectoryOperationError(f"Cannot inspect directory: {directory}") from exc
 
             for child in children:
                 if child.is_symlink():
@@ -166,9 +163,7 @@ class DirectoryInspector:
                         return
 
                     try:
-                        relative = child.relative_to(
-                            self._resolver.workspace
-                        ).as_posix()
+                        relative = child.relative_to(self._resolver.workspace).as_posix()
 
                         size = child.stat().st_size if is_file else None
 
@@ -181,11 +176,7 @@ class DirectoryInspector:
                                 is_file=is_file,
                                 is_symlink=False,
                                 size_bytes=size,
-                                extension=(
-                                    child.suffix.lower() or None
-                                    if is_file
-                                    else None
-                                ),
+                                extension=(child.suffix.lower() or None if is_file else None),
                             )
                         )
                     except OSError:
@@ -195,11 +186,7 @@ class DirectoryInspector:
                             exc_info=True,
                         )
 
-                if (
-                    recursive
-                    and is_directory
-                    and depth < max_depth
-                ):
+                if recursive and is_directory and depth < max_depth:
                     visit(child, depth + 1)
 
                 if truncated:
@@ -258,9 +245,7 @@ class DirectoryInspector:
                     ),
                 )
             except OSError as exc:
-                raise DirectoryOperationError(
-                    f"Cannot build tree for: {directory}"
-                ) from exc
+                raise DirectoryOperationError(f"Cannot build tree for: {directory}") from exc
 
             for index, child in enumerate(children):
                 count += 1

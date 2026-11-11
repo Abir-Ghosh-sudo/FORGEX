@@ -1,4 +1,3 @@
-
 """Initial database schema migration for FORGEX."""
 
 from __future__ import annotations

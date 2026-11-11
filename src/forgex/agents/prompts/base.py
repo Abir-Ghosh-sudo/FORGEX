@@ -37,13 +37,10 @@ class PromptTemplate:
         if variables:
             values.update(variables)
 
-        missing = [
-            key for key in self.required_variables if key not in values
-        ]
+        missing = [key for key in self.required_variables if key not in values]
         if missing:
             raise ValueError(
-                f"Missing prompt variables for {self.name}: "
-                + ", ".join(sorted(missing))
+                f"Missing prompt variables for {self.name}: " + ", ".join(sorted(missing))
             )
 
         rendered: dict[str, str] = {}

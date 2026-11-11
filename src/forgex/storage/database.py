@@ -1,4 +1,3 @@
-
 """SQLite database infrastructure for FORGEX."""
 
 from __future__ import annotations
@@ -35,9 +34,7 @@ class Database:
 
         self._is_memory = raw_path == ":memory:"
         self._database_target = (
-            ":memory:"
-            if self._is_memory
-            else str(Path(database_path).expanduser().resolve())
+            ":memory:" if self._is_memory else str(Path(database_path).expanduser().resolve())
         )
 
         self.database_path = Path(self._database_target)
@@ -84,9 +81,7 @@ class Database:
 
             connection.row_factory = sqlite3.Row
 
-            connection.execute(
-                f"PRAGMA busy_timeout = {self.busy_timeout_ms}"
-            )
+            connection.execute(f"PRAGMA busy_timeout = {self.busy_timeout_ms}")
 
             if self.foreign_keys:
                 connection.execute("PRAGMA foreign_keys = ON")
@@ -115,9 +110,7 @@ class Database:
             if isinstance(exc, StorageError):
                 raise
 
-            raise StorageError(
-                f"Failed to connect to database: {exc}"
-            ) from exc
+            raise StorageError(f"Failed to connect to database: {exc}") from exc
 
     @property
     def connection(self) -> sqlite3.Connection:
@@ -152,9 +145,7 @@ class Database:
         try:
             yield cursor
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Database cursor operation failed: {exc}"
-            ) from exc
+            raise StorageError(f"Database cursor operation failed: {exc}") from exc
         finally:
             cursor.close()
 
@@ -168,9 +159,7 @@ class Database:
         try:
             return self.connection.execute(query, parameters)
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"SQL execution failed: {exc}"
-            ) from exc
+            raise StorageError(f"SQL execution failed: {exc}") from exc
 
     def executemany(
         self,
@@ -182,9 +171,7 @@ class Database:
         try:
             return self.connection.executemany(query, parameters)
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Batch SQL execution failed: {exc}"
-            ) from exc
+            raise StorageError(f"Batch SQL execution failed: {exc}") from exc
 
     @contextmanager
     def transaction(
@@ -203,9 +190,7 @@ class Database:
 
         try:
             if depth == 0:
-                connection.execute(
-                    "BEGIN IMMEDIATE" if immediate else "BEGIN"
-                )
+                connection.execute("BEGIN IMMEDIATE" if immediate else "BEGIN")
             else:
                 connection.execute(f"SAVEPOINT {savepoint}")
 
@@ -217,27 +202,19 @@ class Database:
                 if depth == 0:
                     connection.commit()
                 else:
-                    connection.execute(
-                        f"RELEASE SAVEPOINT {savepoint}"
-                    )
+                    connection.execute(f"RELEASE SAVEPOINT {savepoint}")
 
             except Exception:
                 if depth == 0:
                     connection.rollback()
                 else:
-                    connection.execute(
-                        f"ROLLBACK TO SAVEPOINT {savepoint}"
-                    )
-                    connection.execute(
-                        f"RELEASE SAVEPOINT {savepoint}"
-                    )
+                    connection.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                    connection.execute(f"RELEASE SAVEPOINT {savepoint}")
 
                 raise
 
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Database transaction failed: {exc}"
-            ) from exc
+            raise StorageError(f"Database transaction failed: {exc}") from exc
 
         finally:
             self._local.transaction_depth = depth
@@ -249,9 +226,7 @@ class Database:
             connection = self.connection
 
             connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute(
-                f"PRAGMA busy_timeout = {self.busy_timeout_ms}"
-            )
+            connection.execute(f"PRAGMA busy_timeout = {self.busy_timeout_ms}")
 
             if self.enable_wal and not self._is_memory:
                 connection.execute("PRAGMA journal_mode = WAL")
@@ -262,39 +237,27 @@ class Database:
             )
 
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Database initialization failed: {exc}"
-            ) from exc
+            raise StorageError(f"Database initialization failed: {exc}") from exc
 
     def integrity_check(self) -> bool:
         """Run SQLite integrity_check."""
 
         try:
-            result = self.connection.execute(
-                "PRAGMA integrity_check"
-            ).fetchone()
+            result = self.connection.execute("PRAGMA integrity_check").fetchone()
 
             return result is not None and result[0] == "ok"
 
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Database integrity check failed: {exc}"
-            ) from exc
+            raise StorageError(f"Database integrity check failed: {exc}") from exc
 
     def foreign_key_check(self) -> list[sqlite3.Row]:
         """Return foreign-key constraint violations."""
 
         try:
-            return list(
-                self.connection.execute(
-                    "PRAGMA foreign_key_check"
-                ).fetchall()
-            )
+            return list(self.connection.execute("PRAGMA foreign_key_check").fetchall())
 
         except sqlite3.Error as exc:
-            raise StorageError(
-                f"Foreign-key check failed: {exc}"
-            ) from exc
+            raise StorageError(f"Foreign-key check failed: {exc}") from exc
 
     def close_thread_connection(self) -> None:
         """Close the current thread's connection."""

@@ -1,4 +1,3 @@
-
 """Cross-platform subprocess tree management for FORGEX."""
 
 from __future__ import annotations

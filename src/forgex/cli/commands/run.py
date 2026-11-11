@@ -21,14 +21,10 @@ def _validate_workspace(path: Path) -> Path:
     try:
         workspace = path.expanduser().resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        raise typer.BadParameter(
-            f"Cannot resolve workspace: {exc}"
-        ) from exc
+        raise typer.BadParameter(f"Cannot resolve workspace: {exc}") from exc
 
     if not workspace.is_dir():
-        raise typer.BadParameter(
-            f"Workspace is not a directory: {workspace}"
-        )
+        raise typer.BadParameter(f"Workspace is not a directory: {workspace}")
 
     return workspace
 
@@ -99,8 +95,7 @@ def run_command(
     console.print()
     console.print(
         Panel(
-            f"[bold]{instruction}[/bold]\n\n"
-            f"[dim]Workspace: {workspace}[/dim]",
+            f"[bold]{instruction}[/bold]\n\n[dim]Workspace: {workspace}[/dim]",
             title="FORGEX Task",
             border_style="cyan",
         )

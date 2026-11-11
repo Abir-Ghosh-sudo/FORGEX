@@ -1,4 +1,3 @@
-
 """Typed request and result models for FORGEX terminal execution."""
 
 from __future__ import annotations

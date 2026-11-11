@@ -41,16 +41,12 @@ class PackageOutputParser:
         parser = parsers.get(manager)
 
         if parser is None:
-            raise PackageParseError(
-                f"Parsing is not supported for {manager.value}"
-            )
+            raise PackageParseError(f"Parsing is not supported for {manager.value}")
 
         try:
             return parser(output, manager)
         except (ValueError, TypeError, KeyError) as exc:
-            raise PackageParseError(
-                f"Unable to parse {manager.value} output: {exc}"
-            ) from exc
+            raise PackageParseError(f"Unable to parse {manager.value} output: {exc}") from exc
 
     def parse_pip(
         self,
@@ -143,9 +139,9 @@ class PackageOutputParser:
                     version=str(version),
                     manager=manager,
                     description=item.get("description"),
-                    dependencies=tuple(
-                        item.get("dependencies", {}).keys()
-                    ) if isinstance(item.get("dependencies"), dict) else (),
+                    dependencies=tuple(item.get("dependencies", {}).keys())
+                    if isinstance(item.get("dependencies"), dict)
+                    else (),
                 )
             )
 
@@ -269,6 +265,4 @@ class PackageOutputParser:
         try:
             return json.loads(output)
         except json.JSONDecodeError as exc:
-            raise PackageParseError(
-                f"Invalid JSON output: {exc}"
-            ) from exc
+            raise PackageParseError(f"Invalid JSON output: {exc}") from exc

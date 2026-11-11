@@ -222,9 +222,7 @@ class ModelManager:
                 **common,
             )
 
-        raise ModelConfigurationError(
-            f"Unsupported provider: {route.provider}"
-        )
+        raise ModelConfigurationError(f"Unsupported provider: {route.provider}")
 
     async def aclose(self) -> None:
         self.close()

@@ -1,4 +1,3 @@
-
 """Cross-platform shell command preparation for FORGEX."""
 
 from __future__ import annotations
@@ -125,10 +124,7 @@ class ShellManager:
         selected = shell_type or self.shell_type
 
         if selected in {ShellType.POWERSHELL, ShellType.CMD}:
-            script = " ".join(
-                self._quote_windows_argument(argument)
-                for argument in arguments
-            )
+            script = " ".join(self._quote_windows_argument(argument) for argument in arguments)
         else:
             script = shlex.join(arguments)
 
@@ -155,9 +151,7 @@ class ShellManager:
             if resolved is not None:
                 return resolved
 
-        raise FileNotFoundError(
-            f"Shell executable not found for {shell_type.value}."
-        )
+        raise FileNotFoundError(f"Shell executable not found for {shell_type.value}.")
 
     @staticmethod
     def _build_arguments(

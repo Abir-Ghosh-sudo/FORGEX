@@ -31,11 +31,7 @@ class ContextAssembler:
         budget = max(512, max_tokens)
         used = 0
 
-        header = (
-            "## Repository Context\n"
-            f"Task: {task}\n"
-            f"Workspace: {self.workspace}\n"
-        )
+        header = f"## Repository Context\nTask: {task}\nWorkspace: {self.workspace}\n"
         parts.append(header)
         used += self._estimate_tokens(header)
 

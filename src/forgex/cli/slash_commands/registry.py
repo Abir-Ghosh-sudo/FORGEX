@@ -1,4 +1,3 @@
-
 """Slash command registration, parsing, and dispatch for FORGEX."""
 
 from __future__ import annotations
@@ -67,10 +66,12 @@ class SlashCommandRegistry:
         """
 
         if isinstance(command, str):
+
             def decorator(handler: SlashHandler) -> SlashHandler:
                 cmd = SlashCommand(name=command, description=handler.__doc__ or "", handler=handler)
                 self._register_cmd(cmd)
                 return handler
+
             return decorator
 
         self._register_cmd(command)
@@ -117,11 +118,7 @@ class SlashCommandRegistry:
         result = list(self.commands.values())
 
         if category is not None:
-            result = [
-                command
-                for command in result
-                if command.category == category
-            ]
+            result = [command for command in result if command.category == category]
 
         return sorted(result, key=lambda command: command.name)
 
@@ -204,10 +201,7 @@ class SlashCommandRegistry:
 
             usage = f" {command.usage}" if command.usage else ""
 
-            lines.append(
-                f"/{command.name}{usage}{aliases}\n"
-                f"    {command.description}"
-            )
+            lines.append(f"/{command.name}{usage}{aliases}\n    {command.description}")
 
         return "\n".join(lines)
 

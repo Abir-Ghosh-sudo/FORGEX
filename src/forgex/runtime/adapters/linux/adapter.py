@@ -1,4 +1,3 @@
-
 """Linux-specific runtime adapter for FORGEX."""
 
 from __future__ import annotations
@@ -17,9 +16,7 @@ class LinuxRuntimeAdapter(RuntimeAdapter):
 
     def __init__(self, environment: RuntimeEnvironment) -> None:
         if not (environment.is_linux or environment.is_macos):
-            raise ValueError(
-                "LinuxRuntimeAdapter requires a Linux or macOS environment."
-            )
+            raise ValueError("LinuxRuntimeAdapter requires a Linux or macOS environment.")
 
         super().__init__(environment)
 
@@ -59,11 +56,7 @@ class LinuxRuntimeAdapter(RuntimeAdapter):
 
         detected = self.environment.shell_executable
 
-        if (
-            detected is not None
-            and detected.is_file()
-            and os.access(detected, os.X_OK)
-        ):
+        if detected is not None and detected.is_file() and os.access(detected, os.X_OK):
             return detected
 
         for candidate in ("bash", "zsh", "sh"):
@@ -92,9 +85,7 @@ class LinuxRuntimeAdapter(RuntimeAdapter):
         resolved = self.resolve_executable(executable_name)
 
         if resolved is None:
-            raise FileNotFoundError(
-                f"Executable could not be resolved: {executable_name}"
-            )
+            raise FileNotFoundError(f"Executable could not be resolved: {executable_name}")
 
         normalized_arguments = tuple(str(argument) for argument in arguments)
 
@@ -106,23 +97,17 @@ class LinuxRuntimeAdapter(RuntimeAdapter):
         )
 
         if not working_directory.is_dir():
-            raise NotADirectoryError(
-                f"Working directory does not exist: {working_directory}"
-            )
+            raise NotADirectoryError(f"Working directory does not exist: {working_directory}")
 
         command_environment = dict(os.environ)
 
         if extra_environment:
             for key, value in extra_environment.items():
                 if not key or "=" in key or "\x00" in key:
-                    raise ValueError(
-                        f"Invalid environment variable name: {key!r}"
-                    )
+                    raise ValueError(f"Invalid environment variable name: {key!r}")
 
                 if "\x00" in value:
-                    raise ValueError(
-                        f"Environment variable {key!r} contains a null byte."
-                    )
+                    raise ValueError(f"Environment variable {key!r} contains a null byte.")
 
                 command_environment[key] = value
 

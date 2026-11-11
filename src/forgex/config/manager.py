@@ -50,9 +50,7 @@ class ConfigurationManager:
         try:
             self.config_dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            raise OSError(
-                f"Cannot create configuration directory: {self.config_dir}"
-            ) from exc
+            raise OSError(f"Cannot create configuration directory: {self.config_dir}") from exc
 
         return self.config_dir
 
@@ -77,9 +75,7 @@ class ConfigurationManager:
                 data = json.load(file)
 
             if not isinstance(data, dict):
-                raise ValueError(
-                    "Configuration root must be a JSON object."
-                )
+                raise ValueError("Configuration root must be a JSON object.")
 
             self._settings = ForgexSettings.model_validate(data)
 
@@ -91,9 +87,7 @@ class ConfigurationManager:
             return self._settings
 
         except (OSError, json.JSONDecodeError, ValidationError, ValueError) as exc:
-            raise ValueError(
-                f"Failed to load FORGEX configuration: {exc}"
-            ) from exc
+            raise ValueError(f"Failed to load FORGEX configuration: {exc}") from exc
 
     def save(
         self,
@@ -142,9 +136,7 @@ class ConfigurationManager:
             return self.config_file
 
         except (OSError, TypeError, ValueError) as exc:
-            raise OSError(
-                f"Failed to save FORGEX configuration: {exc}"
-            ) from exc
+            raise OSError(f"Failed to save FORGEX configuration: {exc}") from exc
 
         finally:
             if temporary_path is not None:
@@ -179,13 +171,9 @@ class ConfigurationManager:
         )
 
         try:
-            updated_settings = ForgexSettings.model_validate(
-                merged_data
-            )
+            updated_settings = ForgexSettings.model_validate(merged_data)
         except ValidationError as exc:
-            raise ValueError(
-                f"Invalid configuration update: {exc}"
-            ) from exc
+            raise ValueError(f"Invalid configuration update: {exc}") from exc
 
         self.save(updated_settings)
 
@@ -210,9 +198,7 @@ class ConfigurationManager:
         try:
             self.config_file.unlink()
         except OSError as exc:
-            raise OSError(
-                f"Failed to delete configuration file: {exc}"
-            ) from exc
+            raise OSError(f"Failed to delete configuration file: {exc}") from exc
 
         logger.info("FORGEX configuration file deleted.")
         return True
@@ -227,11 +213,7 @@ class ConfigurationManager:
         result = dict(original)
 
         for key, value in updates.items():
-            if (
-                key in result
-                and isinstance(result[key], dict)
-                and isinstance(value, Mapping)
-            ):
+            if key in result and isinstance(result[key], dict) and isinstance(value, Mapping):
                 result[key] = ConfigurationManager._deep_merge(
                     result[key],
                     dict(value),

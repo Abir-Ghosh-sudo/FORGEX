@@ -1,4 +1,3 @@
-
 """Resource limits and execution budgets for FORGEX."""
 
 from __future__ import annotations
@@ -27,9 +26,7 @@ class ResourceLimits:
             raise ValueError("max_output_bytes must be positive.")
 
         if self.max_concurrent_processes < 1:
-            raise ValueError(
-                "max_concurrent_processes must be positive."
-            )
+            raise ValueError("max_concurrent_processes must be positive.")
 
         optional_limits = {
             "max_cpu_seconds": self.max_cpu_seconds,
@@ -77,9 +74,7 @@ class ResourceBudget:
         """Reserve one process execution slot."""
 
         if self._active_processes >= self.limits.max_concurrent_processes:
-            raise ResourceLimitError(
-                "Maximum concurrent process limit reached."
-            )
+            raise ResourceLimitError("Maximum concurrent process limit reached.")
 
         self._active_processes += 1
 
@@ -100,9 +95,7 @@ class ResourceBudget:
         self._total_output_bytes += byte_count
 
         if self._total_output_bytes > self.limits.max_output_bytes:
-            raise ResourceLimitError(
-                "Aggregate process output limit exceeded."
-            )
+            raise ResourceLimitError("Aggregate process output limit exceeded.")
 
     def check_usage(self, usage: ResourceUsage) -> None:
         """Check observed resource usage against configured limits."""
@@ -117,9 +110,7 @@ class ResourceBudget:
             maximum = self.limits.max_cpu_seconds
 
             if maximum is not None and usage.cpu_seconds > maximum:
-                raise ResourceLimitError(
-                    f"CPU time limit exceeded for PID {usage.pid}."
-                )
+                raise ResourceLimitError(f"CPU time limit exceeded for PID {usage.pid}.")
 
         if usage.memory_bytes is not None:
             if usage.memory_bytes < 0:
@@ -128,14 +119,10 @@ class ResourceBudget:
             maximum = self.limits.max_memory_bytes
 
             if maximum is not None and usage.memory_bytes > maximum:
-                raise ResourceLimitError(
-                    f"Memory limit exceeded for PID {usage.pid}."
-                )
+                raise ResourceLimitError(f"Memory limit exceeded for PID {usage.pid}.")
 
         if usage.output_bytes > self.limits.max_output_bytes:
-            raise ResourceLimitError(
-                f"Output limit exceeded for PID {usage.pid}."
-            )
+            raise ResourceLimitError(f"Output limit exceeded for PID {usage.pid}.")
 
     def reset_output(self) -> None:
         """Reset aggregate output accounting."""

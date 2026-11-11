@@ -1,4 +1,3 @@
-
 """Central factory for constructing FORGEX runtime components."""
 
 from __future__ import annotations
@@ -38,16 +37,12 @@ class RuntimeFactory:
 
         runtime_config = config or RuntimeConfig()
 
-        resources = RuntimeResourceManager(
-            runtime_config.resource_limits()
-        )
+        resources = RuntimeResourceManager(runtime_config.resource_limits())
 
         supervisor = ProcessSupervisor(
             limits=runtime_config.resource_limits(),
             resource_manager=resources,
-            terminate_grace_period=(
-                runtime_config.termination_grace_period
-            ),
+            terminate_grace_period=(runtime_config.termination_grace_period),
             read_chunk_size=runtime_config.output_chunk_size,
         )
 

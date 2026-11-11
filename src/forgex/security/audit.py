@@ -1,4 +1,3 @@
-
 """Security audit logging and integrity verification for FORGEX."""
 
 from __future__ import annotations
@@ -63,9 +62,7 @@ class AuditEvent:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: str = field(
-        default_factory=lambda: datetime.now(UTC).isoformat()
-    )
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
     def __post_init__(self) -> None:
         for name in ("actor", "action"):

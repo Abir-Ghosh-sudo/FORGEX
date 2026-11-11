@@ -1,4 +1,3 @@
-
 """Agent-facing filesystem toolkit for FORGEX."""
 
 from __future__ import annotations
@@ -157,11 +156,7 @@ class FilesystemToolkit:
 
             if not recursive:
                 root = self._workspace.root
-                results = tuple(
-                    path
-                    for path in results
-                    if Path(path).parent == root
-                )
+                results = tuple(path for path in results if Path(path).parent == root)
 
             return results
 
@@ -269,10 +264,7 @@ class FilesystemToolkit:
             return cls._serialize(asdict(value))
 
         if isinstance(value, dict):
-            return {
-                str(key): cls._serialize(item)
-                for key, item in value.items()
-            }
+            return {str(key): cls._serialize(item) for key, item in value.items()}
 
         if isinstance(value, (list, tuple, set)):
             return [cls._serialize(item) for item in value]

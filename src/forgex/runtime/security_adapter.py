@@ -1,4 +1,3 @@
-
 """Adapters connecting FORGEX security policy and runtime infrastructure."""
 
 from __future__ import annotations
@@ -97,9 +96,7 @@ class RuntimeSecurityAdapter:
         """Request explicit approval before executing a command."""
 
         if self.approval_handler is None:
-            raise ApprovalRequiredError(
-                "No approval handler is configured."
-            )
+            raise ApprovalRequiredError("No approval handler is configured.")
 
         result = self.approval_handler(request, policy)
 
@@ -115,9 +112,7 @@ class RuntimeSecurityAdapter:
                 reason="Approved by user." if result else "Approval rejected.",
             )
 
-        raise SecurityAdapterError(
-            "Approval handler must return ApprovalResult or bool."
-        )
+        raise SecurityAdapterError("Approval handler must return ApprovalResult or bool.")
 
     async def _execute_command(self, request: CommandRequest) -> Any:
         """Execute an approved command through RuntimeManager."""

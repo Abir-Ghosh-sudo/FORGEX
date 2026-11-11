@@ -142,10 +142,7 @@ def async_retry(
     exponential_base: float = 2.0,
     jitter: bool = True,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-    on_retry: (
-        Callable[[Exception, int, float], Any]
-        | None
-    ) = None,
+    on_retry: (Callable[[Exception, int, float], Any] | None) = None,
 ) -> Callable[
     [Callable[P, Awaitable[R]]],
     Callable[P, Awaitable[R]],

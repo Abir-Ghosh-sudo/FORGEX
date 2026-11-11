@@ -1,4 +1,3 @@
-
 """Runtime configuration and validation for FORGEX."""
 
 from __future__ import annotations
@@ -67,14 +66,10 @@ class RuntimeConfig:
             raise ValueError("shutdown_timeout must be positive.")
 
         if self.termination_grace_period < 0:
-            raise ValueError(
-                "termination_grace_period cannot be negative."
-            )
+            raise ValueError("termination_grace_period cannot be negative.")
 
         if self.max_concurrent_processes < 1:
-            raise ValueError(
-                "max_concurrent_processes must be positive."
-            )
+            raise ValueError("max_concurrent_processes must be positive.")
 
         if self.max_output_bytes < 1:
             raise ValueError("max_output_bytes must be positive.")
@@ -110,12 +105,8 @@ class RuntimeConfig:
 
         object.__setattr__(self, "metadata", dict(self.metadata))
 
-        if set(self.allowed_environment_variables) & set(
-            self.blocked_environment_variables
-        ):
-            raise ValueError(
-                "Environment variables cannot be both allowed and blocked."
-            )
+        if set(self.allowed_environment_variables) & set(self.blocked_environment_variables):
+            raise ValueError("Environment variables cannot be both allowed and blocked.")
 
     def resource_limits(self) -> ResourceLimits:
         """Create matching process resource limits."""
@@ -145,17 +136,9 @@ class RuntimeConfig:
         for key, value in source.items():
             normalized_key = key.upper() if os.name == "nt" else key
 
-            normalized_allowed = (
-                {item.upper() for item in allowed}
-                if os.name == "nt"
-                else allowed
-            )
+            normalized_allowed = {item.upper() for item in allowed} if os.name == "nt" else allowed
 
-            normalized_blocked = (
-                {item.upper() for item in blocked}
-                if os.name == "nt"
-                else blocked
-            )
+            normalized_blocked = {item.upper() for item in blocked} if os.name == "nt" else blocked
 
             if normalized_key in normalized_blocked:
                 continue

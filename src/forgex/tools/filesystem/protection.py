@@ -1,4 +1,3 @@
-
 """Workspace filesystem protection and sensitive path detection."""
 
 from __future__ import annotations
@@ -68,9 +67,7 @@ class WorkspaceProtection:
             raise ValueError("Workspace must be an existing directory.")
 
         patterns = (
-            self.DEFAULT_PROTECTED_PATTERNS
-            if protected_patterns is None
-            else protected_patterns
+            self.DEFAULT_PROTECTED_PATTERNS if protected_patterns is None else protected_patterns
         )
 
         if isinstance(patterns, str):
@@ -152,9 +149,8 @@ class WorkspaceProtection:
         for pattern in patterns:
             normalized_pattern = pattern.replace("\\", "/")
 
-            if (
-                fnmatch.fnmatchcase(normalized, normalized_pattern)
-                or self._matches_directory(normalized, normalized_pattern)
+            if fnmatch.fnmatchcase(normalized, normalized_pattern) or self._matches_directory(
+                normalized, normalized_pattern
             ):
                 if operation == "read" and self._allow_read:
                     return ProtectionResult(

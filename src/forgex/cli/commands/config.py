@@ -85,9 +85,7 @@ def show_config(
 
         if section:
             if section not in data:
-                raise typer.BadParameter(
-                    f"Unknown configuration section: {section}"
-                )
+                raise typer.BadParameter(f"Unknown configuration section: {section}")
 
             data = {section: data[section]}
 
@@ -131,9 +129,7 @@ def validate_config() -> None:
         )
 
     except Exception as exc:
-        console.print(
-            f"[red]Configuration validation failed:[/red]\n{exc}"
-        )
+        console.print(f"[red]Configuration validation failed:[/red]\n{exc}")
         raise typer.Exit(code=1) from exc
 
 
@@ -189,9 +185,7 @@ def reset_config(
         manager.reset()
         clear_settings_cache()
 
-        console.print(
-            "[green]Saved configuration reset successfully.[/green]"
-        )
+        console.print("[green]Saved configuration reset successfully.[/green]")
 
     except Exception as exc:
         console.print(f"[red]Configuration reset failed:[/red] {exc}")

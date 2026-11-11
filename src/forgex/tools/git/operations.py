@@ -1,4 +1,3 @@
-
 """Core Git operations for FORGEX."""
 
 from __future__ import annotations
@@ -131,15 +130,9 @@ class GitOperations:
         result = [
             GitBranch(
                 name=branch.name,
-                is_current=branch == repo.active_branch
-                if not repo.head.is_detached
-                else False,
+                is_current=branch == repo.active_branch if not repo.head.is_detached else False,
                 is_remote=False,
-                upstream=(
-                    branch.tracking_branch().name
-                    if branch.tracking_branch()
-                    else None
-                ),
+                upstream=(branch.tracking_branch().name if branch.tracking_branch() else None),
                 last_commit=branch.commit.hexsha,
             )
             for branch in repo.branches
@@ -170,9 +163,7 @@ class GitOperations:
 
         try:
             if name in [branch.name for branch in repo.branches]:
-                raise GitOperationError(
-                    f"Branch already exists: {name}"
-                )
+                raise GitOperationError(f"Branch already exists: {name}")
 
             branch = repo.create_head(name)
 
@@ -186,9 +177,7 @@ class GitOperations:
             )
 
         except GitCommandError as exc:
-            raise GitOperationError(
-                f"Could not create branch: {name}"
-            ) from exc
+            raise GitOperationError(f"Could not create branch: {name}") from exc
 
     def checkout(
         self,
@@ -199,8 +188,7 @@ class GitOperations:
 
         if repo.is_dirty(untracked_files=True):
             raise GitOperationError(
-                "Cannot checkout with uncommitted changes. "
-                "Commit or stash changes first."
+                "Cannot checkout with uncommitted changes. Commit or stash changes first."
             )
 
         try:
@@ -214,9 +202,7 @@ class GitOperations:
             )
 
         except (IndexError, GitCommandError) as exc:
-            raise GitOperationError(
-                f"Cannot checkout branch: {branch_name}"
-            ) from exc
+            raise GitOperationError(f"Cannot checkout branch: {branch_name}") from exc
 
     def delete_branch(
         self,
@@ -228,9 +214,7 @@ class GitOperations:
         repo = self.repositories.discover(path)
 
         if not force and repo.active_branch.name == name:
-            raise GitOperationError(
-                "Cannot delete the currently checked-out branch."
-            )
+            raise GitOperationError("Cannot delete the currently checked-out branch.")
 
         try:
             branch = repo.heads[name]
@@ -244,9 +228,7 @@ class GitOperations:
             )
 
         except (IndexError, GitCommandError) as exc:
-            raise GitOperationError(
-                f"Could not delete branch: {name}"
-            ) from exc
+            raise GitOperationError(f"Could not delete branch: {name}") from exc
 
     def diff(
         self,
@@ -301,7 +283,7 @@ class GitOperations:
             truncated = len(encoded) > self.max_diff_bytes
 
             if truncated:
-                combined = encoded[:self.max_diff_bytes].decode(
+                combined = encoded[: self.max_diff_bytes].decode(
                     "utf-8",
                     errors="ignore",
                 )
@@ -376,9 +358,7 @@ class GitOperations:
             commit = repo.index.commit(
                 message,
                 author=(
-                    self._actor(author_name, author_email)
-                    if author_name and author_email
-                    else None
+                    self._actor(author_name, author_email) if author_name and author_email else None
                 ),
             )
 
@@ -395,9 +375,7 @@ class GitOperations:
         revision: str = "HEAD",
     ) -> tuple[GitCommit, ...]:
         if not 1 <= limit <= self.max_history:
-            raise ValueError(
-                f"limit must be between 1 and {self.max_history}."
-            )
+            raise ValueError(f"limit must be between 1 and {self.max_history}.")
 
         self._validate_revision(revision)
         repo = self.repositories.discover(path)
@@ -518,6 +496,7 @@ class GitOperations:
     @staticmethod
     def _actor(name: str, email: str):
         from git import Actor
+
         return Actor(name, email)
 
     @staticmethod

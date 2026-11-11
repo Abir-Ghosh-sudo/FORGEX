@@ -83,9 +83,7 @@ class ForgexTask:
     status: TaskStatus = TaskStatus.PENDING
     progress: TaskProgress = field(default_factory=TaskProgress)
 
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     completed_at: datetime | None = None
 
@@ -123,17 +121,13 @@ class ForgexTask:
         """Raise an exception when cancellation was requested."""
 
         if self.cancellation_event.is_set():
-            raise TaskCancelledError(
-                f"Task {self.task_id} was cancelled."
-            )
+            raise TaskCancelledError(f"Task {self.task_id} was cancelled.")
 
     def request_cancellation(self) -> None:
         """Request cancellation of the task."""
 
         if self.is_terminal:
-            raise RuntimeError(
-                "Cannot cancel a task that has already finished."
-            )
+            raise RuntimeError("Cannot cancel a task that has already finished.")
 
         self.cancellation_event.set()
 
@@ -250,8 +244,7 @@ class TaskManager:
 
             if new_status not in self._ALLOWED_TRANSITIONS[task.status]:
                 raise RuntimeError(
-                    f"Invalid task transition: "
-                    f"{task.status.value} -> {new_status.value}"
+                    f"Invalid task transition: {task.status.value} -> {new_status.value}"
                 )
 
             old_status = task.status
@@ -313,9 +306,7 @@ class TaskManager:
                 raise KeyError(f"Task not found: {task_id}")
 
             if task.status != TaskStatus.RUNNING:
-                raise RuntimeError(
-                    "Progress can only be updated for running tasks."
-                )
+                raise RuntimeError("Progress can only be updated for running tasks.")
 
             task.progress.update(
                 percentage=percentage,
@@ -398,9 +389,7 @@ class TaskManager:
                 return False
 
             if not task.is_terminal:
-                raise RuntimeError(
-                    "Only completed, failed or cancelled tasks can be removed."
-                )
+                raise RuntimeError("Only completed, failed or cancelled tasks can be removed.")
 
             del self._tasks[task_id]
             return True

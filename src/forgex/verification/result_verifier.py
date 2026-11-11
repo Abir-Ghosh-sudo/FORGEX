@@ -70,9 +70,7 @@ class ResultVerifier:
         """Verify test execution results."""
         result = ExecutionVerificationResult(verified=(failed == 0 and errors == 0))
 
-        result.checks.append(
-            {"name": "total_tests", "passed": total > 0, "detail": str(total)}
-        )
+        result.checks.append({"name": "total_tests", "passed": total > 0, "detail": str(total)})
         result.checks.append(
             {
                 "name": "all_passed",

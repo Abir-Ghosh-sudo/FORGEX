@@ -1,4 +1,3 @@
-
 """Windows-specific runtime adapter for FORGEX."""
 
 from __future__ import annotations
@@ -17,9 +16,7 @@ class WindowsRuntimeAdapter(RuntimeAdapter):
 
     def __init__(self, environment: RuntimeEnvironment) -> None:
         if not environment.is_windows:
-            raise ValueError(
-                "WindowsRuntimeAdapter requires a Windows environment."
-            )
+            raise ValueError("WindowsRuntimeAdapter requires a Windows environment.")
 
         super().__init__(environment)
 
@@ -95,9 +92,7 @@ class WindowsRuntimeAdapter(RuntimeAdapter):
         resolved = self.resolve_executable(executable_name)
 
         if resolved is None:
-            raise FileNotFoundError(
-                f"Executable could not be resolved: {executable_name}"
-            )
+            raise FileNotFoundError(f"Executable could not be resolved: {executable_name}")
 
         normalized_arguments = tuple(str(argument) for argument in arguments)
 
@@ -109,9 +104,7 @@ class WindowsRuntimeAdapter(RuntimeAdapter):
         )
 
         if not working_directory.is_dir():
-            raise NotADirectoryError(
-                f"Working directory does not exist: {working_directory}"
-            )
+            raise NotADirectoryError(f"Working directory does not exist: {working_directory}")
 
         command_environment = dict(os.environ)
 
@@ -121,9 +114,7 @@ class WindowsRuntimeAdapter(RuntimeAdapter):
                     raise ValueError(f"Invalid environment variable name: {key!r}")
 
                 if "\x00" in value:
-                    raise ValueError(
-                        f"Environment variable {key!r} contains a null byte."
-                    )
+                    raise ValueError(f"Environment variable {key!r} contains a null byte.")
 
                 # Windows environment variable names are case-insensitive.
                 existing_key = next(

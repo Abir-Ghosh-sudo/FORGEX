@@ -44,9 +44,7 @@ class TestRunner:
         workspace = Path(request.workspace).expanduser().resolve()
 
         if not workspace.is_dir():
-            raise TestRunnerError(
-                f"Workspace does not exist: {workspace}"
-            )
+            raise TestRunnerError(f"Workspace does not exist: {workspace}")
 
         started_at = datetime.now(UTC)
         start_time = time.monotonic()
@@ -79,9 +77,7 @@ class TestRunner:
             command = self.resolver.resolve(resolved_request)
 
             if not self.resolver.is_available(command):
-                raise TestRunnerError(
-                    f"Test executable not available: {command[0]}"
-                )
+                raise TestRunnerError(f"Test executable not available: {command[0]}")
 
             environment = os.environ.copy()
             environment.update(request.environment)
@@ -130,9 +126,7 @@ class TestRunner:
             raise
 
         except Exception as exc:
-            raise TestRunnerError(
-                f"Test execution failed: {exc}"
-            ) from exc
+            raise TestRunnerError(f"Test execution failed: {exc}") from exc
 
     @staticmethod
     def _decode(value: bytes | str | None) -> str:
@@ -148,11 +142,7 @@ class TestRunner:
         return_code: int,
     ) -> TestStatus:
         if state == SupervisedProcessState.COMPLETED:
-            return (
-                TestStatus.PASSED
-                if return_code == 0
-                else TestStatus.FAILED
-            )
+            return TestStatus.PASSED if return_code == 0 else TestStatus.FAILED
 
         if state == SupervisedProcessState.TIMED_OUT:
             return TestStatus.TIMEOUT

@@ -1,4 +1,3 @@
-
 """Central workspace filesystem service for FORGEX."""
 
 from __future__ import annotations
@@ -44,10 +43,7 @@ class WorkspaceConfiguration:
         )
 
         if any(
-            not isinstance(value, int)
-            or isinstance(value, bool)
-            or value <= 0
-            for value in limits
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in limits
         ):
             raise ValueError("All workspace limits must be positive integers.")
 
@@ -75,9 +71,7 @@ class WorkspaceService:
         protected_patterns: tuple[str, ...] | None = None,
     ) -> None:
         if not isinstance(configuration, WorkspaceConfiguration):
-            raise TypeError(
-                "configuration must be WorkspaceConfiguration."
-            )
+            raise TypeError("configuration must be WorkspaceConfiguration.")
 
         self._configuration = configuration
         self._resolver = WorkspacePathResolver(configuration.root)

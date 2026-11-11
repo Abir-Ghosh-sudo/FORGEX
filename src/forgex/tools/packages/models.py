@@ -61,9 +61,7 @@ class PackageSpec:
         if self.name.startswith("-") or "\x00" in self.name:
             raise ValueError("Invalid package name")
 
-        if self.version is not None and (
-            not self.version.strip() or "\x00" in self.version
-        ):
+        if self.version is not None and (not self.version.strip() or "\x00" in self.version):
             raise ValueError("Invalid package version")
 
         if any(not item or "\x00" in item for item in self.extras):
@@ -112,14 +110,16 @@ class PackageRequest:
             ):
                 raise ValueError("Invalid environment variable")
 
-        if self.operation in (
-            PackageOperation.INSTALL,
-            PackageOperation.UNINSTALL,
-            PackageOperation.UPDATE,
-        ) and not self.packages:
-            raise ValueError(
-                f"{self.operation.value} requires at least one package"
+        if (
+            self.operation
+            in (
+                PackageOperation.INSTALL,
+                PackageOperation.UNINSTALL,
+                PackageOperation.UPDATE,
             )
+            and not self.packages
+        ):
+            raise ValueError(f"{self.operation.value} requires at least one package")
 
 
 @dataclass(frozen=True, slots=True)

@@ -95,6 +95,7 @@ class MCPToolRegistry:
             and not self.permission_manager.has_permission(actor or "system", permission)
         ):
             from forgex.security.errors import PermissionDeniedError
+
             raise PermissionDeniedError(
                 f"Permission '{permission}' required for MCP tool '{name}'.",
                 actor=actor or "system",

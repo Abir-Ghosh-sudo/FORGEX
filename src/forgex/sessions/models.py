@@ -1,4 +1,3 @@
-
 """Domain models for FORGEX coding sessions."""
 
 from __future__ import annotations
@@ -174,9 +173,7 @@ class CodingSession:
         }
 
         if include_messages:
-            result["messages"] = [
-                message.to_dict() for message in self.messages
-            ]
+            result["messages"] = [message.to_dict() for message in self.messages]
 
         return result
 
@@ -191,10 +188,7 @@ class CodingSession:
             status=SessionStatus(data.get("status", "active")),
             created_at=datetime.fromisoformat(data["created_at"]),
             updated_at=datetime.fromisoformat(data["updated_at"]),
-            messages=[
-                SessionMessage.from_dict(message)
-                for message in data.get("messages", [])
-            ],
+            messages=[SessionMessage.from_dict(message) for message in data.get("messages", [])],
             metadata=dict(data.get("metadata") or {}),
             model_provider=data.get("model_provider"),
             model_name=data.get("model_name"),

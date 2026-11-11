@@ -1,4 +1,3 @@
-
 """Secure and recoverable workspace file deletion."""
 
 from __future__ import annotations
@@ -64,9 +63,7 @@ class FileDeleter:
                 raise TypeError("protection must be WorkspaceProtection.")
 
             if protection.workspace != resolver.workspace:
-                raise ValueError(
-                    "Protection workspace must match resolver workspace."
-                )
+                raise ValueError("Protection workspace must match resolver workspace.")
 
         self._resolver = resolver
         self._protection = protection
@@ -89,14 +86,10 @@ class FileDeleter:
 
         if permanent:
             if not self._allow_permanent_delete:
-                raise PermanentDeletionDenied(
-                    "Permanent deletion is disabled by configuration."
-                )
+                raise PermanentDeletionDenied("Permanent deletion is disabled by configuration.")
 
             if not confirm:
-                raise PermanentDeletionDenied(
-                    "Permanent deletion requires explicit confirmation."
-                )
+                raise PermanentDeletionDenied("Permanent deletion requires explicit confirmation.")
 
             self._remove_target(target)
 
@@ -118,9 +111,7 @@ class FileDeleter:
         try:
             os.replace(target, trash_target)
         except OSError as exc:
-            raise FileDeletionError(
-                f"Could not move entry to trash: {target}"
-            ) from exc
+            raise FileDeletionError(f"Could not move entry to trash: {target}") from exc
 
         return FileDeletionResult(
             original_path=target,
@@ -135,9 +126,7 @@ class FileDeleter:
             raise TypeError("result must be FileDeletionResult.")
 
         if result.permanent:
-            raise FileDeletionError(
-                "Permanently deleted entries cannot be restored."
-            )
+            raise FileDeletionError("Permanently deleted entries cannot be restored.")
 
         if result.trash_path.parent != self._trash_directory:
             raise FileDeletionError("Invalid trash location.")
@@ -151,9 +140,7 @@ class FileDeleter:
         self._validate_target(destination)
 
         if destination.exists() or destination.is_symlink():
-            raise FileDeletionError(
-                f"Cannot restore: destination already exists: {destination}"
-            )
+            raise FileDeletionError(f"Cannot restore: destination already exists: {destination}")
 
         destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -162,9 +149,7 @@ class FileDeleter:
         try:
             os.replace(result.trash_path, destination)
         except OSError as exc:
-            raise FileDeletionError(
-                f"Could not restore entry: {destination}"
-            ) from exc
+            raise FileDeletionError(f"Could not restore entry: {destination}") from exc
 
         return destination
 
@@ -187,24 +172,16 @@ class FileDeleter:
         """Validate workspace boundaries and protected paths."""
 
         if target == self._resolver.workspace:
-            raise FileDeletionError(
-                "The workspace root cannot be deleted."
-            )
+            raise FileDeletionError("The workspace root cannot be deleted.")
 
         if target == self._trash_directory:
-            raise FileDeletionError(
-                "The trash directory cannot be deleted through this API."
-            )
+            raise FileDeletionError("The trash directory cannot be deleted through this API.")
 
         if self._trash_directory in target.parents:
-            raise FileDeletionError(
-                "Direct deletion of trash entries is not permitted."
-            )
+            raise FileDeletionError("Direct deletion of trash entries is not permitted.")
 
         if target.is_symlink():
-            raise FileDeletionError(
-                "Symlink deletion is not permitted."
-            )
+            raise FileDeletionError("Symlink deletion is not permitted.")
 
         if self._protection is not None:
             result = self._protection.inspect(
@@ -219,9 +196,7 @@ class FileDeleter:
         """Create and validate the workspace trash directory."""
 
         if self._trash_directory.is_symlink():
-            raise FileDeletionError(
-                "Trash directory cannot be a symlink."
-            )
+            raise FileDeletionError("Trash directory cannot be a symlink.")
 
         self._trash_directory.mkdir(
             parents=True,
@@ -229,9 +204,7 @@ class FileDeleter:
         )
 
         if not self._trash_directory.is_dir():
-            raise FileDeletionError(
-                "Trash location is not a directory."
-            )
+            raise FileDeletionError("Trash location is not a directory.")
 
         self._resolver.resolve(
             self._trash_directory,
@@ -249,11 +222,7 @@ class FileDeleter:
             elif target.is_dir():
                 shutil.rmtree(target)
             else:
-                raise FileDeletionError(
-                    f"Unsupported filesystem object: {target}"
-                )
+                raise FileDeletionError(f"Unsupported filesystem object: {target}")
         except OSError as exc:
             logger.exception("Permanent deletion failed: %s", target)
-            raise FileDeletionError(
-                f"Could not permanently delete: {target}"
-            ) from exc
+            raise FileDeletionError(f"Could not permanently delete: {target}") from exc

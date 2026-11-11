@@ -43,9 +43,7 @@ def _json_default(value: Any) -> Any:
     if isinstance(value, bytes):
         return value.hex()
 
-    raise TypeError(
-        f"Object of type {type(value).__name__} is not JSON serializable."
-    )
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable.")
 
 
 def to_json(
@@ -66,9 +64,7 @@ def to_json(
             allow_nan=False,
         )
     except (TypeError, ValueError, OverflowError) as exc:
-        raise SerializationError(
-            f"JSON serialization failed: {exc}"
-        ) from exc
+        raise SerializationError(f"JSON serialization failed: {exc}") from exc
 
 
 def from_json(
@@ -85,9 +81,7 @@ def from_json(
     try:
         data = json.loads(content)
     except (json.JSONDecodeError, UnicodeDecodeError, TypeError) as exc:
-        raise SerializationError(
-            f"JSON deserialization failed: {exc}"
-        ) from exc
+        raise SerializationError(f"JSON deserialization failed: {exc}") from exc
 
     if expected_type is None:
         return data
@@ -99,14 +93,11 @@ def from_json(
         try:
             return expected_type.model_validate(data)
         except Exception as exc:
-            raise SerializationError(
-                f"JSON model validation failed: {exc}"
-            ) from exc
+            raise SerializationError(f"JSON model validation failed: {exc}") from exc
 
     if not isinstance(data, expected_type):
         raise SerializationError(
-            f"Expected {expected_type.__name__}, "
-            f"received {type(data).__name__}."
+            f"Expected {expected_type.__name__}, received {type(data).__name__}."
         )
 
     return data
@@ -156,9 +147,7 @@ def sha256_file(
     file_path = Path(path).expanduser().resolve()
 
     if not file_path.is_file():
-        raise FileNotFoundError(
-            f"Cannot hash missing file: {file_path}"
-        )
+        raise FileNotFoundError(f"Cannot hash missing file: {file_path}")
 
     digest = hashlib.sha256()
 
@@ -167,9 +156,7 @@ def sha256_file(
             while chunk := file.read(chunk_size):
                 digest.update(chunk)
     except OSError as exc:
-        raise SerializationError(
-            f"Failed to hash file: {file_path}"
-        ) from exc
+        raise SerializationError(f"Failed to hash file: {file_path}") from exc
 
     return digest.hexdigest()
 
@@ -187,19 +174,13 @@ def to_primitive(data: Any) -> Any:
         return data.model_dump(mode="json")
 
     if isinstance(data, dict):
-        return {
-            str(key): to_primitive(value)
-            for key, value in data.items()
-        }
+        return {str(key): to_primitive(value) for key, value in data.items()}
 
     if isinstance(data, (list, tuple)):
         return [to_primitive(item) for item in data]
 
     if isinstance(data, set):
-        return [
-            to_primitive(item)
-            for item in sorted(data, key=str)
-        ]
+        return [to_primitive(item) for item in sorted(data, key=str)]
 
     if isinstance(data, (str, int, float, bool)) or data is None:
         return data

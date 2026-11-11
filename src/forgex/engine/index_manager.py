@@ -32,9 +32,7 @@ class IndexManager:
         self.workspace = Path(workspace).expanduser().resolve()
 
         if not self.workspace.is_dir():
-            raise IndexManagerError(
-                f"Workspace does not exist: {self.workspace}"
-            )
+            raise IndexManagerError(f"Workspace does not exist: {self.workspace}")
 
         self.indexer = indexer or RepositoryIndexer(self.workspace)
         self.store = store or IndexStore(database_path)
@@ -45,9 +43,7 @@ class IndexManager:
 
     def _validate_components(self) -> None:
         if self.indexer.workspace != self.workspace:
-            raise IndexManagerError(
-                "Indexer workspace does not match manager workspace."
-            )
+            raise IndexManagerError("Indexer workspace does not match manager workspace.")
 
     def _load_existing_index(self) -> None:
         """Restore persisted index into memory."""
@@ -56,9 +52,7 @@ class IndexManager:
                 for item in self.store.load_all():
                     self.indexer._index[item.path] = item
             except Exception as exc:
-                raise IndexManagerError(
-                    f"Unable to restore repository index: {exc}"
-                ) from exc
+                raise IndexManagerError(f"Unable to restore repository index: {exc}") from exc
 
     @property
     def files(self) -> tuple[IndexedFile, ...]:
@@ -78,20 +72,14 @@ class IndexManager:
         """Build or update the repository index."""
         with self._lock:
             try:
-                result = self.indexer.index_repository(
-                    incremental=incremental
-                )
+                result = self.indexer.index_repository(incremental=incremental)
 
                 self.store.save_many(self.files)
 
                 # Remove persisted records for files no longer present.
-                indexed_paths = {
-                    item.path for item in self.files
-                }
+                indexed_paths = {item.path for item in self.files}
 
-                persisted_paths = {
-                    item.path for item in self.store.load_all()
-                }
+                persisted_paths = {item.path for item in self.store.load_all()}
 
                 for removed_path in persisted_paths - indexed_paths:
                     self.store.remove_file(removed_path)
@@ -99,9 +87,7 @@ class IndexManager:
                 return result
 
             except Exception as exc:
-                raise IndexManagerError(
-                    f"Repository indexing failed: {exc}"
-                ) from exc
+                raise IndexManagerError(f"Repository indexing failed: {exc}") from exc
 
     def get_file(
         self,
@@ -141,9 +127,7 @@ class IndexManager:
 
             if candidate.is_absolute():
                 try:
-                    candidate = candidate.resolve().relative_to(
-                        self.workspace
-                    )
+                    candidate = candidate.resolve().relative_to(self.workspace)
                 except ValueError:
                     return False
 

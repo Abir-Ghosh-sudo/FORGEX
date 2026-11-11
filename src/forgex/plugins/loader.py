@@ -49,9 +49,7 @@ class PluginLoader:
             if p.name.startswith("_"):
                 continue
             try:
-                spec = importlib.util.spec_from_file_location(
-                    f"forgex_plugin_{p.stem}", p
-                )
+                spec = importlib.util.spec_from_file_location(f"forgex_plugin_{p.stem}", p)
                 if spec and spec.loader:
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)

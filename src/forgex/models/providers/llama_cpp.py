@@ -72,9 +72,7 @@ class LlamaCppProvider(BaseModelProvider):
                 )
             path = ggufs[0]
         if path.suffix.lower() != ".gguf":
-            raise ModelConfigurationError(
-                f"llama.cpp provider requires a .gguf model file: {path}"
-            )
+            raise ModelConfigurationError(f"llama.cpp provider requires a .gguf model file: {path}")
         return path
 
     def _load(self) -> Any:
@@ -144,9 +142,7 @@ class LlamaCppProvider(BaseModelProvider):
                     text=text,
                     model=self.model_name,
                     provider=self.provider_name,
-                    finish_reason=str(choices[0].get("finish_reason"))
-                    if choices
-                    else None,
+                    finish_reason=str(choices[0].get("finish_reason")) if choices else None,
                     raw=response,
                 )
             except Exception:
