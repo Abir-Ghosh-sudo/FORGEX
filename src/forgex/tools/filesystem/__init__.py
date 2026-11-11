@@ -3,7 +3,7 @@
 
 from forgex.tools.filesystem.paths import (
     ResolvedPath,
-    WorkspacePathError,
+    PathSecurityError,
     WorkspacePathResolver,
 )
 from forgex.tools.filesystem.reader import (
