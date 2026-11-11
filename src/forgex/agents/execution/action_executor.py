@@ -191,7 +191,9 @@ class ActionExecutor:
             target = self._resolve_target(workspace, target_str)
             if target.exists():
                 if target.is_dir():
-                    raise ActionExecutionError("Directory deletion is not supported by agent actions.")
+                    raise ActionExecutionError(
+                        "Directory deletion is not supported by agent actions."
+                    )
                 target.unlink()
             return ActionExecutionResult("delete", target_str, True, output=f"Deleted {target_str}")
         except Exception as exc:
