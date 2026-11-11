@@ -131,6 +131,12 @@ class ForgexApplication:
             logger.debug("FORGEX application is already running.")
             return
 
+        # Register the default multi-agent workflow if no nodes are registered yet.
+        if not self.orchestrator.registered_nodes:
+            from forgex.agents.workflow import build_default_agent_workflow
+
+            build_default_agent_workflow(self.orchestrator)
+
         await self.lifecycle.startup()
         self._started = True
 
@@ -141,14 +147,14 @@ class ForgexApplication:
 
     async def execute_task(
         self,
-        task: ForgexTask,
+        task: ForgexTask | str,
         *,
         initial_state: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Execute a task through the configured workflow orchestrator.
 
         Args:
-            task: Task created by the application's TaskManager.
+            task: Task created by the application's TaskManager, or a prompt string.
             initial_state: Optional workflow-specific initial state.
 
         Returns:
@@ -156,6 +162,9 @@ class ForgexApplication:
         """
 
         self._ensure_running()
+
+        if isinstance(task, str):
+            task = await self.task_manager.create_task(task)
 
         return await self.orchestrator.execute(
             task,

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import shutil
 import sys
 from dataclasses import dataclass
@@ -53,15 +52,17 @@ def _check_ollama() -> DiagnosticResult:
 
 def _check_native_engine() -> DiagnosticResult:
     try:
-        available = importlib.util.find_spec("forgex.engine._native")
-    except (ImportError, ModuleNotFoundError, ValueError):
-        available = None
+        from forgex.engine import is_native_available
 
-    if available is not None:
+        available = is_native_available()
+    except Exception:
+        available = False
+
+    if available:
         return DiagnosticResult(
             name="Native Engine",
             status="PASS",
-            details="C++ extension detected",
+            details="C++ extension detected and operational",
         )
 
     return DiagnosticResult(

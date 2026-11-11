@@ -6,12 +6,12 @@ import typer
 
 from forgex import __version__
 from forgex.cli.commands import (
-    analyze_workspace,
+    analyze_command,
     chat_command,
     config_app,
     doctor_command,
     git_app,
-    init_app,
+    init_command,
     model_app,
     run_command,
     session_app,
@@ -31,13 +31,13 @@ app = typer.Typer(
 app.add_typer(config_app, name="config", help="Manage FORGEX configuration.")
 app.add_typer(git_app, name="git", help="Manage Git operations.")
 app.add_typer(model_app, name="model", help="Manage local AI models.")
-app.add_typer(init_app, name="init", help="Initialize a FORGEX project.")
 app.add_typer(session_app, name="session", help="Manage coding sessions.")
 app.add_typer(test_app, name="test", help="Run and discover project tests.")
 app.add_typer(update_app, name="update", help="Check FORGEX updates.")
 
 app.command("doctor")(doctor_command)
-app.command("analyze")(analyze_workspace)
+app.command("analyze")(analyze_command)
+app.command("init")(init_command)
 app.command("run")(run_command)
 app.command("chat")(chat_command)
 

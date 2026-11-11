@@ -305,14 +305,9 @@ def _render_analysis(result: AnalysisResult) -> None:
 
 @app.command("workspace")
 def analyze_command(
-    path: Path = typer.Argument(
-        Path.cwd(),
-        help="Project directory to analyze.",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-        readable=True,
-        resolve_path=True,
+    path: Path | None = typer.Argument(
+        None,
+        help="Project directory to analyze (defaults to current directory).",
     ),
     max_files: int = typer.Option(
         100_000,
@@ -322,8 +317,9 @@ def analyze_command(
     ),
 ) -> None:
     """Analyze the structure and languages of a workspace."""
+    target_path = Path.cwd() if path is None else Path(path).resolve()
     try:
-        result = analyze_workspace(path, max_files=max_files)
+        result = analyze_workspace(target_path, max_files=max_files)
         _render_analysis(result)
     except (ValueError, OSError) as exc:
         console.print(f"[red]Project analysis failed:[/red] {exc}")

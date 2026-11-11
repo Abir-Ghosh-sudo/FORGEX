@@ -11,7 +11,12 @@ from forgex.cli.commands.doctor import (
     doctor_command,
 )
 from forgex.cli.commands.git import app as git_app
-from forgex.cli.commands.init import app as init_app
+from forgex.cli.commands.init import (
+    app as init_app,
+)
+from forgex.cli.commands.init import (
+    init_command,
+)
 from forgex.cli.commands.model import app as model_app
 from forgex.cli.commands.run import run_command
 from forgex.cli.commands.session import app as session_app
@@ -27,6 +32,7 @@ __all__ = [
     "doctor_command",
     "git_app",
     "init_app",
+    "init_command",
     "model_app",
     "run_command",
     "session_app",

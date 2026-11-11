@@ -95,7 +95,8 @@ async def _interactive_session(workspace: Path) -> None:
                     console=console,
                     spinner="dots",
                 ):
-                    result = await application.execute_task(instruction)
+                    task = await application.task_manager.create_task(instruction)
+                    result = await application.execute_task(task)
 
                 console.print(
                     Panel(

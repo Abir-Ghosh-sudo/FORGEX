@@ -103,7 +103,7 @@ def model_pull(
 ) -> None:
     """Pull a model from Ollama."""
     settings = _get_model_settings()
-    manager = ModelManager(settings.model)
+    manager = ModelManager(settings)
     try:
         success, output = manager.pull_ollama_model(name)
         if success:
@@ -129,8 +129,8 @@ def model_use(
 ) -> None:
     """Set the active model provider and model."""
     settings = _get_model_settings()
-    settings.model.provider = provider
-    settings.model.model_name = model
+    settings.provider = provider
+    settings.model_name = model
     console.print(f"[green]Model configured:[/green] provider={provider}, model={model}")
     console.print(
         "[yellow]Note:[/yellow] Changes apply to the current session only unless saved to .env."
@@ -146,7 +146,7 @@ def model_download(
 ) -> None:
     """Download model weights from Hugging Face Hub."""
     settings = _get_model_settings()
-    manager = ModelManager(settings.model)
+    manager = ModelManager(settings)
     try:
         result = manager.download(repo_id)
         console.print(f"[green]Downloaded:[/green] {result.repo_id} -> {result.local_path}")

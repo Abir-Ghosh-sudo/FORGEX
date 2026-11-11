@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 from copy import deepcopy
+from pathlib import Path
 from typing import Protocol
 from uuid import UUID
 
@@ -14,6 +16,8 @@ from forgex.sessions.models import (
     SessionMessage,
     SessionStatus,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SessionNotFoundError(SessionError):
@@ -134,7 +138,30 @@ class SessionManager:
     def __init__(
         self,
         repository: SessionRepository | None = None,
+        *,
+        storage_path: Path | str | None = None,
     ) -> None:
+        if repository is None and storage_path is not None:
+            try:
+                from forgex.storage.database import Database
+                from forgex.storage.repositories.session import SQLiteSessionRepository
+
+                db_path = Path(storage_path)
+                if db_path.is_dir() or not db_path.suffix:
+                    db_path.mkdir(parents=True, exist_ok=True)
+                    db_file = db_path / "forgex.db"
+                else:
+                    db_path.parent.mkdir(parents=True, exist_ok=True)
+                    db_file = db_path
+                db = Database(database_path=db_file)
+                db.initialize()
+                from forgex.storage.schemas.session import create_session_schema
+
+                create_session_schema(db)
+                repository = SQLiteSessionRepository(database=db)
+            except Exception as exc:
+                logger.warning("Could not initialize persistent session storage: %s", exc)
+
         self._repository = repository or InMemorySessionRepository()
         self._lock = threading.RLock()
 

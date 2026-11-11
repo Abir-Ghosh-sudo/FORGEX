@@ -22,8 +22,8 @@ A terminal-first autonomous AI coding agent for Python. Plan, code, review, test
 ## Installation
 
 ```bash
-git clone https://github.com/forgex-org/forgex.git
-cd forgex
+git clone https://github.com/Abir-Ghosh-sudo/FORGEX.git
+cd FORGEX
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate.bat
 pip install -e ".[dev]"

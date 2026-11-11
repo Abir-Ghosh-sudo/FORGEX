@@ -49,7 +49,8 @@ async def _execute_task(
             "[bold cyan]FORGEX is processing your task...[/bold cyan]",
             spinner="dots",
         ):
-            result = await application.execute_task(instruction)
+            task = await application.task_manager.create_task(instruction)
+            result = await application.execute_task(task)
 
         console.print()
         console.print(

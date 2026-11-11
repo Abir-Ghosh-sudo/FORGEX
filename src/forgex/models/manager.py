@@ -147,8 +147,13 @@ class ModelManager:
         ignore_patterns: list[str] | tuple[str, ...] | None = None,
         filename: str | None = None,
         local_dir: str | Path | None = None,
+        local_files_only: bool = False,
     ) -> DownloadResult:
-        """Download model weights from Hugging Face Hub (no hosted inference)."""
+        """Download model weights from Hugging Face Hub (no hosted inference).
+
+        By default, explicit downloads allow fetching remote models even if
+        inference settings default to offline local files only.
+        """
         return self.downloader.download_model(
             repo_id,
             revision=revision,
@@ -156,6 +161,7 @@ class ModelManager:
             ignore_patterns=ignore_patterns,
             filename=filename,
             local_dir=local_dir,
+            local_files_only=local_files_only,
         )
 
     def list_ollama_models(self) -> list[str]:

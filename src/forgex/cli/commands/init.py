@@ -65,4 +65,6 @@ def init(
     console.print("\nRun [bold]forgex chat[/bold] to start coding.")
 
 
-__all__ = ["app", "init"]
+init_command = init
+
+__all__ = ["app", "init", "init_command"]

@@ -56,11 +56,14 @@ class HuggingFaceDownloader:
         filename: str | None = None,
         local_dir: str | Path | None = None,
         progress_callback: Callable[[str], None] | None = None,
+        local_files_only: bool | None = None,
     ) -> DownloadResult:
         """Download a model repo or a specific file from Hugging Face Hub."""
         repo = (repo_id or "").strip()
         if not repo:
             raise HuggingFaceDownloadError("repo_id cannot be empty.")
+
+        offline_mode = self.local_files_only if local_files_only is None else local_files_only
 
         try:
             from huggingface_hub import hf_hub_download, snapshot_download
@@ -82,7 +85,7 @@ class HuggingFaceDownloader:
                     token=self.token,
                     cache_dir=str(self.cache_dir) if self.cache_dir else None,
                     local_dir=str(Path(local_dir).expanduser().resolve()) if local_dir else None,
-                    local_files_only=self.local_files_only,
+                    local_files_only=offline_mode,
                 )
                 local_path = Path(path_str).resolve()
                 files = (filename,)
@@ -95,7 +98,7 @@ class HuggingFaceDownloader:
                     token=self.token,
                     cache_dir=str(self.cache_dir) if self.cache_dir else None,
                     local_dir=str(Path(local_dir).expanduser().resolve()) if local_dir else None,
-                    local_files_only=self.local_files_only,
+                    local_files_only=offline_mode,
                 )
                 local_path = Path(path_str).resolve()
                 files = self._list_downloaded_files(local_path, allow_patterns)
