@@ -264,7 +264,8 @@ class ActionExecutor:
             results.append(res.to_dict())
 
             if res.success:
-                if res.action_type in {"create", "modify", "delete", "write", "edit"} and res.target:
+                is_file_op = res.action_type in {"create", "modify", "delete", "write", "edit"}
+                if is_file_op and res.target:
                     if res.target not in files_changed:
                         files_changed.append(res.target)
                 elif res.action_type == "command" and res.target:

@@ -133,12 +133,18 @@ class ModelRouter:
             "hf": "transformers",
             "huggingface": "transformers",
             "local": "transformers",
+            "vllm": "openai_compatible",
+            "sglang": "openai_compatible",
+            "openai": "openai_compatible",
+            "openai-compatible": "openai_compatible",
+            "openai_api": "openai_compatible",
+            "lm_studio": "openai_compatible",
         }
         return aliases.get(provider, provider)
 
     @staticmethod
     def _validate_provider(provider: str) -> None:
-        allowed = {"ollama", "llama_cpp", "transformers"}
+        allowed = {"ollama", "llama_cpp", "transformers", "openai_compatible"}
         if provider not in allowed:
             raise ModelRoutingError(
                 f"Unsupported local provider '{provider}'. "
@@ -155,6 +161,8 @@ class ModelRouter:
             return "Selected Ollama for local managed model inference."
         if provider == "transformers":
             return "Selected Transformers local inference."
+        if provider == "openai_compatible":
+            return "Selected OpenAI-compatible API (vLLM, SGLang, LM Studio, or OpenAI)."
         return f"Selected provider '{provider}'."
 
     @staticmethod
