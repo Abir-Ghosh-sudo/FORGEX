@@ -1,3 +1,0 @@
-C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/CMakeFiles/CMakeScratch/TryCompile-9pmdn5/CMakeFiles/cmTC_214e4.dir
-C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/CMakeFiles/CMakeScratch/TryCompile-9pmdn5/CMakeFiles/edit_cache.dir
-C:/Users/ABIR/OneDrive/Desktop/hacathon/Forgex/build/CMakeFiles/CMakeScratch/TryCompile-9pmdn5/CMakeFiles/rebuild_cache.dir
