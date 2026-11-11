@@ -143,6 +143,8 @@ class GitRepositoryManager:
                 f"Could not initialize Git repository: {target}"
             ) from exc
 
+    init = initialize
+
     def is_repository(self, path: Path | str = ".") -> bool:
         """Check whether a valid repository exists at a path."""
 

@@ -77,7 +77,10 @@ class GitManager:
             return GitOperationResult(False, "init", "Workspace path unsafe.")
         try:
             if self._repo_manager:
-                self._repo_manager.init()
+                if hasattr(self._repo_manager, "initialize"):
+                    self._repo_manager.initialize()
+                elif hasattr(self._repo_manager, "init"):
+                    self._repo_manager.init()
             else:
                 import subprocess
 

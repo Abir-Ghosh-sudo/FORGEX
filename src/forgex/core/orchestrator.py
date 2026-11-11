@@ -104,15 +104,17 @@ class WorkflowOrchestrator:
 
         async def execute_node(
             state: ForgexState,
-            config: dict[str, Any],
+            config: Any = None,
+            **kwargs: Any,
         ) -> dict[str, Any]:
             """Execute a node with task cancellation checks."""
 
-            configurable = config.get("configurable", {})
-            task_id = configurable.get("forgex_task_id")
+            cfg = config if isinstance(config, dict) else (getattr(config, "configurable", None) or {})
+            configurable = cfg.get("configurable", cfg) if isinstance(cfg, dict) else {}
+            task_id = configurable.get("forgex_task_id") or state.get("task_id")
 
             if not isinstance(task_id, str):
-                raise ExecutionError("Missing FORGEX task ID in graph configuration.")
+                raise ExecutionError("Missing FORGEX task ID in graph configuration or state.")
 
             task = await self.task_manager.get_task(task_id)
             task.check_cancelled()
