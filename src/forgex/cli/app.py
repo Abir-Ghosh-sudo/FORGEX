@@ -18,7 +18,6 @@ from forgex.cli.commands import (
     test_app,
     update_app,
 )
-from forgex.cli.commands.model_extensions import model_pull, model_use, model_download
 from forgex.cli.slash_commands.extensions import register_extended_slash_commands
 
 app = typer.Typer(
