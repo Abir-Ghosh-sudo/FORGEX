@@ -41,9 +41,6 @@ class TesterNode(AgentNode):
                 toolkit = TestingToolkit(workspace, supervisor)
                 try:
                     detected = toolkit.detect_framework()
-                    if detected.framework is TestFramework.UNKNOWN:
-                        raise RuntimeError("No supported test framework was detected.")
-
                     request = toolkit.build_request(
                         framework=detected.framework,
                         timeout_seconds=60.0,
