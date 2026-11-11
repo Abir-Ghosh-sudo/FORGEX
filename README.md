@@ -55,6 +55,38 @@ Use local models for privacy and offline-oriented workflows, or connect the mode
 - A supported model runtime and a coding model
 - C++20 toolchain only if you want to build the optional native extension
 
+### Quick install directly from the terminal
+
+You can install FORGEX straight from GitHub without manually cloning the repository.
+
+**Windows (PowerShell):**
+
+```powershell
+py -3.11 -m venv $env:USERPROFILE\\forgex-env
+& $env:USERPROFILE\\forgex-env\\Scripts\\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
+forgex --version
+forgex doctor
+```
+
+**Linux:**
+
+```bash
+python3 -m venv ~/forgex-env
+source ~/forgex-env/bin/activate
+python -m pip install --upgrade pip
+python -m pip install "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
+forgex --version
+forgex doctor
+```
+
+Keep the virtual environment activated whenever you use the `forgex` command. To leave it, run `deactivate`. To update later, run:
+
+```bash
+python -m pip install --upgrade "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
+```
+
 ### 1. Clone the repository
 
 ```bash
