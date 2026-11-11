@@ -1,0 +1,11 @@
+# ninja log v7
+44	704	8161184512891245	src/forgex/engine/cpp/core/CMakeFiles/forgex_core.dir/core.cpp.obj	ab71ecadd088ddbe
+705	805	8161184519468450	src/forgex/engine/cpp/core/forgex_core.lib	d36fa1d410ddd112
+55	1587	8161184512941852	src/forgex/engine/cpp/parser/CMakeFiles/forgex_parser.dir/parser.cpp.obj	c314f2002dd3adeb
+1587	1657	8161184528230513	src/forgex/engine/cpp/parser/forgex_parser.lib	557298a1e7d23c4e
+69	1756	8161184513110928	src/forgex/engine/cpp/search/CMakeFiles/forgex_search.dir/search.cpp.obj	8e4f23aa087dd572
+1760	1853	8161184529967067	src/forgex/engine/cpp/search/forgex_search.lib	7ab815e8fd7e7d86
+95	1981	8161184513257184	src/forgex/engine/cpp/indexing/CMakeFiles/forgex_indexing.dir/index_store.cpp.obj	e7ad2d879ed8233d
+87	2654	8161184513257184	src/forgex/engine/cpp/indexing/CMakeFiles/forgex_indexing.dir/indexing.cpp.obj	122cecff007b7617
+2654	2731	8161184538870612	src/forgex/engine/cpp/indexing/forgex_indexing.lib	76c94e80fc740bd2
+103	5323	8161184513416831	src/forgex/engine/cpp/bindings/CMakeFiles/_native.dir/bindings.cpp.obj	feec2a5065455498
