@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="560" viewBox="0 0 1600 560" role="img" aria-labelledby="title desc">
+<title id="title">FORGEX — Build Beyond Code</title>
+<desc id="desc">A futuristic dark navy banner with a neon gradient FORGEX emblem, terminal interface, and autonomous coding agent branding.</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#050b1b"/><stop offset=".55" stop-color="#09152d"/><stop offset="1" stop-color="#100b2b"/></linearGradient>
+  <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#22d3ee"/><stop offset=".48" stop-color="#3b82f6"/><stop offset="1" stop-color="#c026d3"/></linearGradient>
+  <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0c1d38"/><stop offset="1" stop-color="#10102b"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#1e3a66" stroke-opacity=".28" stroke-width="1"/></pattern>
+</defs>
+<rect width="1600" height="560" rx="28" fill="url(#bg)"/>
+<rect width="1600" height="560" rx="28" fill="url(#grid)"/>
+<circle cx="1360" cy="80" r="230" fill="#4f46e5" opacity=".10"/>
+<circle cx="160" cy="500" r="250" fill="#0891b2" opacity=".10"/>
+<path d="M0 430 Q330 350 650 460 T1250 430 T1600 450" fill="none" stroke="#2563eb" stroke-opacity=".35" stroke-width="2"/>
+<!-- emblem -->
+<g transform="translate(105 125)" filter="url(#glow)">
+  <path d="M0 0H205L160 48H58V105H143L98 151H58V250H0Z" fill="url(#neon)"/>
+  <path d="M100 105H205L160 151H100Z" fill="#080f25"/>
+</g>
+<text x="360" y="225" fill="#f8fafc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="112" font-weight="800" letter-spacing="5">FORGE<tspan fill="url(#neon)">X</tspan></text>
+<text x="370" y="285" fill="#cbd5e1" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="32" letter-spacing="5">BUILD BEYOND CODE.</text>
+<text x="370" y="345" fill="#94a3b8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="23">Autonomous AI coding agent · Local-first · Open source</text>
+<!-- terminal card -->
+<g transform="translate(965 105)">
+  <rect width="520" height="310" rx="22" fill="url(#panel)" stroke="#2563eb" stroke-opacity=".8" stroke-width="2"/>
+  <path d="M0 58H520" stroke="#25446f" stroke-width="2"/>
+  <circle cx="30" cy="29" r="7" fill="#fb7185"/><circle cx="56" cy="29" r="7" fill="#fbbf24"/><circle cx="82" cy="29" r="7" fill="#34d399"/>
+  <text x="112" y="37" fill="#94a3b8" font-family="monospace" font-size="16">forgex — autonomous session</text>
+  <text x="30" y="105" fill="#22d3ee" font-family="monospace" font-size="19">$ forgex run "build something great"</text>
+  <text x="30" y="151" fill="#a78bfa" font-family="monospace" font-size="18">◆ planner</text><text x="170" y="151" fill="#cbd5e1" font-family="monospace" font-size="17">task understood</text>
+  <text x="30" y="192" fill="#38bdf8" font-family="monospace" font-size="18">◆ coder</text><text x="170" y="192" fill="#cbd5e1" font-family="monospace" font-size="17">changes implemented</text>
+  <text x="30" y="233" fill="#c084fc" font-family="monospace" font-size="18">◆ reviewer</text><text x="170" y="233" fill="#cbd5e1" font-family="monospace" font-size="17">quality checked</text>
+  <text x="30" y="274" fill="#34d399" font-family="monospace" font-size="18">◆ tester</text><text x="170" y="274" fill="#cbd5e1" font-family="monospace" font-size="17">verification reported</text>
+</g>
+<g transform="translate(370 430)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18" font-weight="600">
+  <rect width="205" height="48" rx="24" fill="#0b2440" stroke="#0ea5e9"/><text x="102" y="31" fill="#bae6fd" text-anchor="middle">MULTI-AGENT</text>
+  <rect x="220" width="205" height="48" rx="24" fill="#151b3e" stroke="#818cf8"/><text x="322" y="31" fill="#c7d2fe" text-anchor="middle">MODEL FLEXIBLE</text>
+  <rect x="440" width="205" height="48" rx="24" fill="#102b31" stroke="#2dd4bf"/><text x="542" y="31" fill="#99f6e4" text-anchor="middle">HUMAN CONTROL</text>
+</g>
+<text x="1480" y="520" fill="#64748b" text-anchor="end" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="16">WINDOWS  ·  LINUX  ·  PYTHON  ·  C++20</text>
+</svg>
