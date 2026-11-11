@@ -217,7 +217,7 @@ class ActionExecutor:
                 ),
             )
         try:
-            argv = tuple(shlex.split(command_str, posix=False))
+            argv = tuple(shlex.split(command_str, posix=True))
             if not argv:
                 raise ActionExecutionError("Command did not contain an executable.")
             request = TerminalRequest(
