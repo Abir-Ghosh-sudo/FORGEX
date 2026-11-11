@@ -6,10 +6,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from forgex.agents.nodes.coder import CoderNode
+from forgex.agents.execution.action_executor import ActionExecutor
 from forgex.agents.nodes.planner import PlannerNode
 from forgex.agents.nodes.reviewer import ReviewerNode
 from forgex.agents.nodes.tester import TesterNode
 from forgex.core.orchestrator import ForgexState, WorkflowOrchestrator
+from forgex.tools.terminal.executor import TerminalExecutor
 
 DEFAULT_AGENT_WORKFLOW = (
     "planner",
@@ -33,6 +35,7 @@ def build_default_agent_workflow(
     *,
     model: Any = None,
     config: AgentWorkflowConfig | None = None,
+    terminal_executor: TerminalExecutor | None = None,
 ) -> WorkflowOrchestrator:
     """Register and connect the default planner->coder->reviewer(->tester) workflow."""
 
@@ -43,7 +46,10 @@ def build_default_agent_workflow(
         raise ValueError("max_test_cycles must be >= 0.")
 
     planner = PlannerNode(model=model)
-    coder = CoderNode(model=model)
+    coder = CoderNode(
+        model=model,
+        action_executor=ActionExecutor(terminal_executor=terminal_executor),
+    )
     reviewer = ReviewerNode(model=model)
     tester = TesterNode(model=model)
 
@@ -102,6 +108,7 @@ def register_default_agent_workflow(
     *,
     model: Any = None,
     config: AgentWorkflowConfig | None = None,
+    terminal_executor: TerminalExecutor | None = None,
 ) -> Any:
     """Configure the default workflow on a ForgexApplication-like object."""
 
@@ -115,6 +122,7 @@ def register_default_agent_workflow(
         orchestrator,
         model=model,
         config=config,
+        terminal_executor=terminal_executor,
     )
     return orchestrator
 
