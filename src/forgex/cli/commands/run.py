@@ -8,12 +8,26 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm
 from rich.status import Status
 
 from forgex.core import ForgexApplication
 from forgex.core.exceptions import ForgexError
 
 console = Console()
+
+
+def _approve_terminal_request(request, decision) -> bool:
+    """Ask the operator before running a policy-flagged command."""
+    command = " ".join(request.argv)
+    console.print(
+        Panel(
+            f"[bold]{command}[/bold]\n\n[dim]{decision.reason}\nRisk: {decision.risk_level}[/dim]",
+            title="Terminal approval required",
+            border_style="yellow",
+        )
+    )
+    return Confirm.ask("Allow this command for this run?", default=False)
 
 
 def _validate_workspace(path: Path) -> Path:
@@ -34,7 +48,7 @@ async def _execute_task(
     instruction: str,
 ) -> None:
     """Initialize FORGEX and execute a task."""
-    application = ForgexApplication(workspace=workspace)
+    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request)
 
     try:
         with Status(
