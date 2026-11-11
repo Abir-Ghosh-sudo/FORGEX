@@ -1,5 +1,6 @@
+"""Updated CLI app integrating all modules."""
 
-"""Main command-line application for FORGEX."""
+from __future__ import annotations
 
 import typer
 
@@ -10,12 +11,15 @@ from forgex.cli.commands import (
     config_app,
     doctor_command,
     git_app,
+    init_app,
     model_app,
     run_command,
     session_app,
     test_app,
     update_app,
 )
+from forgex.cli.commands.model_extensions import model_pull, model_use, model_download
+from forgex.cli.slash_commands.extensions import register_extended_slash_commands
 
 app = typer.Typer(
     name="forgex",
@@ -27,6 +31,7 @@ app = typer.Typer(
 app.add_typer(config_app, name="config", help="Manage FORGEX configuration.")
 app.add_typer(git_app, name="git", help="Manage Git operations.")
 app.add_typer(model_app, name="model", help="Manage local AI models.")
+app.add_typer(init_app, name="init", help="Initialize a FORGEX project.")
 app.add_typer(session_app, name="session", help="Manage coding sessions.")
 app.add_typer(test_app, name="test", help="Run and discover project tests.")
 app.add_typer(update_app, name="update", help="Check FORGEX updates.")
@@ -48,7 +53,7 @@ def main_callback(
     ),
 ) -> None:
     """Initialize the FORGEX command-line interface."""
-
+    register_extended_slash_commands()
     if version:
         typer.echo(f"FORGEX v{__version__}")
         raise typer.Exit()

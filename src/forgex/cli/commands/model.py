@@ -12,13 +12,17 @@ from rich.console import Console
 from rich.table import Table
 
 from forgex.config import get_settings
-
+from forgex.cli.commands.model_extensions import model_download, model_pull, model_use
 
 app = typer.Typer(
     name="model",
     help="Inspect and manage local AI models.",
     no_args_is_help=True,
 )
+
+app.command("pull")(model_pull)
+app.command("use")(model_use)
+app.command("download")(model_download)
 
 console = Console()
 
