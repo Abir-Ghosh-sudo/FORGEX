@@ -5,10 +5,12 @@
 # FORGEX
 ### Build Beyond Code.
 
+**Current release: v1.0.0** · Initial public release line
+
 **An open-source, terminal-first AI coding agent that helps you understand, build, debug, and improve real codebases.**
 
 [![CI](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml/badge.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX)
+[![Version](https://img.shields.io/badge/version-v1.0.0-6366f1.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/releases)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/Abir-Ghosh-sudo/FORGEX)
@@ -45,6 +47,38 @@ Use local models for privacy and offline-oriented workflows, or connect the mode
 | 🔌 Extensibility | Provides foundations for MCP, skills, and plugins. |
 | ⚙️ Optional native engine | C++20 and pybind11 components for accelerated parsing, indexing, and search. |
 | 🖥️ Cross-platform | Targets Windows and Linux, with a Python fallback when native compilation is unavailable. |
+
+## 🧰 What can FORGEX help you do?
+
+Describe a development task in plain language and use FORGEX as a terminal-based coding companion for work such as:
+
+- **Understand an unfamiliar repository** — inspect its structure, identify important files, and get a starting point for a change.
+- **Plan implementation work** — turn a feature request or bug report into a sequence of engineering tasks.
+- **Create and improve code** — generate implementation actions for new features, fixes, and refactors.
+- **Investigate bugs** — trace likely causes, inspect relevant code, and work through a proposed fix.
+- **Run development commands** — execute supported project commands through the supervised terminal path and handle approval prompts.
+- **Review and test changes** — use the reviewer/tester workflow and available project test tooling to report verification results.
+- **Work with Git** — inspect repository state and use the Git toolset for common repository operations.
+- **Use local AI models** — connect supported local runtimes so your source code can stay on your machine, subject to the model/runtime you configure.
+- **Search and navigate code** — use repository context, parsers, and search tools to locate relevant code.
+
+### Example tasks
+
+```text
+forgex run "Explain how authentication works in this repository"
+forgex run "Find the cause of the failing login test and propose a fix"
+forgex run "Add input validation to the user registration endpoint"
+forgex run "Refactor duplicated date parsing logic"
+forgex run "Run the test suite and summarize failures"
+```
+
+These are example task prompts, not guarantees that every repository or model will complete every task autonomously. Results depend on model capability, project setup, available tests, and enabled permissions. Review generated changes before merging them.
+
+## 🏷️ Version and release
+
+**Current project version: `v1.0.0`**
+
+The package version is defined in `pyproject.toml` and exposed by `forgex --version`. The README version badge tracks this project version. Check the [GitHub Releases](https://github.com/Abir-Ghosh-sudo/FORGEX/releases) page for published release notes and downloadable assets; a version number in the source does not by itself mean a GitHub release has been published.
 
 ## 🚀 Getting Started
 
@@ -195,6 +229,19 @@ forgex --help
 forgex COMMAND --help
 ```
 
+## 🧱 Core building blocks
+
+| Area | Included building blocks |
+|---|---|
+| Agent orchestration | Planner, Coder, Reviewer, Tester roles and workflow state |
+| Model layer | Model manager and Ollama, llama.cpp, Transformers integrations |
+| Context | Repository inspection, parsing, indexing, and search components |
+| Developer tools | Filesystem, terminal, Git, package management, and test tooling |
+| Runtime | Process supervision, platform adapters, and execution limits |
+| Security | Workspace boundaries, policy evaluation, permission checks, and approval hooks |
+| Persistence | SQLite-backed sessions and storage repositories |
+| Native engine | Optional C++20 components exposed through pybind11 |
+
 ## 🧩 How it works
 
 FORGEX uses a stateful workflow to coordinate specialized agents and developer tools.
@@ -289,6 +336,16 @@ FORGEX is built around human-controlled execution:
 - Use Git commits or backups before large autonomous changes.
 
 **Important:** Application-level policy checks are defense-in-depth; they are not a replacement for operating-system isolation. For untrusted code, use a disposable container, virtual machine, or other OS-level sandbox with restricted network and filesystem access.
+
+## 📌 Support and limitations
+
+- **Operating systems:** Windows and Linux are the primary targets.
+- **Python:** 3.11+.
+- **Native engine:** Optional; the Python path is available when a native compiler is not installed.
+- **Model runtime:** Ollama, llama.cpp, and Hugging Face Transformers integrations are included; individual model compatibility varies.
+- **Network access:** Required for first-time package/model downloads unless dependencies and model files are already cached.
+- **Autonomy:** FORGEX is a development tool, not an unattended production deployment system. Keep approval prompts enabled for commands and review code changes.
+- **Verification:** A reported test result only covers the tests that were actually discovered and executed. No test run is not a passing test run.
 
 ## 🗺️ Project status
 
