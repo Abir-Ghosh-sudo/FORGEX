@@ -1,38 +1,28 @@
+"""FORGEX tool system.
 
-"""FORGEX tool infrastructure.
-
-Provides workspace filesystem operations and secure terminal execution.
+Provides filesystem, terminal, Git, testing, and package-management tools.
 """
 
-from forgex.tools.filesystem import (
-    DirectoryInspector,
-    FileDeleter,
-    FileOperations,
-    FileReader,
-    FileSearch,
-    FileWriter,
-    WorkspacePathResolver,
+from forgex.tools.filesystem import FilesystemToolkit
+from forgex.tools.git import (
+    GitOperations,
+    GitRemoteOperations,
+    GitRepositoryManager,
 )
-
+from forgex.tools.packages import PackageToolkit
 from forgex.tools.terminal import (
     SupervisorTerminalRunner,
-    TerminalExecutionStatus,
     TerminalExecutor,
-    TerminalRequest,
-    TerminalResult,
 )
+from forgex.tools.testing import TestingToolkit
 
 __all__ = [
-    "DirectoryInspector",
-    "FileDeleter",
-    "FileOperations",
-    "FileReader",
-    "FileSearch",
-    "FileWriter",
+    "FilesystemToolkit",
+    "GitOperations",
+    "GitRemoteOperations",
+    "GitRepositoryManager",
+    "PackageToolkit",
     "SupervisorTerminalRunner",
-    "TerminalExecutionStatus",
     "TerminalExecutor",
-    "TerminalRequest",
-    "TerminalResult",
-    "WorkspacePathResolver",
+    "TestingToolkit",
 ]
