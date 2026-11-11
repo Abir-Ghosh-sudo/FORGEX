@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable
 
 from forgex.tools.filesystem.workspace import WorkspaceService
 
@@ -142,14 +142,29 @@ class FilesystemToolkit:
         pattern: str,
         *,
         recursive: bool = True,
+        case_sensitive: bool = False,
+        max_results: int | None = None,
     ) -> FilesystemToolResult:
-        return self._execute(
-            "search_files",
-            lambda: self._workspace.find(
+        """Search filenames inside the workspace."""
+
+        def operation():
+            results = self._workspace.find(
                 pattern,
-                recursive=recursive,
-            ),
-        )
+                case_sensitive=case_sensitive,
+                max_results=max_results,
+            )
+
+            if not recursive:
+                root = self._workspace.root
+                results = tuple(
+                    path
+                    for path in results
+                    if Path(path).parent == root
+                )
+
+            return results
+
+        return self._execute("search_files", operation)
 
     def search_content(
         self,
@@ -158,14 +173,18 @@ class FilesystemToolkit:
         file_pattern: str = "*",
         case_sensitive: bool = False,
         use_regex: bool = False,
+        max_results: int | None = None,
     ) -> FilesystemToolResult:
+        """Search file contents using literal or regular expressions."""
+
         return self._execute(
             "search_content",
             lambda: self._workspace.search_content(
                 query,
                 file_pattern=file_pattern,
                 case_sensitive=case_sensitive,
-                use_regex=use_regex,
+                regex=use_regex,
+                max_results=max_results,
             ),
         )
 
@@ -208,14 +227,20 @@ class FilesystemToolkit:
             ),
         )
 
-    def _execute(self, operation: str, callback) -> FilesystemToolResult:
+    def _execute(
+        self,
+        operation: str,
+        callback: Callable[[], Any],
+    ) -> FilesystemToolResult:
         try:
             result = callback()
+
             return FilesystemToolResult(
                 operation=operation,
                 success=True,
                 data=self._serialize(result),
             )
+
         except Exception as exc:
             return FilesystemToolResult(
                 operation=operation,
@@ -225,7 +250,12 @@ class FilesystemToolkit:
 
     @classmethod
     def _serialize(cls, value: Any) -> Any:
-        if value is None or isinstance(value, (str, int, float, bool)):
+        """Convert filesystem results into agent-friendly data."""
+
+        if value is None or isinstance(
+            value,
+            (str, int, float, bool),
+        ):
             return value
 
         if isinstance(value, Path):
@@ -235,8 +265,6 @@ class FilesystemToolkit:
             return cls._serialize(value.to_dict())
 
         if hasattr(value, "__dataclass_fields__"):
-            from dataclasses import asdict
-
             return cls._serialize(asdict(value))
 
         if isinstance(value, dict):
@@ -245,7 +273,7 @@ class FilesystemToolkit:
                 for key, item in value.items()
             }
 
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, (list, tuple, set)):
             return [cls._serialize(item) for item in value]
 
         return str(value)

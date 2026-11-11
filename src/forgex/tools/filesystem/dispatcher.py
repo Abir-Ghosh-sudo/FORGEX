@@ -1,9 +1,10 @@
 
-"""Validated operation dispatcher for FORGEX filesystem tools."""
+"""Validated, fail-safe dispatcher for FORGEX filesystem tools."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from forgex.tools.filesystem.toolkit import (
@@ -18,111 +19,138 @@ class FilesystemDispatchError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class OperationSpec:
-    """Description of a supported filesystem operation."""
+    """Immutable description of a supported filesystem operation."""
 
     name: str
     handler: Callable[..., FilesystemToolResult]
     required_arguments: frozenset[str]
     optional_arguments: frozenset[str]
+    description: str
+
+    @property
+    def allowed_arguments(self) -> frozenset[str]:
+        return self.required_arguments | self.optional_arguments
 
 
 class FilesystemDispatcher:
-    """Dispatch validated operation requests to FilesystemToolkit."""
+    """Validate and dispatch requests to the filesystem toolkit."""
 
     def __init__(self, toolkit: FilesystemToolkit) -> None:
         if not isinstance(toolkit, FilesystemToolkit):
             raise TypeError("toolkit must be FilesystemToolkit.")
 
         self._toolkit = toolkit
-        self._operations = self._build_registry()
+        self._operations = MappingProxyType(self._build_registry())
 
     def _build_registry(self) -> dict[str, OperationSpec]:
-        handlers = {
+        definitions = {
             "read_file": (
                 self._toolkit.read_file,
                 {"path"},
                 {"start_line", "end_line"},
+                "Read a file or a selected line range.",
             ),
             "write_file": (
                 self._toolkit.write_file,
                 {"path", "content"},
                 {"overwrite"},
+                "Write text content to a workspace file.",
             ),
             "delete_file": (
                 self._toolkit.delete_file,
                 {"path"},
                 {"permanent", "confirm"},
+                "Delete a file or directory.",
             ),
             "copy_path": (
                 self._toolkit.copy_path,
                 {"source", "destination"},
                 {"overwrite"},
+                "Copy a workspace file or directory.",
             ),
             "move_path": (
                 self._toolkit.move_path,
                 {"source", "destination"},
                 {"overwrite"},
+                "Move a workspace file or directory.",
             ),
             "rename_path": (
                 self._toolkit.rename_path,
                 {"source", "new_name"},
                 {"overwrite"},
+                "Rename a workspace file or directory.",
             ),
             "search_files": (
                 self._toolkit.search_files,
                 {"pattern"},
                 {"recursive"},
+                "Search workspace filenames using a pattern.",
             ),
             "search_content": (
                 self._toolkit.search_content,
                 {"query"},
-                {
-                    "file_pattern",
-                    "case_sensitive",
-                    "use_regex",
-                },
+                {"file_pattern", "case_sensitive", "use_regex"},
+                "Search file contents using literal text or regex.",
             ),
             "inspect_directory": (
                 self._toolkit.inspect_directory,
                 set(),
                 {"path", "recursive", "max_depth"},
+                "List entries in a workspace directory.",
             ),
             "inspect_metadata": (
                 self._toolkit.inspect_metadata,
                 {"path"},
                 set(),
+                "Inspect metadata for a workspace path.",
             ),
             "get_tree": (
                 self._toolkit.get_tree,
                 set(),
                 {"path", "max_depth"},
+                "Return a textual directory tree.",
             ),
         }
 
-        return {
-            name: OperationSpec(
+        registry: dict[str, OperationSpec] = {}
+
+        for name, (
+            handler,
+            required,
+            optional,
+            description,
+        ) in definitions.items():
+            required_set = frozenset(required)
+            optional_set = frozenset(optional)
+
+            if required_set & optional_set:
+                raise RuntimeError(
+                    f"Overlapping arguments in operation '{name}'."
+                )
+
+            registry[name] = OperationSpec(
                 name=name,
                 handler=handler,
-                required_arguments=frozenset(required),
-                optional_arguments=frozenset(optional),
+                required_arguments=required_set,
+                optional_arguments=optional_set,
+                description=description,
             )
-            for name, (
-                handler,
-                required,
-                optional,
-            ) in handlers.items()
-        }
+
+        return registry
 
     @property
     def available_operations(self) -> tuple[str, ...]:
+        """Return all supported operation names."""
+
         return tuple(sorted(self._operations))
 
     def describe_operations(self) -> list[dict[str, Any]]:
-        """Return operation descriptions suitable for agent prompts."""
+        """Return JSON-serializable operation descriptions."""
 
         return [
             {
                 "name": spec.name,
+                "description": spec.description,
                 "required_arguments": sorted(
                     spec.required_arguments
                 ),
@@ -141,18 +169,25 @@ class FilesystemDispatcher:
         operation: str,
         arguments: Mapping[str, Any] | None = None,
     ) -> FilesystemToolResult:
-        """Validate and execute one filesystem operation."""
+        """Validate and execute a registered filesystem operation."""
 
-        if not isinstance(operation, str) or not operation.strip():
+        if not isinstance(operation, str):
             raise FilesystemDispatchError(
-                "Operation name must be a non-empty string."
+                "Operation name must be a string."
+            )
+
+        operation = operation.strip()
+
+        if not operation:
+            raise FilesystemDispatchError(
+                "Operation name cannot be empty."
             )
 
         spec = self._operations.get(operation)
 
         if spec is None:
             raise FilesystemDispatchError(
-                f"Unsupported filesystem operation: {operation}"
+                f"Unsupported filesystem operation: {operation!r}."
             )
 
         if arguments is None:
@@ -163,25 +198,44 @@ class FilesystemDispatcher:
                 "Operation arguments must be a mapping."
             )
 
-        supplied = set(arguments)
-        allowed = spec.required_arguments | spec.optional_arguments
+        supplied = set(arguments.keys())
+
+        invalid_keys = [
+            key for key in supplied
+            if not isinstance(key, str) or not key
+        ]
+
+        if invalid_keys:
+            raise FilesystemDispatchError(
+                "All argument names must be non-empty strings."
+            )
 
         missing = spec.required_arguments - supplied
-        unknown = supplied - allowed
+        unknown = supplied - spec.allowed_arguments
 
         if missing:
             raise FilesystemDispatchError(
-                f"Missing required arguments: {sorted(missing)}"
+                f"Missing required arguments for '{operation}': "
+                f"{sorted(missing)}."
             )
 
         if unknown:
             raise FilesystemDispatchError(
-                f"Unsupported arguments: {sorted(unknown)}"
+                f"Unsupported arguments for '{operation}': "
+                f"{sorted(unknown)}."
             )
 
         try:
-            return spec.handler(**dict(arguments))
+            result = spec.handler(**dict(arguments))
         except Exception as exc:
             raise FilesystemDispatchError(
-                f"Could not dispatch '{operation}': {exc}"
+                f"Filesystem operation '{operation}' failed: "
+                f"{type(exc).__name__}: {exc}"
             ) from exc
+
+        if not isinstance(result, FilesystemToolResult):
+            raise FilesystemDispatchError(
+                f"Operation '{operation}' returned an invalid result."
+            )
+
+        return result
