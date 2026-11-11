@@ -155,6 +155,9 @@ class ForgexApplication:
 
             build_default_agent_workflow(self.orchestrator, model=self.model_manager)
 
+        if not self.orchestrator.is_compiled:
+            self.orchestrator.compile()
+
         await self.lifecycle.startup()
         self._started = True
 

@@ -2,7 +2,6 @@
 [build-system]
 requires = [
     "scikit-build-core>=0.10",
-    "pybind11>=2.13",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -30,7 +29,7 @@ keywords = [
 ]
 
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
@@ -60,6 +59,10 @@ dependencies = [
 
 
 [project.optional-dependencies]
+
+native = [
+    "pybind11>=2.13",
+]
 
 local = [
     "ollama>=0.4",

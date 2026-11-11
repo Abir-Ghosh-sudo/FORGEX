@@ -41,6 +41,11 @@ build/
 *.lib
 *.dll
 *.exp
+*.obj
+*.o
+*.a
+CMakeCache.txt
+CMakeFiles/
 
 # Installer logs
 installers/**/*.log
