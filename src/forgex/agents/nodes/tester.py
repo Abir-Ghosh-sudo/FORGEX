@@ -9,7 +9,6 @@ from forgex.agents.nodes.base import AgentNode
 from forgex.agents.roles.tester import TesterRole
 from forgex.core.orchestrator import ForgexState
 from forgex.runtime.supervisor import ProcessSupervisor
-from forgex.tools.testing.models import TestFramework
 from forgex.tools.testing.toolkit import TestingToolkit
 
 
