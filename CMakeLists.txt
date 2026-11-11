@@ -2,52 +2,65 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(
-    FORGEXNative
+    FORGEX
     VERSION 1.0.0
-    DESCRIPTION "FORGEX Native C++ Engine"
-    LANGUAGES NONE
+    DESCRIPTION "FORGEX Native AI Coding Engine"
+    LANGUAGES CXX
 )
 
-# Native C++ extension will be enabled when its binding source exists.
-set(FORGEX_NATIVE_BINDING
-    "${CMAKE_CURRENT_SOURCE_DIR}/native/cpp/bindings/module.cpp"
-)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(EXISTS "${FORGEX_NATIVE_BINDING}")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-    enable_language(CXX)
+option(FORGEX_BUILD_PYTHON "Build Python native extension" ON)
+option(FORGEX_BUILD_TESTS "Build native tests" OFF)
+option(FORGEX_ENABLE_NATIVE_OPTIMIZATION "Enable native optimizations" ON)
 
-    find_package(pybind11 CONFIG REQUIRED)
+if(FORGEX_BUILD_PYTHON)
 
-    pybind11_add_module(
-        _native
-        MODULE
-        "${FORGEX_NATIVE_BINDING}"
+    find_package(
+        Python
+        COMPONENTS Interpreter Development.Module
+        REQUIRED
     )
 
-    target_include_directories(
-        _native
-        PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/native/cpp/include"
-    )
+    find_package(pybind11 CONFIG QUIET)
 
-    target_compile_features(
-        _native
-        PRIVATE
-        cxx_std_20
-    )
+    if(NOT pybind11_FOUND)
 
-    install(
-        TARGETS _native
-        LIBRARY DESTINATION forgex/engine
-        RUNTIME DESTINATION forgex/engine
-    )
+        execute_process(
+            COMMAND
+                "${Python_EXECUTABLE}"
+                -m pybind11
+                --cmakedir
+            OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            RESULT_VARIABLE PYBIND11_RESULT
+        )
 
-else()
+        if(NOT PYBIND11_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "Could not locate pybind11. Install it using pip."
+            )
+        endif()
 
-    message(
-        STATUS
-        "FORGEX: Native C++ binding not created yet. Python package build will continue."
-    )
+        find_package(
+            pybind11
+            CONFIG
+            REQUIRED
+            PATHS "${PYBIND11_CMAKE_DIR}"
+            NO_DEFAULT_PATH
+        )
+
+    endif()
+
+    message(STATUS "FORGEX Python: ${Python_EXECUTABLE}")
+    message(STATUS "FORGEX pybind11: ${pybind11_DIR}")
 
 endif()
+
+add_subdirectory(
+    src/forgex/engine/cpp
+)
