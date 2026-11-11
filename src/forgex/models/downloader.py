@@ -111,7 +111,7 @@ class HuggingFaceDownloader:
                 local_path=local_path,
                 revision=revision,
                 files=files,
-                from_cache=self.local_files_only,
+                from_cache=offline_mode,
                 metadata={"local_dir": str(local_dir) if local_dir else None},
             )
         except HuggingFaceDownloadError:

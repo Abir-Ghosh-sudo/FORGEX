@@ -228,6 +228,16 @@ class ModelManager:
                 **common,
             )
 
+        if route.provider in {"openai_compatible", "vllm", "sglang", "openai"}:
+            from forgex.models.providers.openai_compatible import OpenAICompatibleProvider
+
+            return OpenAICompatibleProvider(
+                base_url=self.settings.ollama_base_url
+                if "11434" not in self.settings.ollama_base_url
+                else "http://localhost:8000/v1",
+                **common,
+            )
+
         raise ModelConfigurationError(f"Unsupported provider: {route.provider}")
 
     async def aclose(self) -> None:

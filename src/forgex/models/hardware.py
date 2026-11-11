@@ -107,18 +107,25 @@ def _detect_total_memory_gb() -> float | None:
 
     try:
         if platform.system() == "Windows":
-            result = subprocess.run(
-                ["wmic", "computersystem", "get", "TotalPhysicalMemory", "/value"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-                check=False,
-            )
-            for line in result.stdout.splitlines():
-                if "TotalPhysicalMemory" in line and "=" in line:
-                    value = line.split("=", 1)[1].strip()
-                    if value:
-                        return round(int(value) / (1024**3), 2)
+            import ctypes
+
+            class MemoryStatusEx(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+
+            stat = MemoryStatusEx()
+            stat.dwLength = ctypes.sizeof(MemoryStatusEx)
+            if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+                return round(stat.ullTotalPhys / (1024**3), 2)
         elif Path("/proc/meminfo").exists():
             meminfo_text = Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore")
             for line in meminfo_text.splitlines():
@@ -131,6 +138,18 @@ def _detect_total_memory_gb() -> float | None:
 
 
 def _detect_gpu() -> tuple[bool, str | None, float | None]:
+    try:
+        import torch  # type: ignore
+
+        if torch.cuda.is_available():
+            name = torch.cuda.get_device_name(0)
+            vram = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 2)
+            return True, name, vram
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return True, "Apple Silicon (MPS)", None
+    except Exception:
+        pass
+
     try:
         result = subprocess.run(
             [

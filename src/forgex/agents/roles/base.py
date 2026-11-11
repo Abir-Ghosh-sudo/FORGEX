@@ -67,7 +67,17 @@ class AgentRole:
             )
 
         try:
-            response = self.model.generate(messages, agent=self.name)
+            if hasattr(self.model, "agenerate") and callable(self.model.agenerate):
+                response = await self.model.agenerate(messages, agent=self.name)
+            else:
+                generate_fn = getattr(self.model, "generate")
+                if inspect.iscoroutinefunction(generate_fn):
+                    response = await generate_fn(messages, agent=self.name)
+                else:
+                    import asyncio
+
+                    response = await asyncio.to_thread(generate_fn, messages, agent=self.name)
+
             if inspect.isawaitable(response):
                 response = await response
         except Exception as exc:

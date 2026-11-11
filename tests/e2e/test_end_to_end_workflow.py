@@ -36,8 +36,12 @@ class MockCodingModel:
             )
         if agent == "coder":
             return (
-                '{"summary": "Code changes completed", "actions": '
-                '[{"action": "modify", "file": "math_utils.py"}]}'
+                '{"summary": "Code changes completed", "actions": ['
+                '{"type": "modify", "file": "math_utils.py", "content": '
+                '"def add(a, b):\\n    return a + b\\n\\ndef multiply(a, b):\\n    return a * b\\n"},'
+                '{"type": "modify", "file": "test_math_utils.py", "content": '
+                '"from math_utils import add, multiply\\n\\ndef test_add():\\n    assert add(2, 3) == 5\\n\\ndef test_multiply():\\n    assert multiply(3, 4) == 12\\n"}'
+                ']}'
             )
         if agent == "reviewer":
             return (
@@ -62,8 +66,12 @@ class MockCodingModel:
             )
         if "coder" in prompt_text or "actions" in prompt_text:
             return (
-                '{"summary": "Code changes completed", "actions": '
-                '[{"action": "modify", "file": "math_utils.py"}]}'
+                '{"summary": "Code changes completed", "actions": ['
+                '{"type": "modify", "file": "math_utils.py", "content": '
+                '"def add(a, b):\\n    return a + b\\n\\ndef multiply(a, b):\\n    return a * b\\n"},'
+                '{"type": "modify", "file": "test_math_utils.py", "content": '
+                '"from math_utils import add, multiply\\n\\ndef test_add():\\n    assert add(2, 3) == 5\\n\\ndef test_multiply():\\n    assert multiply(3, 4) == 12\\n"}'
+                ']}'
             )
         return '{"summary": "Implement multiply function", "steps": ["step 1"]}'
 
@@ -115,18 +123,18 @@ async def test_end_to_end_coding_workflow(tmp_path: Path) -> None:
     assert "implementation" in final_state or "coder_output" in final_state
     assert "review" in final_state or "reviewer_output" in final_state
 
-    # 7. Apply code changes and verify
-    # Simulate coder writing the file to disk
-    math_file.write_text(
-        "def add(a, b):\n    return a + b\n\ndef multiply(a, b):\n    return a * b\n",
-        encoding="utf-8",
-    )
-    test_file.write_text(
-        "from math_utils import add, multiply\n\n"
-        "def test_add():\n    assert add(2, 3) == 5\n\n"
-        "def test_multiply():\n    assert multiply(3, 4) == 12\n",
-        encoding="utf-8",
-    )
+    # 7. Verify CoderNode directly modified math_utils.py and test_math_utils.py on disk!
+    math_content = math_file.read_text(encoding="utf-8")
+    assert "def multiply(a, b):" in math_content
+    test_content = test_file.read_text(encoding="utf-8")
+    assert "def test_multiply():" in test_content
+    assert "assert multiply(3, 4) == 12" in test_content
+
+    # Verify implementation reported changed files
+    implementation = final_state.get("implementation") or {}
+    files_changed = implementation.get("files_changed") or []
+    assert "math_utils.py" in files_changed
+    assert "test_math_utils.py" in files_changed
 
     # 8. Run actual tests via pytest
     test_process = subprocess.run(
