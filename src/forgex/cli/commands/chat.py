@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm
 from rich.prompt import Prompt
 from rich.status import Status
 
@@ -15,6 +16,19 @@ from forgex.core import ForgexApplication
 from forgex.core.exceptions import ForgexError
 
 console = Console()
+
+
+def _approve_terminal_request(request, decision) -> bool:
+    """Ask the operator before running a policy-flagged command."""
+    command = " ".join(request.argv)
+    console.print(
+        Panel(
+            f"[bold]{command}[/bold]\n\n[dim]{decision.reason}\nRisk: {decision.risk_level}[/dim]",
+            title="Terminal approval required",
+            border_style="yellow",
+        )
+    )
+    return Confirm.ask("Allow this command for this run?", default=False)
 
 EXIT_COMMANDS = {"/exit", "/quit", "/q"}
 HELP_COMMANDS = {"/help", "/h"}
@@ -56,7 +70,7 @@ def _show_help() -> None:
 
 async def _interactive_session(workspace: Path) -> None:
     """Run a persistent FORGEX application session."""
-    application = ForgexApplication(workspace=workspace)
+    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request)
 
     try:
         await application.start()
