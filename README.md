@@ -1,138 +1,295 @@
 # FORGEX
 
-**Build Beyond Code.**
+<div align="center">
+
+# FORGEX
+### Build Beyond Code.
+
+**An open-source, terminal-first AI coding agent that helps you understand, build, debug, and improve real codebases.**
 
 [![CI](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml/badge.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0--stable-blue.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX)
-[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-brightgreen.svg)](https://python.org)
-[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/Abir-Ghosh-sudo/FORGEX)
 
-A terminal-first autonomous AI coding agent. Plan, code, review, test, and debug repositories autonomously using local models or custom APIs with strict permission gates and human-in-the-loop approval.
+[Getting Started](#-getting-started) · [Features](#-what-is-forgex) · [CLI](#-command-line) · [Architecture](#-how-it-works) · [Contributing](#-contributing)
 
----
-
-## Key Features
-
-- **Autonomous Multi-Agent Workflow:** Planner, Coder, Reviewer, and Tester agents collaborating via LangGraph with bounded cycle loops and verification guards.
-- **Compiler-Free Pure-Python Core:** Installs effortlessly without any C++ compiler or native toolchain requirements.
-- **Optional C++20 Native Acceleration:** High-performance indexing, AST parsing, and fuzzy searching via pybind11 when build tools are available.
-- **Local Model First:** Native integration with Ollama (`llama3.1`, `qwen2.5-coder`), GGUF (`llama.cpp`), and Hugging Face Hub (offline & cached).
-- **Security & Approvals:** Granular permission system, command audit logging, risk scoring, null-byte prevention, and interactive confirmation for filesystem and terminal modifications.
-- **Extensible:** Model Context Protocol (MCP) client/server, custom skills (`coding`, `debugging`, `refactoring`, `testing`), and dynamic plugin loading.
-- **Cross-Platform:** Full compatibility with Windows 11/10 and Linux.
+</div>
 
 ---
 
-## Quick Start
+## ⚡ What is FORGEX?
 
-### 1. Pure Python Installation (Default, No Compiler Needed)
+FORGEX is a **terminal-first autonomous AI coding agent** designed to work with your repository—not just answer questions about code.
+
+Give it a task in natural language. FORGEX can plan the work, inspect the project, produce implementation changes, review the result, and run available tests through a coordinated agent workflow. You stay in control with workspace boundaries, permission checks, and approval gates for sensitive operations.
+
+Use local models for privacy and offline-oriented workflows, or connect the model runtime that fits your environment.
+
+> **Your terminal. Your codebase. Your models. Your control.**
+
+## ✨ What is inside?
+
+| Capability | What it does |
+|---|---|
+| 🤖 Multi-agent workflow | Coordinates Planner, Coder, Reviewer, and Tester roles. |
+| 🧭 Repository understanding | Inspects project structure, source files, and code context. |
+| 🛠️ Coding actions | Creates, edits, and removes project files and can run development commands. |
+| 🔍 Review and verification | Reviews generated changes and runs available project tests. |
+| 🧠 Model flexibility | Supports local model runtimes including Ollama, llama.cpp, and Hugging Face Transformers. |
+| 🔐 Permission-aware execution | Applies security policy, workspace checks, and approval handling to sensitive operations. |
+| 🧰 Developer tools | Includes filesystem, terminal, Git, package, and testing toolkits. |
+| 🔌 Extensibility | Provides foundations for MCP, skills, and plugins. |
+| ⚙️ Optional native engine | C++20 and pybind11 components for accelerated parsing, indexing, and search. |
+| 🖥️ Cross-platform | Targets Windows and Linux, with a Python fallback when native compilation is unavailable. |
+
+## 🚀 Getting Started
+
+### Requirements
+
+- Python **3.11 or newer**
+- Git
+- A supported model runtime and a coding model
+- C++20 toolchain only if you want to build the optional native extension
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Abir-Ghosh-sudo/FORGEX.git
 cd FORGEX
+```
 
+### 2. Create and activate a virtual environment
+
+**Windows (PowerShell):**
+
+```powershell
 python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-# On Windows:
-.venv\Scripts\activate.bat
-# On Linux/macOS:
+**Linux:**
+
+```bash
+python3 -m venv .venv
 source .venv/bin/activate
+```
 
+### 3. Install FORGEX
+
+For development and the standard Python installation:
+
+```bash
+python -m pip install --upgrade pip
 pip install -e ".[dev]"
 ```
 
-### 2. Optional C++20 Native Acceleration (For maximum performance)
+Install optional integrations when you need them:
 
 ```bash
-# Install native build dependencies
-pip install pybind11 cmake ninja
+# Ollama integration
+pip install -e ".[local]"
 
-# Build native extension
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORGEX_BUILD_PYTHON=ON
-cmake --build build --config Release
+# Hugging Face Transformers runtime
+pip install -e ".[transformers]"
+
+# Model Context Protocol support
+pip install -e ".[mcp]"
+
+# Vector-store support
+pip install -e ".[vector]"
 ```
 
-### 3. Verify Environment
+### 4. Set up a local model
+
+One option is [Ollama](https://ollama.com/). Install Ollama, start its service, and pull a coding model:
+
+```bash
+ollama pull qwen2.5-coder:7b
+```
+
+Then verify your environment:
 
 ```bash
 forgex --version
 forgex doctor
+forgex model list
 ```
 
-`forgex doctor` verifies Python, Git, Ollama connectivity, and native engine status.
+> Model availability and hardware requirements depend on the model you choose. Larger models need more RAM/VRAM. Use a quantized model that fits your machine.
 
----
+### 5. Initialize and start coding
 
-## CLI Usage
-
-| Command | Description |
-|---|---|
-| `forgex doctor` | Run system diagnostics and verify dependencies. |
-| `forgex analyze [PATH]` | Inspect project language breakdown and file structure. |
-| `forgex init [PATH]` | Initialize a FORGEX configuration in a target project. |
-| `forgex run "TASK"` | Run an autonomous multi-step coding task on the current workspace. |
-| `forgex chat` | Launch an interactive REPL coding session. |
-| `forgex test run` | Discover and run test suites. |
-| `forgex model list` | Manage and inspect local LLMs via Ollama. |
-| `forgex git status` | View git status, changes, and diffs. |
-| `forgex config show` | View current sanitized settings. |
-
----
-
-## Architecture
-
-FORGEX follows a stateful multi-agent architecture:
-
-```
-[ User Prompt ]
-       │
-       ▼
-[ Planner Node ] ──> Decomposes task into atomic implementation steps
-       │
-       ▼
- [ Coder Node ]  ──> Executes file modifications & generates diffs
-       │
-       ▼
-[ Reviewer Node ]──> Validates code quality, syntax, and risks
-       │
-   (Approved)
-       ▼
- [ Tester Node ] ──> Executes tests, collects results & verifies fixes
-       │
-       ▼
-[ Git & Output ] ──> Commits verified changes or surfaces human approvals
-```
-
----
-
-## Documentation
-
-Full guides and references are available in [`docs/`](docs/):
-- [`docs/quickstart.md`](docs/quickstart.md) - Quickstart walkthrough
-- [`docs/architecture.md`](docs/architecture.md) - Deep architectural dive
-- [`docs/cli_reference.md`](docs/cli_reference.md) - Comprehensive CLI flags and subcommands
-- [`docs/configuration.md`](docs/configuration.md) - Configuration schema and settings
-- [`docs/model_setup.md`](docs/model_setup.md) - Ollama, GGUF, and Hugging Face guide
-- [`docs/mcp.md`](docs/mcp.md) - Model Context Protocol usage
-- [`docs/plugins_skills.md`](docs/plugins_skills.md) - Custom skills and plugin authoring
-
----
-
-## Testing
+From the repository or project directory you want FORGEX to work in:
 
 ```bash
-# Run complete test suite (520+ tests)
+forgex init
+forgex analyze
+forgex run "Find and fix the bug in the login flow"
+```
+
+Start an interactive session with:
+
+```bash
+forgex chat
+```
+
+**Tip:** Review proposed changes and approve sensitive operations carefully. Commit or back up important work before running autonomous tasks.
+
+## ⌨️ Command Line
+
+| Command | Purpose |
+|---|---|
+| `forgex --version` | Show the installed version. |
+| `forgex doctor` | Check the environment and runtime availability. |
+| `forgex init [PATH]` | Initialize FORGEX configuration for a project. |
+| `forgex analyze [PATH]` | Inspect a project and its structure. |
+| `forgex run "TASK"` | Execute an autonomous coding task. |
+| `forgex chat` | Open an interactive coding session. |
+| `forgex model list` | Inspect available local models. |
+| `forgex model pull MODEL` | Download a supported model. |
+| `forgex git status` | Inspect repository status. |
+| `forgex test run` | Discover and run project tests. |
+| `forgex config show` | Display the current configuration. |
+| `forgex session` | Manage coding sessions. |
+
+For command-specific options, use:
+
+```bash
+forgex --help
+forgex COMMAND --help
+```
+
+## 🧩 How it works
+
+FORGEX uses a stateful workflow to coordinate specialized agents and developer tools.
+
+```text
+                 YOUR TASK
+                    │
+                    ▼
+             ┌─────────────┐
+             │   PLANNER   │  Understands the goal and breaks down work
+             └──────┬──────┘
+                    ▼
+             ┌─────────────┐
+             │    CODER    │  Produces and executes implementation actions
+             └──────┬──────┘
+                    ▼
+             ┌─────────────┐
+             │   REVIEWER  │  Reviews the implementation
+             └──────┬──────┘
+                    ▼
+             ┌─────────────┐
+             │   TESTER    │  Runs available tests and reports results
+             └──────┬──────┘
+                    │
+             Fix / re-check loop
+                    │
+                    ▼
+             ┌─────────────┐
+             │   RESULT    │  Changes, output, and verification report
+             └─────────────┘
+```
+
+The workflow is backed by reusable components for model access, context retrieval, filesystem operations, terminal execution, Git, testing, security, sessions, and storage.
+
+## 🧠 Model runtimes
+
+FORGEX is designed to keep model selection flexible. The current runtime integrations include:
+
+- **Ollama** — run supported models through a local Ollama service.
+- **llama.cpp** — use compatible local GGUF model setups.
+- **Hugging Face Transformers** — load supported models through the Transformers ecosystem and cached model files.
+
+Model compatibility, tool-calling behavior, memory usage, and performance vary by model and runtime. Check each model's official card and license before downloading or using it.
+
+## ⚡ Optional C++20 acceleration
+
+The Python implementation is the fallback path; a native build is optional. To compile the extension, install a working C++20 compiler, CMake, Ninja, and pybind11:
+
+```bash
+pip install pybind11 cmake ninja
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORGEX_BUILD_PYTHON=ON
+cmake --build build --config Release
+```
+
+On Windows, use a supported Visual Studio C++ Build Tools installation and run the commands from a configured developer environment. If you do not have a native toolchain, continue using the Python installation.
+
+## 🧪 Development
+
+Install development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Run the checks:
+
+```bash
+# Test suite
 pytest tests
 
-# Verify native engine tests
-pytest tests/unit/test_native_engine.py
+# Lint
+ruff check src
 
-# Verify end-to-end coding agent workflow
-pytest tests/e2e/test_end_to_end_workflow.py
+# Formatting check
+ruff format --check src
 ```
+
+Native extension tests can be run when the extension has been built:
+
+```bash
+pytest tests/unit/test_native_engine.py
+```
+
+## 🔒 Security
+
+FORGEX is built around human-controlled execution:
+
+- Keep work scoped to the intended project workspace.
+- Review permission prompts before allowing sensitive operations.
+- Avoid running untrusted repositories or model-generated commands with elevated privileges.
+- Never place API keys, passwords, or other secrets in prompts or committed files.
+- Use Git commits or backups before large autonomous changes.
+
+**Important:** Application-level policy checks are defense-in-depth; they are not a replacement for operating-system isolation. For untrusted code, use a disposable container, virtual machine, or other OS-level sandbox with restricted network and filesystem access.
+
+## 🗺️ Project status
+
+FORGEX is under active development. The repository contains the core CLI, agent workflow, model integrations, developer toolkits, security and runtime components, optional native engine, and supporting infrastructure. Provider coverage and platform behavior may vary by environment.
+
+If you find a bug or have an idea, please open an issue with reproduction steps and relevant logs (remove secrets first).
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository.
+2. Create a focused branch: `git checkout -b feature/your-feature`.
+3. Make your changes and add or update tests.
+4. Run the relevant checks locally.
+5. Open a pull request describing the change and its verification.
+
+Please keep pull requests focused and include clear reproduction steps for bug fixes.
+
+## 📄 License
+
+FORGEX is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+
+## 🌐 Links
+
+- **Repository:** [github.com/Abir-Ghosh-sudo/FORGEX](https://github.com/Abir-Ghosh-sudo/FORGEX)
+- **Issues:** [Report a bug or request a feature](https://github.com/Abir-Ghosh-sudo/FORGEX/issues)
+- **Discussions:** [Join the conversation](https://github.com/Abir-Ghosh-sudo/FORGEX/discussions)
 
 ---
 
-## License
+<div align="center">
 
-FORGEX is open-source software licensed under the [Apache-2.0 License](LICENSE).
+**FORGEX — Build Beyond Code.**
+
+*Plan smarter. Build faster. Stay in control.*
+
+</div>
