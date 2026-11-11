@@ -7,8 +7,7 @@ import asyncio
 import inspect
 import logging
 import time
-from collections.abc import Awaitable, Callable
-from pathlib import Path
+from collections.abc import Awaitable
 from typing import Protocol
 
 from forgex.tools.terminal.models import (
@@ -29,35 +28,28 @@ class TerminalExecutionError(Exception):
 
 
 class TerminalAuthorizer(Protocol):
-    """Authorization contract for terminal requests."""
-
     def authorize(self, request: TerminalRequest) -> bool | Awaitable[bool]:
         """Return whether the request is permitted."""
 
 
 class TerminalRunner(Protocol):
-    """Runtime execution contract."""
-
     def run(
         self,
         request: TerminalRequest,
     ) -> TerminalResult | Awaitable[TerminalResult]:
-        """Execute a validated terminal request."""
+        """Execute an authorized request."""
 
 
 class TerminalAuditSink(Protocol):
-    """Audit logging contract."""
-
-    def record(self, result: TerminalResult) -> None | Awaitable[None]:
-        """Record a terminal execution result."""
+    def record(
+        self,
+        result: TerminalResult,
+    ) -> None | Awaitable[None]:
+        """Record an execution result."""
 
 
 class TerminalExecutor:
-    """Coordinates authorization, execution and audit recording.
-
-    The executor never invokes a shell itself. The injected runner is
-    responsible for passing argv directly to the runtime supervisor.
-    """
+    """Coordinates authorization, execution and audit recording."""
 
     def __init__(
         self,
@@ -68,74 +60,61 @@ class TerminalExecutor:
     ) -> None:
         if authorizer is None:
             raise ValueError("A terminal authorizer is required.")
-
         if runner is None:
             raise ValueError("A terminal runner is required.")
 
         self._authorizer = authorizer
         self._runner = runner
         self._audit_sink = audit_sink
+
         self._closed = False
-        self._lock = asyncio.Lock()
+        self._active_executions = 0
+        self._state_lock = asyncio.Lock()
+        self._idle = asyncio.Event()
+        self._idle.set()
 
     async def execute(self, request: TerminalRequest) -> TerminalResult:
         """Authorize and execute a terminal request."""
 
-        if self._closed:
-            raise TerminalExecutionError("Terminal executor is closed.")
-
         if not isinstance(request, TerminalRequest):
             raise TypeError("request must be a TerminalRequest.")
 
-        async with self._lock:
-            if self._closed:
-                raise TerminalExecutionError("Terminal executor is closed.")
-
-        self._validate_workspace(request)
+        await self._register_execution()
 
         started_at = time.monotonic()
 
         try:
+            self._validate_workspace(request)
+
             authorized = await self._resolve(
                 self._authorizer.authorize(request)
             )
+
+            if not isinstance(authorized, bool):
+                raise TerminalExecutionError(
+                    "Authorizer must return a boolean decision."
+                )
 
             if not authorized:
                 result = self._make_result(
                     request=request,
                     status=TerminalExecutionStatus.DENIED,
                     started_at=started_at,
-                    error="Terminal execution was denied by security policy.",
+                    error="Terminal execution denied by security policy.",
                 )
                 await self._audit(result)
                 return result
 
             result = await self._resolve(self._runner.run(request))
 
-            if not isinstance(result, TerminalResult):
-                raise TerminalExecutionError(
-                    "Terminal runner returned an invalid result."
-                )
-
-            if result.argv != request.argv:
-                raise TerminalExecutionError(
-                    "Runner result argv does not match the authorized request."
-                )
-
-            if result.working_directory.resolve() != (
-                request.working_directory.resolve()
-            ):
-                raise TerminalExecutionError(
-                    "Runner executed in an unexpected working directory."
-                )
+            self._validate_result(request, result)
 
             await self._audit(result)
             return result
 
         except asyncio.CancelledError:
             logger.info(
-                "Terminal execution cancelled: executable=%s session=%s",
-                request.executable,
+                "Terminal execution cancelled: session=%s",
                 request.session_id,
             )
             raise
@@ -145,8 +124,7 @@ class TerminalExecutor:
 
         except Exception as exc:
             logger.exception(
-                "Terminal execution failed: executable=%s session=%s",
-                request.executable,
+                "Terminal execution failed: session=%s",
                 request.session_id,
             )
 
@@ -157,18 +135,40 @@ class TerminalExecutor:
                 exit_code=-1,
                 error=f"{type(exc).__name__}: {exc}",
             )
+
             await self._audit(result)
             return result
 
-    def _validate_workspace(self, request: TerminalRequest) -> None:
-        """Ensure execution starts inside an existing directory."""
+        finally:
+            await self._unregister_execution()
+
+    async def _register_execution(self) -> None:
+        async with self._state_lock:
+            if self._closed:
+                raise TerminalExecutionError(
+                    "Terminal executor is closed."
+                )
+
+            self._active_executions += 1
+            self._idle.clear()
+
+    async def _unregister_execution(self) -> None:
+        async with self._state_lock:
+            self._active_executions -= 1
+
+            if self._active_executions <= 0:
+                self._active_executions = 0
+                self._idle.set()
+
+    @staticmethod
+    def _validate_workspace(request: TerminalRequest) -> None:
+        """Ensure the working directory exists and is a directory."""
 
         try:
             workspace = request.working_directory.resolve(strict=True)
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             raise TerminalExecutionError(
-                f"Working directory does not exist: "
-                f"{request.working_directory}"
+                f"Invalid working directory: {request.working_directory}"
             ) from exc
 
         if not workspace.is_dir():
@@ -176,8 +176,36 @@ class TerminalExecutor:
                 f"Working directory is not a directory: {workspace}"
             )
 
+    @staticmethod
+    def _validate_result(
+        request: TerminalRequest,
+        result: TerminalResult,
+    ) -> None:
+        if not isinstance(result, TerminalResult):
+            raise TerminalExecutionError(
+                "Terminal runner returned an invalid result."
+            )
+
+        if result.argv != request.argv:
+            raise TerminalExecutionError(
+                "Runner argv differs from the authorized request."
+            )
+
+        try:
+            actual = result.working_directory.resolve(strict=True)
+            expected = request.working_directory.resolve(strict=True)
+        except (OSError, RuntimeError) as exc:
+            raise TerminalExecutionError(
+                "Could not verify the execution working directory."
+            ) from exc
+
+        if actual != expected:
+            raise TerminalExecutionError(
+                "Runner used an unexpected working directory."
+            )
+
     async def _audit(self, result: TerminalResult) -> None:
-        """Send the result to the optional audit sink."""
+        """Record an execution result without masking its outcome."""
 
         if self._audit_sink is None:
             return
@@ -187,12 +215,10 @@ class TerminalExecutor:
         except asyncio.CancelledError:
             raise
         except Exception:
-            logger.exception("Failed to record terminal execution audit.")
+            logger.exception("Terminal audit recording failed.")
 
     @staticmethod
     async def _resolve(value):
-        """Resolve synchronous or asynchronous dependency results."""
-
         if inspect.isawaitable(value):
             return await value
         return value
@@ -212,19 +238,28 @@ class TerminalExecutor:
             exit_code=exit_code,
             stdout="",
             stderr="",
-            duration_seconds=max(0.0, time.monotonic() - started_at),
+            duration_seconds=max(
+                0.0,
+                time.monotonic() - started_at,
+            ),
             working_directory=request.working_directory,
             error=error,
         )
 
-    async def close(self) -> None:
-        """Prevent new terminal executions."""
+    async def close(self, *, wait: bool = True) -> None:
+        """Reject new executions and optionally wait for active ones."""
 
-        async with self._lock:
+        async with self._state_lock:
             self._closed = True
+            idle = self._idle
+
+        if wait:
+            await idle.wait()
 
     @property
     def is_closed(self) -> bool:
-        """Whether the executor has been closed."""
-
         return self._closed
+
+    @property
+    def active_executions(self) -> int:
+        return self._active_executions
