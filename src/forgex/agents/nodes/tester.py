@@ -22,6 +22,10 @@ class TesterNode(AgentNode):
         update = await super().__call__(state)
         report = update.get("test_report") or {}
         update["output"] = report
+        metadata = dict(update.get("metadata") or {})
+        cycles = int(metadata.get("test_cycles", 0))
+        metadata["test_cycles"] = cycles + 1
+        update["metadata"] = metadata
         failures = report.get("failures") or []
         if failures and not report.get("verified", False):
             update["error"] = "; ".join(str(item) for item in failures)

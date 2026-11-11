@@ -28,6 +28,10 @@ class ForgexState(TypedDict, total=False):
     current_agent: str
     messages: list[dict[str, Any]]
     metadata: dict[str, Any]
+    plan: dict[str, Any]
+    implementation: dict[str, Any]
+    review: dict[str, Any]
+    test_report: dict[str, Any]
 
 
 NodeHandler = Callable[
@@ -109,7 +113,11 @@ class WorkflowOrchestrator:
         ) -> dict[str, Any]:
             """Execute a node with task cancellation checks."""
 
-            cfg = config if isinstance(config, dict) else (getattr(config, "configurable", None) or {})
+            cfg = (
+                config
+                if isinstance(config, dict)
+                else (getattr(config, "configurable", None) or {})
+            )
             configurable = cfg.get("configurable", cfg) if isinstance(cfg, dict) else {}
             task_id = configurable.get("forgex_task_id") or state.get("task_id")
 
@@ -191,6 +199,12 @@ class WorkflowOrchestrator:
         self._finish_points.add(node_name)
 
         self._invalidate_graph()
+
+    def mark_finish_point(self, node_name: str) -> None:
+        """Register a node as a finish point when terminated via conditional edges."""
+
+        self._validate_node_reference(node_name)
+        self._finish_points.add(node_name)
 
     def _validate_node_reference(self, name: str) -> None:
         """Validate a workflow node reference."""

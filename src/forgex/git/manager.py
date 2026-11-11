@@ -61,7 +61,7 @@ class GitManager:
         self.safety = GitSafetyChecker(self.workspace)
         try:
             self._repo_manager = GitRepositoryManager(self.workspace)
-            self._operations = GitOperations(self.workspace)
+            self._operations = GitOperations(self._repo_manager)
         except Exception as exc:
             logger.debug("Git tools initialization deferred: %s", exc)
             self._repo_manager = None

@@ -20,7 +20,6 @@ import pytest
 
 from forgex.cli.commands.analyze import analyze_workspace
 from forgex.core.application import ForgexApplication
-from forgex.core.orchestrator import ForgexState
 from forgex.git.manager import GitManager
 
 
@@ -29,15 +28,44 @@ class MockCodingModel:
 
     def generate(self, messages: list[dict[str, str]], **kwargs) -> str:
         prompt_text = " ".join(m.get("content", "") for m in messages).lower()
-        if "plan" in prompt_text:
-            return '{"plan": ["Add multiply function", "Add unit test"], "affected_files": ["math_utils.py", "test_math_utils.py"], "dependencies": []}'
-        if "code" in prompt_text or "implement" in prompt_text:
-            return '{"files": [{"path": "math_utils.py", "action": "modify", "content": "def add(a, b):\\n    return a + b\\n\\ndef multiply(a, b):\\n    return a * b\\n"}], "summary": "Implemented multiply function"}'
-        if "review" in prompt_text:
-            return '{"approved": true, "score": 9.5, "feedback": "Code is clean and meets requirements", "blockers": []}'
-        if "test" in prompt_text:
-            return '{"tests_run": 2, "passed": 2, "failed": 0, "verified": true, "next_action": "complete"}'
-        return '{"status": "ok"}'
+        agent = str(kwargs.get("agent", "")).lower()
+        if agent == "planner":
+            return (
+                '{"summary": "Implement multiply function", "steps": '
+                '["Create multiply in math_utils.py", "Add unit test in test_math_utils.py"]}'
+            )
+        if agent == "coder":
+            return (
+                '{"summary": "Code changes completed", "actions": '
+                '[{"action": "modify", "file": "math_utils.py"}]}'
+            )
+        if agent == "reviewer":
+            return (
+                '{"approved": true, "summary": "Code passes review without blockers", '
+                '"findings": []}'
+            )
+        if agent == "tester":
+            return (
+                '{"summary": "All tests pass successfully", "verified": true, '
+                '"next_action": "complete"}'
+            )
+
+        if "reviewer" in prompt_text:
+            return (
+                '{"approved": true, "summary": "Code passes review without blockers", '
+                '"findings": []}'
+            )
+        if "tester" in prompt_text:
+            return (
+                '{"summary": "All tests pass successfully", "verified": true, '
+                '"next_action": "complete"}'
+            )
+        if "coder" in prompt_text or "actions" in prompt_text:
+            return (
+                '{"summary": "Code changes completed", "actions": '
+                '[{"action": "modify", "file": "math_utils.py"}]}'
+            )
+        return '{"summary": "Implement multiply function", "steps": ["step 1"]}'
 
 
 @pytest.mark.asyncio
@@ -69,8 +97,9 @@ async def test_end_to_end_coding_workflow(tmp_path: Path) -> None:
     assert analysis.total_files >= 2
     assert "Python" in analysis.languages
 
-    # 3. Application and Orchestrator Initialization
-    app = ForgexApplication(workspace=workspace)
+    # 3. Application and Orchestrator Initialization with deterministic mock model
+    mock_model = MockCodingModel()
+    app = ForgexApplication(workspace=workspace, model_manager=mock_model)
     await app.start()
     assert app.is_running is True
 

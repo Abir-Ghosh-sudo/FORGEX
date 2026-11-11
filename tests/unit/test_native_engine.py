@@ -44,4 +44,3 @@ class TestNativeEngine:
         assert expected_keys.issubset(capabilities.keys())
         for key in expected_keys:
             assert capabilities[key] is True
-

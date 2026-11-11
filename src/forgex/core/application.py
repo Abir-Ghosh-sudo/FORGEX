@@ -35,6 +35,7 @@ class ForgexApplication:
         *,
         max_concurrency: int = 1,
         metadata: Mapping[str, Any] | None = None,
+        model_manager: Any | None = None,
     ) -> None:
         if max_concurrency < 1:
             raise ValueError("max_concurrency must be at least 1.")
@@ -61,6 +62,17 @@ class ForgexApplication:
             workspace=self.context.workspace,
             max_concurrency=max_concurrency,
         )
+
+        if model_manager is not None:
+            self.model_manager = model_manager
+        else:
+            try:
+                from forgex.models.manager import ModelManager
+
+                self.model_manager = ModelManager()
+            except Exception as exc:
+                logger.debug("ModelManager initialization deferred: %s", exc)
+                self.model_manager = None
 
         self.lifecycle = ApplicationLifecycle(self.context)
 
@@ -91,6 +103,12 @@ class ForgexApplication:
             "lifecycle",
             self.lifecycle,
         )
+
+        if self.model_manager is not None:
+            self.context.register_service(
+                "model_manager",
+                self.model_manager,
+            )
 
     @property
     def workspace(self) -> Path:
@@ -135,7 +153,7 @@ class ForgexApplication:
         if not self.orchestrator.registered_nodes:
             from forgex.agents.workflow import build_default_agent_workflow
 
-            build_default_agent_workflow(self.orchestrator)
+            build_default_agent_workflow(self.orchestrator, model=self.model_manager)
 
         await self.lifecycle.startup()
         self._started = True

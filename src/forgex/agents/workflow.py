@@ -62,10 +62,7 @@ def build_default_agent_workflow(
         metadata = state.get("metadata") or {}
         cycles = int(metadata.get("review_cycles", 0))
         approved = bool(review.get("approved", False))
-        if not approved and cycles < cfg.max_review_cycles:
-            state_metadata = dict(metadata)
-            state_metadata["review_cycles"] = cycles + 1
-            state["metadata"] = state_metadata
+        if not approved and cycles <= cfg.max_review_cycles:
             return "coder"
         if cfg.include_tester:
             return "tester"
@@ -84,10 +81,7 @@ def build_default_agent_workflow(
             cycles = int(metadata.get("test_cycles", 0))
             verified = bool(report.get("verified", False))
             next_action = str(report.get("next_action", "complete")).lower()
-            if (not verified or next_action in {"fix", "retest"}) and cycles < cfg.max_test_cycles:
-                state_metadata = dict(metadata)
-                state_metadata["test_cycles"] = cycles + 1
-                state["metadata"] = state_metadata
+            if (not verified or next_action in {"fix", "retest"}) and cycles <= cfg.max_test_cycles:
                 return "coder"
             return "__end__"
 
@@ -96,9 +90,9 @@ def build_default_agent_workflow(
             route_after_test,
             {"coder": "coder", "__end__": "__end__"},
         )
-        orchestrator.set_finish_point("tester")
+        orchestrator.mark_finish_point("tester")
     else:
-        orchestrator.set_finish_point("reviewer")
+        orchestrator.mark_finish_point("reviewer")
 
     return orchestrator
 

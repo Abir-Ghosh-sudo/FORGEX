@@ -26,6 +26,10 @@ class ReviewerNode(AgentNode):
         update = await super().__call__(state)
         review = update.get("review") or {}
         update["output"] = review
+        metadata = dict(update.get("metadata") or {})
+        cycles = int(metadata.get("review_cycles", 0))
+        metadata["review_cycles"] = cycles + 1
+        update["metadata"] = metadata
         if not review.get("approved", False):
             required = review.get("required_fixes") or []
             if required:
