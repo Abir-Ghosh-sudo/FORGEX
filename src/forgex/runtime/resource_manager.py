@@ -5,13 +5,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator
 
 from forgex.runtime.limits import (
     ResourceBudget,
-    ResourceLimitError,
     ResourceLimits,
     ResourceUsage,
 )

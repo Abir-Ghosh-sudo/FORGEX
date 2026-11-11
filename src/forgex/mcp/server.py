@@ -47,8 +47,7 @@ class MCPServer:
         if self._started:
             return
         try:
-            from mcp.server import Server
-            from mcp.server.stdio import stdio_server
+            pass
         except Exception:
             logger.warning("mcp package not installed; MCP server will be a stub.")
             self._started = True
@@ -60,7 +59,7 @@ class MCPServer:
         """Stop the MCP server."""
         self._started = False
 
-    async def __aenter__(self) -> "MCPServer":
+    async def __aenter__(self) -> MCPServer:
         await self.start()
         return self
 

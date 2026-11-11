@@ -8,14 +8,12 @@ import logging
 import marshal
 import re
 import sqlite3
-
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Callable
+from datetime import UTC, datetime
 
 from forgex.core.exceptions import StorageError
 from forgex.storage.database import Database
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +22,7 @@ MigrationOperation = Callable[[sqlite3.Connection], None]
 
 def utc_now() -> str:
     """Return the current timezone-aware UTC timestamp."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass(frozen=True, slots=True)

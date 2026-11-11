@@ -42,14 +42,8 @@ class FileRetriever:
             raise FileNotFoundError(f"File not found: {full}")
         text = full.read_text(encoding="utf-8", errors="replace")
         lines = text.splitlines(keepends=True)
-        if start_line is not None:
-            start = max(0, start_line - 1)
-        else:
-            start = 0
-        if end_line is not None:
-            end = max(start, end_line)
-        else:
-            end = len(lines)
+        start = max(0, start_line - 1) if start_line is not None else 0
+        end = max(start, end_line) if end_line is not None else len(lines)
         return "".join(lines[start:end])
 
     def write(
@@ -137,7 +131,9 @@ class FileRetriever:
                 continue
             if p.suffix.lower() in self.EXCLUDED_SUFFIXES:
                 continue
-            if not fnmatch.fnmatch(rel if case_sensitive else rel.lower(), file_pattern if case_sensitive else file_pattern.lower()):
+            target_pattern = file_pattern if case_sensitive else file_pattern.lower()
+            target_rel = rel if case_sensitive else rel.lower()
+            if not fnmatch.fnmatch(target_rel, target_pattern):
                 continue
             try:
                 text = p.read_text(encoding="utf-8", errors="replace")
@@ -179,7 +175,11 @@ class FileRetriever:
         recursive: bool,
     ) -> dict[str, Any]:
         name = path.name or str(path)
-        node: dict[str, Any] = {"name": name, "path": str(path.relative_to(self.workspace)), "type": "directory" if path.is_dir() else "file"}
+        node: dict[str, Any] = {
+            "name": name,
+            "path": str(path.relative_to(self.workspace)),
+            "type": "directory" if path.is_dir() else "file",
+        }
         if path.is_dir() and depth < max_depth:
             children: list[dict[str, Any]] = []
             try:

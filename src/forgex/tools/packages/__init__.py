@@ -5,13 +5,13 @@ from forgex.tools.packages.commands import (
     PackageCommandError,
 )
 from forgex.tools.packages.detector import (
+    PackageDetectionError,
     PackageManagerDetector,
     PackageManagerInfo,
-    PackageDetectionError,
 )
 from forgex.tools.packages.executor import (
-    PackageExecutor,
     PackageExecutionError,
+    PackageExecutor,
 )
 from forgex.tools.packages.models import (
     InstalledPackage,

@@ -11,17 +11,14 @@ FORGEX sandbox and approval system.
 
 from __future__ import annotations
 
-import base64
-import binascii
 import fnmatch
-import os
 import re
 import shlex
 import threading
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Iterable
 
 from forgex.security.permissions import (
     PermissionAction,
@@ -708,9 +705,8 @@ class SecurityPolicy:
         try:
             candidate = Path(resource).expanduser()
 
-            if not candidate.is_absolute():
-                if workspace is not None:
-                    candidate = workspace / candidate
+            if not candidate.is_absolute() and workspace is not None:
+                candidate = workspace / candidate
 
             resolved = candidate.resolve(strict=False)
 
@@ -782,11 +778,13 @@ class SecurityPolicy:
                 "Package installation is disabled by security configuration."
             )
 
-        if self._config.mode == PolicyMode.STRICT:
-            if risk in {RiskLevel.HIGH, RiskLevel.CRITICAL}:
-                return PermissionDecision.ask(
-                    "High-risk operation requires approval in strict mode."
-                )
+        if (
+            self._config.mode == PolicyMode.STRICT
+            and risk in {RiskLevel.HIGH, RiskLevel.CRITICAL}
+        ):
+            return PermissionDecision.ask(
+                "High-risk operation requires approval in strict mode."
+            )
 
         if (
             self._config.mode == PolicyMode.BALANCED

@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from git import Repo
-from git.exc import GitCommandError, InvalidGitRepositoryError
+from git.exc import GitCommandError
 
 from forgex.tools.git.models import (
     GitBranch,
@@ -21,7 +21,6 @@ from forgex.tools.git.models import (
     GitStatus,
 )
 from forgex.tools.git.repository import (
-    GitRepositoryError,
     GitRepositoryManager,
 )
 

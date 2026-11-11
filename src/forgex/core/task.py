@@ -259,9 +259,8 @@ class TaskManager:
 
             now = datetime.now(UTC)
 
-            if new_status == TaskStatus.RUNNING:
-                if task.started_at is None:
-                    task.started_at = now
+            if new_status == TaskStatus.RUNNING and task.started_at is None:
+                task.started_at = now
 
             if new_status in {
                 TaskStatus.COMPLETED,

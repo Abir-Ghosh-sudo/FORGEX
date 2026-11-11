@@ -109,9 +109,8 @@ class ModelRouter:
     ) -> str:
         if model_path:
             suffix = model_path.suffix.lower()
-            if suffix == ".gguf" or model_path.is_file():
-                if suffix == ".gguf":
-                    return "llama_cpp"
+            if (suffix == ".gguf" or model_path.is_file()) and suffix == ".gguf":
+                return "llama_cpp"
             if model_path.is_dir():
                 return "transformers"
         if shutil.which("ollama"):

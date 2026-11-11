@@ -130,6 +130,9 @@ select = [
     "B",
     "SIM",
 ]
+ignore = [
+    "B008",
+]
 
 
 [tool.mypy]

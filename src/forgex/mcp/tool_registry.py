@@ -89,14 +89,17 @@ class MCPToolRegistry:
             raise ValueError(f"MCP tool not registered: {name}")
 
         permission = tool.get("permission_required")
-        if permission and self.permission_manager is not None:
-            if not self.permission_manager.has_permission(actor or "system", permission):
-                from forgex.security.errors import PermissionDeniedError
-                raise PermissionDeniedError(
-                    f"Permission '{permission}' required for MCP tool '{name}'.",
-                    actor=actor or "system",
-                    permission=permission,
-                )
+        if (
+            permission
+            and self.permission_manager is not None
+            and not self.permission_manager.has_permission(actor or "system", permission)
+        ):
+            from forgex.security.errors import PermissionDeniedError
+            raise PermissionDeniedError(
+                f"Permission '{permission}' required for MCP tool '{name}'.",
+                actor=actor or "system",
+                permission=permission,
+            )
 
         client_name = tool.get("client")
         if client_name and client_name in self._clients:

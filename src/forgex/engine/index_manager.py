@@ -5,13 +5,13 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
+from forgex.engine.index_store import IndexStore
 from forgex.engine.indexing import (
     IndexedFile,
     IndexedSymbol,
     IndexingResult,
     RepositoryIndexer,
 )
-from forgex.engine.index_store import IndexStore
 
 
 class IndexManagerError(RuntimeError):

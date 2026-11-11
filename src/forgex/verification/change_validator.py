@@ -63,7 +63,9 @@ class ChangeValidator:
                 "file": file_path,
                 "old_size": len(old_content),
                 "new_size": len(new_content),
-                "lines_added": max(0, len(new_content.splitlines()) - len(old_content.splitlines())),
+                "lines_added": max(
+                    0, len(new_content.splitlines()) - len(old_content.splitlines())
+                ),
             }
         )
         return result

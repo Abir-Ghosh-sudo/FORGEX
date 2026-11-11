@@ -5,10 +5,10 @@ from __future__ import annotations
 import math
 import threading
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from time import time
-from typing import Mapping
 
 
 class MetricType(StrEnum):

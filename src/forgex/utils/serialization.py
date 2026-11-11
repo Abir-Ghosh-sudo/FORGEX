@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, TypeVar
@@ -177,7 +177,7 @@ def sha256_file(
 def utc_now_iso() -> str:
     """Return the current UTC timestamp in ISO 8601 format."""
 
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def to_primitive(data: Any) -> Any:

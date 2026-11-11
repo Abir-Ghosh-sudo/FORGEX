@@ -82,14 +82,13 @@ class ApprovalRequest:
         if self.expires_at <= self.created_at:
             raise ValueError("Approval expiration must follow creation time.")
 
-        if self.resolved_at is not None:
-            if (
-                self.resolved_at.tzinfo is None
-                or self.resolved_at.utcoffset() is None
-            ):
-                raise ValueError(
-                    "Resolution timestamp must be timezone-aware."
-                )
+        if self.resolved_at is not None and (
+            self.resolved_at.tzinfo is None
+            or self.resolved_at.utcoffset() is None
+        ):
+            raise ValueError(
+                "Resolution timestamp must be timezone-aware."
+            )
 
         if self.status == ApprovalStatus.PENDING:
             if self.resolved_at is not None or self.resolved_by is not None:

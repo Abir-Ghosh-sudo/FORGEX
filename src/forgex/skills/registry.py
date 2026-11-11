@@ -6,7 +6,6 @@ Registers, discovers, and manages skill lifecycle with permission-aware executio
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from forgex.skills.base import Skill, SkillContext, SkillResult
 

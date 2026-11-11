@@ -4,12 +4,12 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import StrEnum
 from time import perf_counter
-from typing import Iterator
 from uuid import uuid4
 
 

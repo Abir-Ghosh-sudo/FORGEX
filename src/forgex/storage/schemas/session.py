@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-
 CREATE_SESSIONS_TABLE = """
 CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,

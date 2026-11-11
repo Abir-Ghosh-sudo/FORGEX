@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 
 from forgex.agents.nodes.coder import CoderNode
 from forgex.agents.nodes.planner import PlannerNode

@@ -6,8 +6,9 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from forgex.context.file_retrieval import FileRetriever
 from forgex.context.context_assembler import ContextAssembler
+from forgex.context.file_retrieval import FileRetriever
+from forgex.context.symbol_retrieval import SymbolRetriever
 
 logger = logging.getLogger(__name__)
 

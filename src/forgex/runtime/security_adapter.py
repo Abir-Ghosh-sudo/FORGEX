@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import inspect
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from forgex.runtime.manager import RuntimeManager
 from forgex.runtime.security import (
@@ -16,7 +17,6 @@ from forgex.runtime.security import (
     PolicyResult,
     SecurityGateway,
 )
-from forgex.security.permissions import RiskLevel
 from forgex.security.policy import SecurityPolicy
 
 logger = logging.getLogger(__name__)

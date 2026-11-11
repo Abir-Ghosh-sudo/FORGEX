@@ -6,9 +6,9 @@ from __future__ import annotations
 import fnmatch
 import logging
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 
 from forgex.tools.filesystem.paths import WorkspacePathResolver
 

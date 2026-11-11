@@ -6,7 +6,7 @@ import asyncio
 import os
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from forgex.runtime.supervisor import (
@@ -48,7 +48,7 @@ class TestRunner:
                 f"Workspace does not exist: {workspace}"
             )
 
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         start_time = time.monotonic()
         run_id = uuid.uuid4().hex
 
@@ -102,7 +102,7 @@ class TestRunner:
                 supervised.return_code,
             )
 
-            finished_at = datetime.now(timezone.utc)
+            finished_at = datetime.now(UTC)
 
             return TestRunResult(
                 run_id=run_id,

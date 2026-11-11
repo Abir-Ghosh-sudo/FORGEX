@@ -19,7 +19,6 @@ from forgex.tools.testing.models import (
     TestFramework,
     TestRequest,
     TestRunResult,
-    TestStatus,
 )
 from forgex.tools.testing.parsers import TestOutputParser
 from forgex.tools.testing.runner import (

@@ -7,8 +7,9 @@ import platform
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from .models import BenchmarkReport, BenchmarkResult
 
@@ -99,7 +100,7 @@ class BenchmarkRunner:
     def create_report(self) -> BenchmarkReport:
         """Create a report from completed benchmarks."""
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         return BenchmarkReport(
             started_at=now,

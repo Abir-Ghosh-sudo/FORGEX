@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
-from typing import Mapping
 
 
 class TerminalExecutionStatus(StrEnum):
@@ -113,13 +113,11 @@ class TerminalResult:
         if self.duration_seconds < 0:
             raise ValueError("duration_seconds cannot be negative.")
 
-        if self.status is TerminalExecutionStatus.SUCCESS:
-            if self.exit_code != 0:
-                raise ValueError("Successful execution must have exit_code 0.")
+        if self.status is TerminalExecutionStatus.SUCCESS and self.exit_code != 0:
+            raise ValueError("Successful execution must have exit_code 0.")
 
-        if self.status is TerminalExecutionStatus.FAILED:
-            if self.exit_code in (None, 0):
-                raise ValueError("Failed execution must have a non-zero exit code.")
+        if self.status is TerminalExecutionStatus.FAILED and self.exit_code in (None, 0):
+            raise ValueError("Failed execution must have a non-zero exit code.")
 
     @property
     def succeeded(self) -> bool:

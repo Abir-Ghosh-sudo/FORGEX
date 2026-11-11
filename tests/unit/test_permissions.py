@@ -1,4 +1,3 @@
-
 """Unit tests for FORGEX permission management."""
 
 from __future__ import annotations
@@ -6,6 +5,7 @@ from __future__ import annotations
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +20,8 @@ from forgex.security.permissions import (
     RiskLevel,
 )
 
+TEST_WORKSPACE = Path(".").resolve()
+
 
 @pytest.fixture
 def manager() -> PermissionManager:
@@ -30,20 +32,23 @@ def manager() -> PermissionManager:
 def basic_request() -> PermissionRequest:
     return PermissionRequest(
         subject="agent:coder",
-        action=PermissionAction.READ,
         resource="src/main.py",
-        scope=PermissionScope.WORKSPACE,
-        risk_level=RiskLevel.LOW,
+        action=PermissionLevel.READ,
+        workspace=TEST_WORKSPACE,
+        risk=RiskLevel.LOW,
     )
 
 
 class TestPermissionEnums:
     def test_permission_actions_exist(self) -> None:
-        assert PermissionAction.READ.value == "read"
-        assert PermissionAction.WRITE.value == "write"
-        assert PermissionAction.EXECUTE.value == "execute"
+        assert PermissionAction.ALLOW.value == "allow"
+        assert PermissionAction.DENY.value == "deny"
+        assert PermissionAction.ASK.value == "ask"
 
     def test_permission_levels_exist(self) -> None:
+        assert PermissionLevel.READ.value == "read"
+        assert PermissionLevel.WRITE.value == "write"
+        assert PermissionLevel.EXECUTE.value == "execute"
         assert len(PermissionLevel) > 0
 
     def test_risk_levels_exist(self) -> None:
@@ -57,54 +62,62 @@ class TestPermissionRequest:
     def test_request_creation(self, basic_request: PermissionRequest) -> None:
         assert basic_request.subject == "agent:coder"
         assert basic_request.resource == "src/main.py"
+        assert basic_request.action == PermissionLevel.READ
 
     def test_empty_subject_rejected(self) -> None:
         with pytest.raises((ValueError, TypeError)):
             PermissionRequest(
                 subject="",
-                action=PermissionAction.READ,
                 resource="src/main.py",
-                scope=PermissionScope.WORKSPACE,
-                risk_level=RiskLevel.LOW,
+                action=PermissionLevel.READ,
+                workspace=TEST_WORKSPACE,
+                risk=RiskLevel.LOW,
             )
 
     def test_empty_resource_rejected(self) -> None:
         with pytest.raises((ValueError, TypeError)):
             PermissionRequest(
                 subject="agent:coder",
-                action=PermissionAction.READ,
                 resource="",
-                scope=PermissionScope.WORKSPACE,
-                risk_level=RiskLevel.LOW,
+                action=PermissionLevel.READ,
+                workspace=TEST_WORKSPACE,
+                risk=RiskLevel.LOW,
             )
+
+
+def _make_grant(
+    subject: str = "agent:coder",
+    resource_pattern: str = "src/*",
+    level: PermissionLevel = PermissionLevel.READ,
+    scope: PermissionScope = PermissionScope.WORKSPACE,
+    expires_at: datetime | None = None,
+    workspace: Path | None = TEST_WORKSPACE,
+) -> PermissionGrant:
+    return PermissionGrant(
+        grant_id="test-grant",
+        subject=subject,
+        resource_pattern=resource_pattern,
+        level=level,
+        scope=scope,
+        workspace=workspace,
+        created_at=datetime.now(timezone.utc),
+        expires_at=expires_at,
+    )
 
 
 class TestPermissionGrant:
     def test_grant_creation(self) -> None:
-        grant = PermissionGrant(
-            subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
-            scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
-        )
+        grant = _make_grant()
 
         assert grant.subject == "agent:coder"
-        assert grant.action == PermissionAction.READ
+        assert grant.level == PermissionLevel.READ
+        assert not grant.is_expired()
 
     def test_grant_expiry(self) -> None:
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+        expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        grant = _make_grant(expires_at=expires_at)
 
-        grant = PermissionGrant(
-            subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
-            scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
-            expires_at=expires_at,
-        )
-
-        assert grant.expires_at == expires_at
+        assert grant.is_expired()
 
 
 class TestPermissionManager:
@@ -121,15 +134,13 @@ class TestPermissionManager:
         self,
         manager: PermissionManager,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
 
         assert len(manager.list_grants()) >= 1
 
@@ -138,15 +149,13 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
         decision = manager.check(basic_request)
 
         assert decision.allowed is True
@@ -156,15 +165,13 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:reviewer",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
 
         assert manager.check(basic_request).allowed is False
 
@@ -173,15 +180,13 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.WRITE,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.WRITE,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
 
         assert manager.check(basic_request).allowed is False
 
@@ -190,15 +195,13 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="tests/*",
+            resource_pattern="tests/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
 
         assert manager.check(basic_request).allowed is False
 
@@ -207,15 +210,16 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
 
-        grant_id = manager.grant(grant)
+        grants = manager.list_grants()
+        grant_id = grants[0].grant_id
         manager.revoke(grant_id)
 
         assert manager.check(basic_request).allowed is False
@@ -225,16 +229,14 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
             expires_at=datetime.now(timezone.utc) - timedelta(seconds=1),
         )
-
-        manager.grant(grant)
 
         assert manager.check(basic_request).allowed is False
 
@@ -243,16 +245,14 @@ class TestPermissionManager:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
         )
-
-        manager.grant(grant)
 
         assert manager.check(basic_request).allowed is True
 
@@ -271,15 +271,13 @@ class TestPermissionConcurrency:
         manager: PermissionManager,
         basic_request: PermissionRequest,
     ) -> None:
-        grant = PermissionGrant(
+        manager.grant(
             subject="agent:coder",
-            action=PermissionAction.READ,
-            resource="src/*",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
             scope=PermissionScope.WORKSPACE,
-            level=PermissionLevel.ALLOW,
+            workspace=TEST_WORKSPACE,
         )
-
-        manager.grant(grant)
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             results = list(
@@ -301,13 +299,11 @@ class TestPermissionConcurrency:
         def add_grant(index: int) -> None:
             try:
                 manager.grant(
-                    PermissionGrant(
-                        subject=f"agent:{index}",
-                        action=PermissionAction.READ,
-                        resource="src/*",
-                        scope=PermissionScope.WORKSPACE,
-                        level=PermissionLevel.ALLOW,
-                    )
+                    subject=f"agent:{index}",
+                    resource_pattern="src/*",
+                    level=PermissionLevel.READ,
+                    scope=PermissionScope.WORKSPACE,
+                    workspace=TEST_WORKSPACE,
                 )
             except Exception as exc:
                 with lock:
@@ -327,13 +323,11 @@ class TestPermissionIsolation:
         basic_request: PermissionRequest,
     ) -> None:
         manager.grant(
-            PermissionGrant(
-                subject="agent:reviewer",
-                action=PermissionAction.READ,
-                resource="src/*",
-                scope=PermissionScope.WORKSPACE,
-                level=PermissionLevel.ALLOW,
-            )
+            subject="agent:reviewer",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
+            scope=PermissionScope.WORKSPACE,
+            workspace=TEST_WORKSPACE,
         )
 
         assert manager.check(basic_request).allowed is False
@@ -344,20 +338,35 @@ class TestPermissionIsolation:
     ) -> None:
         request = PermissionRequest(
             subject="agent:coder",
-            action=PermissionAction.READ,
             resource="../outside/secret.txt",
-            scope=PermissionScope.WORKSPACE,
-            risk_level=RiskLevel.LOW,
+            action=PermissionLevel.READ,
+            workspace=TEST_WORKSPACE,
+            risk=RiskLevel.LOW,
         )
 
         manager.grant(
-            PermissionGrant(
-                subject="agent:coder",
-                action=PermissionAction.READ,
-                resource="src/*",
-                scope=PermissionScope.WORKSPACE,
-                level=PermissionLevel.ALLOW,
-            )
+            subject="agent:coder",
+            resource_pattern="src/*",
+            level=PermissionLevel.READ,
+            scope=PermissionScope.WORKSPACE,
+            workspace=TEST_WORKSPACE,
         )
 
         assert manager.check(request).allowed is False
+
+
+class TestPermissionDecision:
+    def test_allow_decision(self) -> None:
+        d = PermissionDecision.allow("granted")
+        assert d.allowed is True
+        assert d.action == PermissionAction.ALLOW
+
+    def test_deny_decision(self) -> None:
+        d = PermissionDecision.deny("denied")
+        assert d.allowed is False
+        assert d.action == PermissionAction.DENY
+
+    def test_ask_decision(self) -> None:
+        d = PermissionDecision.ask("needs approval")
+        assert d.allowed is False
+        assert d.action == PermissionAction.ASK

@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 class SymbolRetriever:
     """Extracts symbols from source files within the workspace."""
 
-    EXTENSIONS = {".py", ".js", ".ts", ".tsx", ".jsx", ".cpp", ".c", ".h", ".rs", ".go", ".java", ".rb"}
+    EXTENSIONS = {
+        ".py", ".js", ".ts", ".tsx", ".jsx", ".cpp",
+        ".c", ".h", ".rs", ".go", ".java", ".rb",
+    }
 
     PY_SYMBOL_RE = re.compile(
         r"(?:^\s*(?:def|class|async\s+def)\s+([A-Za-z_][A-Za-z0-9_]*))"
@@ -40,7 +43,10 @@ class SymbolRetriever:
         """Scan all supported source files for symbols."""
         symbols: dict[str, list[dict[str, Any]]] = {}
         try:
-            files = [p for p in self.workspace.rglob("*") if p.is_file() and p.suffix.lower() in self.EXTENSIONS]
+            files = [
+                p for p in self.workspace.rglob("*")
+                if p.is_file() and p.suffix.lower() in self.EXTENSIONS
+            ]
         except Exception:
             return symbols
         for p in files:

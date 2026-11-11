@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 from collections import defaultdict
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -72,7 +72,7 @@ class ForgexEvent:
         payload: dict[str, Any] | None = None,
         *,
         source: str = "forgex",
-    ) -> "ForgexEvent":
+    ) -> ForgexEvent:
         """Create a new event."""
         return cls(
             event_type=str(event_type),

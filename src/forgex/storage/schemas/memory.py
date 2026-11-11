@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-
 CREATE_MEMORY_ENTRIES_TABLE = """
 CREATE TABLE IF NOT EXISTS memory_entries (
     id TEXT PRIMARY KEY,

@@ -9,10 +9,11 @@ import os
 import signal
 import time
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from forgex.runtime.limits import ResourceLimits
 from forgex.runtime.output import OutputSnapshot, ProcessOutputBuffer
@@ -163,7 +164,7 @@ class ProcessSupervisor:
                     duration_seconds=time.monotonic() - started,
                 )
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 entry.state = SupervisedProcessState.TIMED_OUT
                 await self._terminate(process)
 
@@ -273,7 +274,7 @@ class ProcessSupervisor:
                 timeout=self.terminate_grace_period,
             )
             return
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
 
         try:

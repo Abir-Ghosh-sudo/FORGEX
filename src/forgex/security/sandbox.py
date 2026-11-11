@@ -13,6 +13,7 @@ IMPORTANT:
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import signal
@@ -21,10 +22,11 @@ import subprocess
 import tempfile
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import BinaryIO, Sequence
+from typing import BinaryIO
 
 
 class SandboxError(Exception):
@@ -198,11 +200,12 @@ class SandboxManager:
                 f"Path escapes sandbox workspace: {path}"
             ) from exc
 
-        if not self._config.allow_hidden_files:
-            if any(part.startswith(".") for part in relative.parts):
-                raise SandboxPermissionError(
-                    f"Hidden file access is disabled: {relative}"
-                )
+        if not self._config.allow_hidden_files and any(
+            part.startswith(".") for part in relative.parts
+        ):
+            raise SandboxPermissionError(
+                f"Hidden file access is disabled: {relative}"
+            )
 
         if not self._config.allow_symlinks:
             self._reject_symlink_components(candidate)
@@ -264,15 +267,14 @@ class SandboxManager:
 
         # Git metadata must not be modified or deleted through filesystem
         # helpers. Git operations should go through the dedicated Git tools.
-        if normalized == ".git" or normalized.startswith(".git/"):
-            if operation in {
-                FilesystemOperation.WRITE,
-                FilesystemOperation.DELETE,
-            }:
-                raise SandboxPermissionError(
-                    "Modifying Git metadata through the filesystem sandbox "
-                    "is not permitted."
-                )
+        if (normalized == ".git" or normalized.startswith(".git/")) and operation in {
+            FilesystemOperation.WRITE,
+            FilesystemOperation.DELETE,
+        }:
+            raise SandboxPermissionError(
+                "Modifying Git metadata through the filesystem sandbox "
+                "is not permitted."
+            )
 
         for pattern in self._config.protected_paths:
             if Path(normalized).match(pattern.lower()):
@@ -280,11 +282,12 @@ class SandboxManager:
                     f"Protected path access denied: {relative}"
                 )
 
-        if operation == FilesystemOperation.DELETE:
-            if normalized == ".git" or normalized.startswith(".git/"):
-                raise SandboxPermissionError(
-                    "Deleting Git metadata is not permitted."
-                )
+        if operation == FilesystemOperation.DELETE and (
+            normalized == ".git" or normalized.startswith(".git/")
+        ):
+            raise SandboxPermissionError(
+                "Deleting Git metadata is not permitted."
+            )
 
     def read_bytes(self, path: str | Path) -> bytes:
         """Read a regular file within the configured size limit."""
@@ -399,10 +402,8 @@ class SandboxManager:
 
             finally:
                 if temporary_path is not None:
-                    try:
+                    with contextlib.suppress(OSError):
                         temporary_path.unlink(missing_ok=True)
-                    except OSError:
-                        pass
 
         except (SandboxError, TypeError, ValueError):
             raise
@@ -570,10 +571,8 @@ class SandboxManager:
                     truncated = True
 
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 pipe.close()
-            except OSError:
-                pass
 
         result[result_key] = bytes(captured)
         result[f"{result_key}_truncated"] = truncated
@@ -794,7 +793,7 @@ class SandboxManager:
                 pass
 
             # taskkill /T targets descendants on Windows.
-            try:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                 subprocess.run(
                     [
                         "taskkill",
@@ -810,8 +809,6 @@ class SandboxManager:
                     timeout=grace_seconds + 2.0,
                     shell=False,
                 )
-            except (OSError, subprocess.TimeoutExpired):
-                pass
 
             if process.poll() is None:
                 process.kill()

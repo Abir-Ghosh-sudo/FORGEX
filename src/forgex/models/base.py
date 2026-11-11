@@ -6,7 +6,7 @@ import abc
 import asyncio
 import inspect
 import logging
-from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -25,7 +25,7 @@ class ModelMessage:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "ModelMessage":
+    def from_mapping(cls, value: Mapping[str, Any]) -> ModelMessage:
         role = str(value.get("role", "user")).strip() or "user"
         content = value.get("content", "")
         if content is None:

@@ -8,7 +8,6 @@ from typing import Any
 from forgex.cli.slash_commands.registry import (
     SlashCommand,
     SlashCommandRegistry,
-    SlashCommandResult,
 )
 
 

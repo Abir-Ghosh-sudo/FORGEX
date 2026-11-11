@@ -5,13 +5,12 @@ from __future__ import annotations
 
 import inspect
 import logging
-from collections.abc import Mapping
 from typing import Any
 
 from forgex.runtime.supervisor import (
     ProcessSupervisor,
-    SupervisedProcessState,
     SupervisedProcessResult,
+    SupervisedProcessState,
 )
 from forgex.tools.terminal.models import (
     TerminalExecutionStatus,
@@ -70,7 +69,7 @@ class SupervisorTerminalRunner:
         except TerminalRunnerError:
             raise
 
-        except TimeoutError as exc:
+        except TimeoutError:
             logger.warning(
                 "Terminal execution timed out: command=%s",
                 request.argv[0],

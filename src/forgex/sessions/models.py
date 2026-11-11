@@ -4,18 +4,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 
 def utc_now() -> datetime:
     """Return the current timezone-aware UTC datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
-class SessionStatus(str, Enum):
+class SessionStatus(StrEnum):
     """Lifecycle states of a coding session."""
 
     ACTIVE = "active"
@@ -25,7 +25,7 @@ class SessionStatus(str, Enum):
     ARCHIVED = "archived"
 
 
-class MessageRole(str, Enum):
+class MessageRole(StrEnum):
     """Supported conversation message roles."""
 
     SYSTEM = "system"

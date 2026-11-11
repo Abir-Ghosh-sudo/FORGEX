@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import typer
 from rich.console import Console
 
 from forgex.cli.slash_commands.registry import slash_registry
-from forgex.cli.slash_commands.builtin import SlashCommand
 
 console = Console()
 

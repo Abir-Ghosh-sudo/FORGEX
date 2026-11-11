@@ -9,12 +9,12 @@ import json
 import os
 import threading
 import uuid
-
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from forgex.security.secrets import SecretScanner
 
@@ -64,7 +64,7 @@ class AuditEvent:
 
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
     def __post_init__(self) -> None:

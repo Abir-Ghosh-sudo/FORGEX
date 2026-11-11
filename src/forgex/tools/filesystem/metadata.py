@@ -6,7 +6,7 @@ from __future__ import annotations
 import os
 import stat
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from forgex.tools.filesystem.paths import WorkspacePathResolver
@@ -161,5 +161,5 @@ class FileMetadataInspector:
 
         return datetime.fromtimestamp(
             value,
-            tz=timezone.utc,
+            tz=UTC,
         )

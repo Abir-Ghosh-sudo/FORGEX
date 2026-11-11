@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Final
-
 
 _UNSET: Final = object()
 
@@ -20,7 +19,7 @@ class SQLiteMemoryRepository:
 
     @staticmethod
     def _now() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     @staticmethod
     def _serialize_metadata(metadata: dict[str, Any]) -> str:

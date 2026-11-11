@@ -6,8 +6,9 @@ import inspect
 import json
 import logging
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from forgex.agents.prompts.base import PromptTemplate, render_prompt_messages
 from forgex.core.exceptions import AgentError

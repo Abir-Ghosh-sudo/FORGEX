@@ -13,7 +13,6 @@ from rich.status import Status
 from forgex.core import ForgexApplication
 from forgex.core.exceptions import ForgexError
 
-
 console = Console()
 
 

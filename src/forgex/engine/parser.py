@@ -27,7 +27,7 @@ class SyntaxNode:
     end_byte: int
     text: str
     named: bool = True
-    children: tuple["SyntaxNode", ...] = field(default_factory=tuple)
+    children: tuple[SyntaxNode, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True, slots=True)

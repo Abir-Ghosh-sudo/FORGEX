@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import shlex
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from typing import Sequence
 
 from forgex.runtime.adapters import RuntimeAdapter, RuntimeCommand
 

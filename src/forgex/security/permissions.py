@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import fnmatch
 import threading
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
-from typing import Iterable
 from uuid import uuid4
 
 

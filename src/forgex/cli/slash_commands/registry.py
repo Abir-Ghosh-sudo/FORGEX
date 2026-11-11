@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import inspect
 import shlex
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
-
+from typing import Any
 
 SlashHandler = Callable[..., Any]
 
@@ -55,9 +55,28 @@ class SlashCommandRegistry:
     commands: dict[str, SlashCommand] = field(default_factory=dict)
     _aliases: dict[str, str] = field(default_factory=dict)
 
-    def register(self, command: SlashCommand) -> None:
-        """Register a command and its aliases."""
+    def register(self, command: str | SlashCommand) -> Any:
+        """Register a command and its aliases.
 
+        Can be used as a decorator with a name string:
+            @registry.register("name")
+            def handler(args): ...
+
+        Or with a SlashCommand object:
+            registry.register(SlashCommand(...))
+        """
+
+        if isinstance(command, str):
+            def decorator(handler: SlashHandler) -> SlashHandler:
+                cmd = SlashCommand(name=command, description=handler.__doc__ or "", handler=handler)
+                self._register_cmd(cmd)
+                return handler
+            return decorator
+
+        self._register_cmd(command)
+        return command
+
+    def _register_cmd(self, command: SlashCommand) -> None:
         names = (command.name, *command.aliases)
 
         for name in names:
@@ -191,3 +210,14 @@ class SlashCommandRegistry:
             )
 
         return "\n".join(lines)
+
+
+slash_registry = SlashCommandRegistry()
+
+__all__ = [
+    "SlashHandler",
+    "SlashCommand",
+    "SlashCommandResult",
+    "SlashCommandRegistry",
+    "slash_registry",
+]

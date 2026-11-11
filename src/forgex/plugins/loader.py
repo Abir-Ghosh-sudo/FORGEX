@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from forgex.plugins.base import Plugin, PluginContext
+from forgex.plugins.base import Plugin
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,11 @@ class PluginLoader:
                     spec.loader.exec_module(module)
                     for attr_name in dir(module):
                         attr = getattr(module, attr_name)
-                        if isinstance(attr, type) and issubclass(attr, Plugin) and attr is not Plugin:
+                        if (
+                            isinstance(attr, type)
+                            and issubclass(attr, Plugin)
+                            and attr is not Plugin
+                        ):
                             self.registry.register(attr)
                             count += 1
             except Exception:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 from uuid import uuid4
@@ -58,7 +58,7 @@ class TelemetryEvent(BaseModel):
     event_type: TelemetryEventType
 
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
 
     component: str = Field(
@@ -92,7 +92,7 @@ class TelemetryEvent(BaseModel):
         if value.tzinfo is None:
             raise ValueError("Telemetry timestamps must be timezone-aware.")
 
-        return value.astimezone(timezone.utc)
+        return value.astimezone(UTC)
 
     @field_validator("component", "operation", "error_type")
     @classmethod

@@ -12,9 +12,10 @@ import inspect
 import logging
 import time
 import uuid
+from collections.abc import Awaitable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Protocol
+from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 

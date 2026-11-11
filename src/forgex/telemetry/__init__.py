@@ -10,8 +10,8 @@ from .events import (
 )
 from .metrics import (
     Metric,
-    MetricType,
     MetricsCollector,
+    MetricType,
 )
 from .tracing import (
     Span,

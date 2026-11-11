@@ -25,6 +25,7 @@ app = typer.Typer(
     help="FORGEX - Build Beyond Code. Your autonomous AI coding agent.",
     no_args_is_help=True,
     add_completion=True,
+    invoke_without_command=True,
 )
 
 app.add_typer(config_app, name="config", help="Manage FORGEX configuration.")

@@ -8,9 +8,9 @@ from .memory import (
     create_memory_schema,
 )
 from .session import (
+    CREATE_SESSION_INDEXES,
     CREATE_SESSION_MESSAGES_TABLE,
     CREATE_SESSIONS_TABLE,
-    CREATE_SESSION_INDEXES,
     create_session_schema,
 )
 

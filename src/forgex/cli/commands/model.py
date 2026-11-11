@@ -114,7 +114,7 @@ def model_pull(
             raise typer.Exit(code=1)
     except Exception as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command("use")
@@ -133,7 +133,9 @@ def model_use(
     settings.model.provider = provider
     settings.model.model_name = model
     console.print(f"[green]Model configured:[/green] provider={provider}, model={model}")
-    console.print("[yellow]Note:[/yellow] Changes apply to the current session only unless saved to .env.")
+    console.print(
+        "[yellow]Note:[/yellow] Changes apply to the current session only unless saved to .env."
+    )
 
 
 @app.command("download")
@@ -153,7 +155,7 @@ def model_download(
             console.print(f"Files: {', '.join(result.files[:5])}")
     except Exception as exc:
         console.print(f"[red]Download failed:[/red] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command("inspect")

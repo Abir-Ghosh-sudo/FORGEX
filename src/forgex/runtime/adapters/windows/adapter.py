@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import os
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from forgex.runtime.adapters import RuntimeAdapter, RuntimeCommand
 from forgex.runtime.environment import RuntimeEnvironment

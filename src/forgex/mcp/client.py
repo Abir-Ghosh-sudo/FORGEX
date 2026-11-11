@@ -101,7 +101,7 @@ class MCPClient:
             self._session = None
         self._connected = False
 
-    async def __aenter__(self) -> "MCPClient":
+    async def __aenter__(self) -> MCPClient:
         await self.connect()
         return self
 

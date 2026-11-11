@@ -16,8 +16,8 @@ from forgex.models.base import (
 from forgex.models.context_budget import ContextBudget, ContextBudgeter
 from forgex.models.downloader import (
     DownloadResult,
-    HuggingFaceDownloadError,
     HuggingFaceDownloader,
+    HuggingFaceDownloadError,
 )
 from forgex.models.errors import (
     ModelConfigurationError,

@@ -7,12 +7,12 @@ from pathlib import Path
 from forgex.runtime.supervisor import ProcessSupervisor
 from forgex.tools.packages.commands import PackageCommandBuilder
 from forgex.tools.packages.detector import (
-    PackageManagerDetector,
     PackageDetectionError,
+    PackageManagerDetector,
 )
 from forgex.tools.packages.executor import (
-    PackageExecutor,
     PackageExecutionError,
+    PackageExecutor,
 )
 from forgex.tools.packages.models import (
     InstalledPackage,
@@ -21,7 +21,6 @@ from forgex.tools.packages.models import (
     PackageRequest,
     PackageResult,
     PackageSpec,
-    PackageStatus,
 )
 from forgex.tools.packages.parser import (
     PackageOutputParser,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import platform
 import shutil
 import sys
 from dataclasses import dataclass
@@ -13,7 +12,6 @@ from rich.console import Console
 from rich.table import Table
 
 from forgex.utils.system import get_hardware_info, get_system_info
-
 
 console = Console()
 

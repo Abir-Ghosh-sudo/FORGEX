@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Mapping
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class PackageManager(StrEnum):
@@ -61,16 +61,16 @@ class PackageSpec:
         if self.name.startswith("-") or "\x00" in self.name:
             raise ValueError("Invalid package name")
 
-        if self.version is not None:
-            if not self.version.strip() or "\x00" in self.version:
-                raise ValueError("Invalid package version")
+        if self.version is not None and (
+            not self.version.strip() or "\x00" in self.version
+        ):
+            raise ValueError("Invalid package version")
 
         if any(not item or "\x00" in item for item in self.extras):
             raise ValueError("Invalid package extras")
 
-        if self.source is not None:
-            if not self.source.strip() or "\x00" in self.source:
-                raise ValueError("Invalid package source")
+        if self.source is not None and (not self.source.strip() or "\x00" in self.source):
+            raise ValueError("Invalid package source")
 
 
 @dataclass(frozen=True, slots=True)

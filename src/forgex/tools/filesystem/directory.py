@@ -156,9 +156,7 @@ class DirectoryInspector:
                 is_directory = child.is_dir()
                 is_file = child.is_file()
 
-                if is_directory and not include_directories:
-                    pass
-                elif is_file and not include_files:
+                if is_directory and not include_directories or is_file and not include_files:
                     pass
                 elif is_directory or is_file:
                     total += 1

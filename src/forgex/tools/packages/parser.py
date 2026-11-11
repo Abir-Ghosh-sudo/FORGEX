@@ -117,10 +117,7 @@ class PackageOutputParser:
     ) -> tuple[InstalledPackage, ...]:
         data = json.loads(output)
 
-        if isinstance(data, list):
-            entries = data
-        else:
-            entries = data.get("dependencies", [])
+        entries = data if isinstance(data, list) else data.get("dependencies", [])
 
         results = []
 

@@ -8,7 +8,6 @@ import sqlite3
 import time
 import uuid
 from pathlib import Path
-from typing import Any
 
 from forgex.memory.memory_store import (
     MemoryItem,
@@ -30,13 +29,12 @@ class SQLiteMemoryStore(MemoryStore):
 
     def _get_conn(self) -> sqlite3.Connection:
         if self._conn is None:
-            self._conn = sqlite3.connect(str(self.database_path))
+            self._conn = sqlite3.connect(str(self.database_path), check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
-            self._init_db()
         return self._conn
 
     def _init_db(self) -> None:
-        conn = sqlite3.connect(str(self.database_path))
+        conn = sqlite3.connect(str(self.database_path), check_same_thread=False)
         try:
             conn.execute(
                 """

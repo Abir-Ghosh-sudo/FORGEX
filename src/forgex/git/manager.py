@@ -14,7 +14,6 @@ from typing import Any
 from forgex.tools.git import (
     GitOperations,
     GitRepositoryManager,
-    GitOperationResult as ToolGitResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -81,7 +80,13 @@ class GitManager:
                 self._repo_manager.init()
             else:
                 import subprocess
-                subprocess.run(["git", "init"], cwd=self.workspace, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["git", "init"],
+                    cwd=self.workspace,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
             return GitOperationResult(True, "init", "Git repository initialized.")
         except Exception as exc:
             return GitOperationResult(False, "init", str(exc))
@@ -91,20 +96,38 @@ class GitManager:
         try:
             if self._operations:
                 status = self._operations.status()
-                return GitOperationResult(True, "status", "Git status retrieved.", data={"status": str(status)})
+                return GitOperationResult(
+                    True, "status", "Git status retrieved.", data={"status": str(status)}
+                )
             import subprocess
-            result = subprocess.run(["git", "status", "--porcelain"], cwd=self.workspace, capture_output=True, text=True, check=True)
-            return GitOperationResult(True, "status", "Git status retrieved.", data={"status": result.stdout})
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=self.workspace,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return GitOperationResult(
+                True, "status", "Git status retrieved.", data={"status": result.stdout}
+            )
         except Exception as exc:
             return GitOperationResult(False, "status", str(exc))
 
     def create_branch(self, branch_name: str) -> GitOperationResult:
         """Create a new branch safely."""
         if not self.safety.is_safe_branch(branch_name):
-            return GitOperationResult(False, "create_branch", f"Branch '{branch_name}' is protected.")
+            return GitOperationResult(
+                False, "create_branch", f"Branch '{branch_name}' is protected."
+            )
         try:
             import subprocess
-            subprocess.run(["git", "checkout", "-b", branch_name], cwd=self.workspace, check=True, capture_output=True, text=True)
+            subprocess.run(
+                ["git", "checkout", "-b", branch_name],
+                cwd=self.workspace,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
             return GitOperationResult(True, "create_branch", f"Branch '{branch_name}' created.")
         except Exception as exc:
             return GitOperationResult(False, "create_branch", str(exc))
@@ -119,10 +142,28 @@ class GitManager:
                 for f in files:
                     if not self.safety.is_path_within_workspace(f):
                         return GitOperationResult(False, "commit", f"File outside workspace: {f}")
-                    subprocess.run(["git", "add", f], cwd=self.workspace, check=True, capture_output=True, text=True)
+                    subprocess.run(
+                        ["git", "add", f],
+                        cwd=self.workspace,
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                    )
             else:
-                subprocess.run(["git", "add", "-A"], cwd=self.workspace, check=True, capture_output=True, text=True)
-            subprocess.run(["git", "commit", "-m", message], cwd=self.workspace, check=True, capture_output=True, text=True)
+                subprocess.run(
+                    ["git", "add", "-A"],
+                    cwd=self.workspace,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+            subprocess.run(
+                ["git", "commit", "-m", message],
+                cwd=self.workspace,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
             return GitOperationResult(True, "commit", f"Committed: {message}")
         except Exception as exc:
             return GitOperationResult(False, "commit", str(exc))
@@ -131,7 +172,13 @@ class GitManager:
         """Rollback to a previous commit."""
         try:
             import subprocess
-            subprocess.run(["git", "reset", "--hard", commit_ref], cwd=self.workspace, check=True, capture_output=True, text=True)
+            subprocess.run(
+                ["git", "reset", "--hard", commit_ref],
+                cwd=self.workspace,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
             return GitOperationResult(True, "rollback", f"Rolled back to {commit_ref}.")
         except Exception as exc:
             return GitOperationResult(False, "rollback", str(exc))
@@ -140,7 +187,13 @@ class GitManager:
         """Get working tree diff."""
         try:
             import subprocess
-            result = subprocess.run(["git", "diff"], cwd=self.workspace, capture_output=True, text=True, check=True)
+            result = subprocess.run(
+                ["git", "diff"],
+                cwd=self.workspace,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
             return GitOperationResult(True, "diff", "Diff retrieved.", data={"diff": result.stdout})
         except Exception as exc:
             return GitOperationResult(False, "diff", str(exc))

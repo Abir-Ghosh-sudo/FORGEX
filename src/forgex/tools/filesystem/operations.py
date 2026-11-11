@@ -6,7 +6,6 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 

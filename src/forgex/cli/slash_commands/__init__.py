@@ -1,8 +1,5 @@
 """Interactive slash commands for the FORGEX CLI."""
 
-__all__: list[str] = []
-"""FORGEX interactive slash command system."""
-
 from forgex.cli.slash_commands.builtin import (
     create_builtin_registry,
     register_builtin_commands,

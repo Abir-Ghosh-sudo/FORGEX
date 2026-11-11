@@ -9,7 +9,6 @@ from rich.console import Console
 from rich.table import Table
 
 from forgex.config import get_settings
-from forgex.core.application import ForgexApplication
 from forgex.git.manager import GitManager
 
 app = typer.Typer(
@@ -31,7 +30,7 @@ def init(
         target.mkdir(parents=True, exist_ok=True)
     except Exception as exc:
         console.print(f"[red]Cannot create directory:[/red] {exc}")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from exc
 
     settings = get_settings()
     if settings.app.workspace is None:

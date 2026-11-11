@@ -6,9 +6,10 @@ Downloads model files only. Does not use hosted inference APIs.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from forgex.models.errors import ModelDownloadError
 

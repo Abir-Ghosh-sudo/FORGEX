@@ -224,9 +224,8 @@ class TestCommandResolver:
             if request.fail_fast:
                 args.append("--bail")
 
-        elif framework == TestFramework.GO:
-            if request.fail_fast:
-                args.append("-failfast")
+        elif framework == TestFramework.GO and request.fail_fast:
+            args.append("-failfast")
 
         args.extend(request.test_paths)
         args.extend(request.extra_args)

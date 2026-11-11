@@ -84,8 +84,9 @@ class CodeVerifier:
         """Verify all Python files in the workspace."""
         result = VerificationResult(passed=True)
         try:
+            ignored_dirs = {".git", ".venv", "__pycache__", "node_modules", "build"}
             for p in self.workspace.rglob("*.py"):
-                if any(part in {".git", ".venv", "__pycache__", "node_modules", "build"} for part in p.parts):
+                if any(part in ignored_dirs for part in p.parts):
                     continue
                 file_result = self.verify_file(p)
                 if not file_result.passed:

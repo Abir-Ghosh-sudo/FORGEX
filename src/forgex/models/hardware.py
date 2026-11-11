@@ -71,9 +71,7 @@ def detect_hardware() -> HardwareProfile:
         ctx = max(ctx, 16384)
         quant = "Q5_K_M" if vram_gb < 12 else "Q6_K"
 
-    if gpu_available and shutil.which("ollama"):
-        preferred = "ollama"
-    elif shutil.which("ollama"):
+    if gpu_available and shutil.which("ollama") or shutil.which("ollama"):
         preferred = "ollama"
     elif _python_package_available("llama_cpp"):
         preferred = "llama_cpp"
@@ -122,7 +120,8 @@ def _detect_total_memory_gb() -> float | None:
                     if value:
                         return round(int(value) / (1024**3), 2)
         elif Path("/proc/meminfo").exists():
-            for line in Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore").splitlines():
+            meminfo_text = Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore")
+            for line in meminfo_text.splitlines():
                 if line.startswith("MemTotal:"):
                     kb = int(line.split()[1])
                     return round(kb / (1024**2), 2)

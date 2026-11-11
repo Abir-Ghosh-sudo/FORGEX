@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,7 +13,6 @@ from rich.panel import Panel
 from rich.table import Table
 
 from forgex.utils.paths import get_platform_name, normalize_path
-
 
 app = typer.Typer(
     name="analyze",
@@ -165,13 +165,11 @@ def analyze_workspace(
     total_size = 0
     truncated = False
 
-    try:
+    with contextlib.suppress(OSError):
         top_level_entries = sorted(
             entry.name + ("/" if entry.is_dir() else "")
             for entry in root.iterdir()
         )
-    except OSError:
-        pass
 
     def walk_error(_: OSError) -> None:
         # Unreadable directories are skipped rather than aborting analysis.

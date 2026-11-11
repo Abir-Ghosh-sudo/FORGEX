@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import threading
 from copy import deepcopy
-from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -15,7 +14,6 @@ from forgex.sessions.models import (
     MessageRole,
     SessionMessage,
     SessionStatus,
-    utc_now,
 )
 
 

@@ -6,9 +6,9 @@ from __future__ import annotations
 import logging
 import sqlite3
 import threading
-from contextlib import contextmanager
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
 from pathlib import Path
-from typing import Iterator
 
 from forgex.core.exceptions import StorageError
 
@@ -109,10 +109,8 @@ class Database:
 
         except (sqlite3.Error, OSError, StorageError) as exc:
             if connection is not None:
-                try:
+                with suppress(sqlite3.Error):
                     connection.close()
-                except sqlite3.Error:
-                    pass
 
             if isinstance(exc, StorageError):
                 raise
@@ -307,10 +305,8 @@ class Database:
             return
 
         if getattr(self._local, "transaction_depth", 0) > 0:
-            try:
+            with suppress(sqlite3.Error):
                 connection.rollback()
-            except sqlite3.Error:
-                pass
 
         with self._connections_lock:
             self._connections.discard(connection)
