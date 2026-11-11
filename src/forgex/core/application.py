@@ -5,12 +5,16 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from forgex.core.context import ApplicationContext
 from forgex.core.lifecycle import ApplicationLifecycle
 from forgex.core.orchestrator import WorkflowOrchestrator
 from forgex.core.task import ForgexTask, TaskManager
+from forgex.runtime.supervisor import ProcessSupervisor
+from forgex.security.permissions import PermissionManager
+from forgex.security.policy import OperationType, SecurityPolicy, SecurityPolicyConfig
+from forgex.tools.terminal import PolicyTerminalAuthorizer, SupervisorTerminalRunner, TerminalExecutor, TerminalSecurityDecision
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +40,7 @@ class ForgexApplication:
         max_concurrency: int = 1,
         metadata: Mapping[str, Any] | None = None,
         model_manager: Any | None = None,
+        approval_handler: Callable[..., Any] | None = None,
     ) -> None:
         if max_concurrency < 1:
             raise ValueError("max_concurrency must be at least 1.")
@@ -75,6 +80,43 @@ class ForgexApplication:
                 self.model_manager = None
 
         self.lifecycle = ApplicationLifecycle(self.context)
+        self.approval_handler = approval_handler
+        self.process_supervisor = ProcessSupervisor()
+        self.permission_manager = PermissionManager()
+        self.security_policy = SecurityPolicy(
+            self.permission_manager,
+            SecurityPolicyConfig(workspace=workspace_path),
+        )
+
+        async def evaluate_terminal(request, command_text):
+            evaluation = self.security_policy.evaluate(
+                subject=request.subject,
+                operation=OperationType.TERMINAL_EXECUTE,
+                resource=command_text,
+                workspace=request.working_directory,
+                command=command_text,
+            )
+            if evaluation.requires_approval:
+                return TerminalSecurityDecision(
+                    allowed=False,
+                    requires_approval=True,
+                    reason=evaluation.decision.reason,
+                    risk_level=evaluation.risk.value,
+                )
+            return TerminalSecurityDecision(
+                allowed=evaluation.allowed,
+                reason=evaluation.decision.reason,
+                risk_level=evaluation.risk.value,
+            )
+
+        self.terminal_executor = TerminalExecutor(
+            authorizer=PolicyTerminalAuthorizer(
+                policy_evaluator=evaluate_terminal,
+                approval_handler=approval_handler,
+                workspace=workspace_path,
+            ),
+            runner=SupervisorTerminalRunner(self.process_supervisor),
+        )
 
         self._started = False
         self._shutdown = False
@@ -153,7 +195,11 @@ class ForgexApplication:
         if not self.orchestrator.registered_nodes:
             from forgex.agents.workflow import build_default_agent_workflow
 
-            build_default_agent_workflow(self.orchestrator, model=self.model_manager)
+            build_default_agent_workflow(
+                self.orchestrator,
+                model=self.model_manager,
+                terminal_executor=self.terminal_executor,
+            )
 
         if not self.orchestrator.is_compiled:
             self.orchestrator.compile()
@@ -207,6 +253,8 @@ class ForgexApplication:
         try:
             await self.lifecycle.shutdown()
         finally:
+            await self.terminal_executor.close(wait=True)
+            await self.process_supervisor.shutdown()
             self._started = False
             self._shutdown = True
 
