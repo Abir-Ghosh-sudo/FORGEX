@@ -13,6 +13,8 @@
 [![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/Abir-Ghosh-sudo/FORGEX)
 
+![FORGEX — Build Beyond Code](docs/assets/forgex-banner.svg)
+
 [Getting Started](#-getting-started) · [Features](#-what-is-forgex) · [CLI](#-command-line) · [Architecture](#-how-it-works) · [Contributing](#-contributing)
 
 </div>
