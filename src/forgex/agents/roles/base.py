@@ -70,7 +70,7 @@ class AgentRole:
             if hasattr(self.model, "agenerate") and callable(self.model.agenerate):
                 response = await self.model.agenerate(messages, agent=self.name)
             else:
-                generate_fn = getattr(self.model, "generate")
+                generate_fn = self.model.generate
                 if inspect.iscoroutinefunction(generate_fn):
                     response = await generate_fn(messages, agent=self.name)
                 else:

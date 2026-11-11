@@ -66,9 +66,24 @@ class TesterNode(AgentNode):
                     report["next_action"] = "fix"
                     report["failures"] = [stderr or stdout]
                     report["test_output"] = stdout + "\n" + stderr
+            except asyncio.TimeoutError:
+                report["verified"] = False
+                report["next_action"] = "fix"
+                report["failures"] = ["Test execution timed out after 60 seconds."]
+                report["test_output"] = ""
             except Exception as exc:
-                # If pytest runner cannot be invoked, fallback to model verification
-                report["runner_warning"] = f"Real test runner execution skipped: {exc}"
+                report["verified"] = False  # Fail closed — never trust model on runner error
+                report["next_action"] = "fix"
+                report["failures"] = [f"Test runner error: {exc!s}"]
+                report["test_output"] = ""
+
+        # If workspace has no tests, never accept model's verified=True
+        if not has_tests:
+            report["verified"] = False
+            if not report.get("failures"):
+                report["failures"] = ["No test files found in workspace; cannot verify implementation."]
+            if not report.get("next_action"):
+                report["next_action"] = "fix"
 
         update["test_report"] = report
         update["output"] = report

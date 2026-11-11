@@ -8,9 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +49,11 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DFORGEX_BUILD_PYTHON=ON
       - name: Build
         run: cmake --build build --config Release
-      - name: Test Native Extension
+      - name: Copy native extension
+        shell: pwsh
         run: |
-          cp build/src/forgex/_native.*.pyd src/forgex/ || cp build/src/forgex/_native.pyd src/forgex/ || true
-          pytest tests/unit/test_native_engine.py
+          $pyd = Get-ChildItem -Path build -Filter "_native*.pyd" -Recurse | Select-Object -First 1
+          if (-not $pyd) { Write-Error "Native extension not found in build/"; exit 1 }
+          Copy-Item $pyd.FullName src/forgex/
+      - name: Test Native Extension
+        run: pytest tests/unit/test_native_engine.py
