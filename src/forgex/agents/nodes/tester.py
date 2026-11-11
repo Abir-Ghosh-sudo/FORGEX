@@ -1,18 +1,20 @@
-"""Tester workflow node."""
+"""Tester workflow node using FORGEX's supervised test runner."""
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import Any
 
 from forgex.agents.nodes.base import AgentNode
 from forgex.agents.roles.tester import TesterRole
 from forgex.core.orchestrator import ForgexState
+from forgex.runtime.supervisor import ProcessSupervisor
+from forgex.tools.testing.models import TestFramework
+from forgex.tools.testing.toolkit import TestingToolkit
 
 
 class TesterNode(AgentNode):
-    """Evaluates verification status and executes real project tests."""
+    """Runs detected project tests and trusts only the real runner result."""
 
     node_name = "tester"
     state_key = "test_report"
@@ -23,79 +25,73 @@ class TesterNode(AgentNode):
     async def __call__(self, state: ForgexState) -> dict[str, Any]:
         update = await super().__call__(state)
         report = dict(update.get("test_report") or {})
+        workspace = Path(state.get("workspace") or Path.cwd()).expanduser().resolve()
 
-        raw_workspace = state.get("workspace") or Path.cwd()
-        workspace = Path(raw_workspace).expanduser().resolve()
-
-        # Check if actual test files exist in the target workspace
-        has_tests = False
-        if workspace.is_dir():
-            has_tests = (
-                (workspace / "tests").is_dir()
-                or any(workspace.glob("test_*.py"))
-                or any(workspace.glob("*_test.py"))
+        if not workspace.is_dir():
+            report.update(
+                verified=False,
+                next_action="fix",
+                summary="Test verification could not start: workspace is missing.",
+                failures=[f"Workspace does not exist: {workspace}"],
+                test_output="",
             )
-
-        # Run real test suite if workspace contains test files
-        if has_tests:
+        else:
+            supervisor = ProcessSupervisor()
             try:
-                process = await asyncio.create_subprocess_exec(
-                    "pytest",
-                    "-q",
-                    cwd=str(workspace),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=60.0,
-                )
-                stdout = stdout_bytes.decode(errors="replace")
-                stderr = stderr_bytes.decode(errors="replace")
-                exit_code = process.returncode or 0
+                toolkit = TestingToolkit(workspace, supervisor)
+                try:
+                    detected = toolkit.detect_framework()
+                    if detected.framework is TestFramework.UNKNOWN:
+                        raise RuntimeError("No supported test framework was detected.")
 
-                if exit_code == 0:
-                    report["verified"] = True
-                    report["summary"] = report.get("summary") or "All workspace tests passed."
-                    report["next_action"] = "complete"
-                    report["failures"] = []
-                    report["test_output"] = stdout
-                else:
-                    report["verified"] = False
-                    report["summary"] = f"Tests failed (exit code {exit_code})"
-                    report["next_action"] = "fix"
-                    report["failures"] = [stderr or stdout]
-                    report["test_output"] = stdout + "\n" + stderr
-            except asyncio.TimeoutError:
-                report["verified"] = False
-                report["next_action"] = "fix"
-                report["failures"] = ["Test execution timed out after 60 seconds."]
-                report["test_output"] = ""
-            except Exception as exc:
-                report["verified"] = False  # Fail closed — never trust model on runner error
-                report["next_action"] = "fix"
-                report["failures"] = [f"Test runner error: {exc!s}"]
-                report["test_output"] = ""
-
-        # If workspace has no tests, never accept model's verified=True
-        if not has_tests:
-            report["verified"] = False
-            if not report.get("failures"):
-                report["failures"] = ["No test files found in workspace; cannot verify implementation."]
-            if not report.get("next_action"):
-                report["next_action"] = "fix"
+                    request = toolkit.build_request(
+                        framework=detected.framework,
+                        timeout_seconds=60.0,
+                    )
+                    result = await toolkit.run_tests(request)
+                    verified = bool(result.success)
+                    output = "\n".join(part for part in (result.stdout, result.stderr) if part)
+                    failures = [] if verified else [
+                        output.strip() or f"Test runner finished with status: {result.status.value}"
+                    ]
+                    report.update(
+                        verified=verified,
+                        next_action="complete" if verified else "fix",
+                        summary=(
+                            f"Tests passed ({result.passed} passed, {result.failed} failed)."
+                            if verified
+                            else f"Tests did not pass (status: {result.status.value})."
+                        ),
+                        failures=failures,
+                        test_output=output,
+                        test_framework=result.framework.value,
+                        test_status=result.status.value,
+                        test_exit_code=result.exit_code,
+                        test_duration_seconds=result.duration_seconds,
+                    )
+                except Exception as exc:
+                    report.update(
+                        verified=False,
+                        next_action="fix",
+                        summary="Test verification failed; implementation is unverified.",
+                        failures=[f"Test runner error: {exc!s}"],
+                        test_output="",
+                    )
+            finally:
+                await supervisor.shutdown()
 
         update["test_report"] = report
         update["output"] = report
         metadata = dict(update.get("metadata") or {})
-        cycles = int(metadata.get("test_cycles", 0))
-        metadata["test_cycles"] = cycles + 1
+        metadata["test_cycles"] = int(metadata.get("test_cycles", 0)) + 1
         update["metadata"] = metadata
+
         failures = report.get("failures") or []
-        if failures and not report.get("verified", False):
-            update["error"] = "; ".join(str(item) for item in failures)
-        elif report.get("verified", False):
-            update["error"] = ""
+        update["error"] = (
+            "; ".join(str(item) for item in failures)
+            if failures and not report.get("verified", False)
+            else ""
+        )
         return update
 
 
