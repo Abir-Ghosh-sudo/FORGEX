@@ -253,8 +253,12 @@ class ForgexApplication:
             return
 
         if not self._started:
-            self._shutdown = True
-            await self.context.close()
+            try:
+                await self.terminal_executor.close(wait=True)
+                await self.process_supervisor.shutdown()
+                await self.context.close()
+            finally:
+                self._shutdown = True
             logger.debug("Unstarted FORGEX application resources closed.")
             return
 
