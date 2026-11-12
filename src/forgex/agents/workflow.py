@@ -36,6 +36,7 @@ def build_default_agent_workflow(
     model: Any = None,
     config: AgentWorkflowConfig | None = None,
     terminal_executor: TerminalExecutor | None = None,
+    file_approval_handler: Any = None,
 ) -> WorkflowOrchestrator:
     """Register and connect the default planner->coder->reviewer(->tester) workflow."""
 
@@ -48,7 +49,10 @@ def build_default_agent_workflow(
     planner = PlannerNode(model=model)
     coder = CoderNode(
         model=model,
-        action_executor=ActionExecutor(terminal_executor=terminal_executor),
+        action_executor=ActionExecutor(
+            terminal_executor=terminal_executor,
+            file_approval_handler=file_approval_handler,
+        ),
     )
     reviewer = ReviewerNode(model=model)
     tester = TesterNode(model=model)
@@ -109,6 +113,7 @@ def register_default_agent_workflow(
     model: Any = None,
     config: AgentWorkflowConfig | None = None,
     terminal_executor: TerminalExecutor | None = None,
+    file_approval_handler: Any = None,
 ) -> Any:
     """Configure the default workflow on a ForgexApplication-like object."""
 
@@ -123,6 +128,7 @@ def register_default_agent_workflow(
         model=model,
         config=config,
         terminal_executor=terminal_executor,
+        file_approval_handler=file_approval_handler,
     )
     return orchestrator
 
