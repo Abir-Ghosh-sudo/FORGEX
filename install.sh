@@ -38,7 +38,7 @@ case ":$PATH:" in
     *)
         PROFILE="$HOME/.profile"
         touch "$PROFILE"
-        if ! grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$PROFILE"; then printf '\n# FORGEX CLI\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$PROFILE"; fi
+        if ! grep -Fq 'export PATH="$BIN_DIR:$PATH"' "$PROFILE"; then printf '\n# FORGEX CLI\nexport PATH="%s:$PATH"\n' "$BIN_DIR" >> "$PROFILE"; fi
         export PATH="$BIN_DIR:$PATH"
         ;;
 esac
