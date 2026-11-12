@@ -8,8 +8,7 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm
-from rich.prompt import Prompt
+from rich.prompt import Confirm, Prompt
 from rich.status import Status
 
 from forgex.core import ForgexApplication
@@ -82,7 +81,11 @@ def _show_help() -> None:
 
 async def _interactive_session(workspace: Path) -> None:
     """Run a persistent FORGEX application session."""
-    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request, file_approval_handler=_approve_file_action)
+    application = ForgexApplication(
+        workspace=workspace,
+        approval_handler=_approve_terminal_request,
+        file_approval_handler=_approve_file_action,
+    )
 
     try:
         await application.start()
