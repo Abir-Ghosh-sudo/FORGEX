@@ -144,6 +144,4 @@ class OpenAICompatibleProvider(BaseModelProvider):
             self._async_client = None
 
 
-__all__ = [
-    "OpenAICompatibleProvider",
-]
+__all__ = ["OpenAICompatibleProvider"]
