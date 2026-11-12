@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import difflib
 import fnmatch
+import inspect
 import logging
 import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from forgex.tools.terminal.executor import TerminalExecutor
@@ -73,9 +75,11 @@ class ActionExecutor:
         workspace: Path | None = None,
         *,
         terminal_executor: TerminalExecutor | None = None,
+        file_approval_handler: Callable[[str, str], bool | Awaitable[bool]] | None = None,
     ) -> None:
         self.workspace = Path(workspace).expanduser().resolve() if workspace else None
         self.terminal_executor = terminal_executor
+        self.file_approval_handler = file_approval_handler
 
     def _resolve_target(self, workspace: Path, target_str: str) -> Path:
         clean_target = target_str.strip().replace("\\", "/")
@@ -147,6 +151,10 @@ class ActionExecutor:
             return ActionExecutionResult("write", "", False, error="No target file specified.")
         try:
             target = self._resolve_target(workspace, target_str)
+            if not await self._request_file_approval(
+                "modify" if overwrite else "create", target_str
+            ):
+                raise ActionExecutionError("File change was not approved by the operator.")
             if target.exists() and not target.is_file():
                 raise ActionExecutionError("Write target exists and is not a regular file.")
             if target.exists() and not overwrite:
@@ -189,6 +197,8 @@ class ActionExecutor:
             return ActionExecutionResult("delete", "", False, error="No target specified.")
         try:
             target = self._resolve_target(workspace, target_str)
+            if not await self._request_file_approval("delete", target_str):
+                raise ActionExecutionError("File deletion was not approved by the operator.")
             if target.exists():
                 if target.is_dir():
                     raise ActionExecutionError(
@@ -199,6 +209,19 @@ class ActionExecutor:
         except Exception as exc:
             logger.warning("Delete action denied/failed for %s: %s", target_str, exc)
             return ActionExecutionResult("delete", target_str, False, error=str(exc))
+
+    async def _request_file_approval(self, operation: str, target: str) -> bool:
+        """Require explicit operator approval before changing workspace files."""
+        if self.file_approval_handler is None:
+            return False
+        try:
+            approved = self.file_approval_handler(operation, target)
+            if inspect.isawaitable(approved):
+                approved = await approved
+        except Exception as exc:
+            logger.warning("File approval failed for %s: %s", target, exc)
+            return False
+        return approved is True
 
     async def _execute_command(
         self,
