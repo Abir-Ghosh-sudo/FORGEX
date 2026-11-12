@@ -12,9 +12,9 @@ import fnmatch
 import inspect
 import logging
 import shlex
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from collections.abc import Awaitable, Callable
 from typing import Any
 
 from forgex.tools.terminal.executor import TerminalExecutor
