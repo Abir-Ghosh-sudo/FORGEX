@@ -112,3 +112,33 @@ class TestNativeEngine:
         assert loaded is not None
         assert len(loaded) == 1
         assert loaded[0].content == files[0].content
+
+    def test_index_limits_preserve_existing_entries_and_stable_order(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Capped scans must not prune unseen files and results stay sorted."""
+        module = load_native_engine()
+        if module is None:
+            pytest.skip("Native engine binary not available.")
+
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        (workspace / "zeta.py").write_text("shared = 1\\n", encoding="utf-8")
+        (workspace / "alpha.py").write_text("shared = 2\\n", encoding="utf-8")
+
+        indexer = module.RepositoryIndexer()
+        options = module.IndexOptions()
+        options.max_files = 0
+        assert indexer.index_directory(workspace, options).success is True
+        assert indexer.file_count() == 2
+
+        options.max_files = 1
+        options.remove_missing_files = True
+        result = indexer.index_directory(workspace, options)
+        assert result.success is True
+        assert indexer.file_count() == 2
+
+        matches = indexer.search_content("shared", True, 1)
+        assert len(matches) == 1
+        assert matches[0].path == "alpha.py"
