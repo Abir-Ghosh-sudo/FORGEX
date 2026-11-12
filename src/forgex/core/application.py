@@ -14,7 +14,12 @@ from forgex.core.task import ForgexTask, TaskManager
 from forgex.runtime.supervisor import ProcessSupervisor
 from forgex.security.permissions import PermissionManager
 from forgex.security.policy import OperationType, SecurityPolicy, SecurityPolicyConfig
-from forgex.tools.terminal import PolicyTerminalAuthorizer, SupervisorTerminalRunner, TerminalExecutor, TerminalSecurityDecision
+from forgex.tools.terminal import (
+    PolicyTerminalAuthorizer,
+    SupervisorTerminalRunner,
+    TerminalExecutor,
+    TerminalSecurityDecision,
+)
 
 logger = logging.getLogger(__name__)
 
