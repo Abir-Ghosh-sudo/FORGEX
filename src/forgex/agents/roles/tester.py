@@ -12,6 +12,8 @@ from forgex.core.exceptions import AgentError
 class TesterRole(AgentRole):
     """Plans and evaluates verification/testing outcomes."""
 
+    __test__ = False
+
     name = "tester"
     template = TESTER_PROMPT
 
