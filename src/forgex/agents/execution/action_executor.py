@@ -164,9 +164,7 @@ class ActionExecutor:
             target.parent.mkdir(parents=True, exist_ok=True)
             text_content = str(content) if content is not None else ""
             old_text = (
-                target.read_text(encoding="utf-8", errors="replace")
-                if target.exists()
-                else ""
+                target.read_text(encoding="utf-8", errors="replace") if target.exists() else ""
             )
             diff = "\n".join(
                 difflib.unified_diff(
