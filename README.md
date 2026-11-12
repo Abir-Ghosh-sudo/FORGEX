@@ -424,6 +424,7 @@ FORGEX_UID="$(id -u)" FORGEX_GID="$(id -g)" docker compose build
 ### Notes
 
 - The container does not include an Ollama server or download an LLM automatically. Configure a supported model runtime separately.
+- The default Docker image uses the portable pure-Python engine. Build the optional C++20 extension separately when you have a native toolchain.
 - Model downloads and remote model providers need network access.
 - The workspace mount is writable because FORGEX must edit project files. Do not mount your home directory, SSH keys, Docker socket, or secrets into an untrusted agent container.
 - Docker adds an isolation boundary, but this default setup is not a hardened hostile-code sandbox. Review approvals and restrict networking further when running untrusted repositories.
