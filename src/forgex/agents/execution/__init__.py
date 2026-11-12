@@ -6,9 +6,4 @@ from forgex.agents.execution.action_executor import (
     ActionExecutor,
 )
 
-__all__ = [
-    "ActionExecutor",
-    "ActionExecutionResult",
-    "ActionExecutionError",
-]
-
+__all__ = ["ActionExecutor", "ActionExecutionResult", "ActionExecutionError"]
