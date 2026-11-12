@@ -30,6 +30,18 @@ def _approve_terminal_request(request, decision) -> bool:
     return Confirm.ask("Allow this command for this run?", default=False)
 
 
+def _approve_file_action(operation: str, target: str) -> bool:
+    """Ask the operator before an agent changes a workspace file."""
+    console.print(
+        Panel(
+            f"[bold]{operation.upper()}[/bold]  {target}",
+            title="File change approval required",
+            border_style="yellow",
+        )
+    )
+    return Confirm.ask("Allow this file change for this run?", default=False)
+
+
 def _validate_workspace(path: Path) -> Path:
     """Validate and normalize the workspace directory."""
     try:
@@ -48,7 +60,7 @@ async def _execute_task(
     instruction: str,
 ) -> None:
     """Initialize FORGEX and execute a task."""
-    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request)
+    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request, file_approval_handler=_approve_file_action)
 
     try:
         with Status(
