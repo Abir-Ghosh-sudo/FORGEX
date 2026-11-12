@@ -1,4 +1,3 @@
-
 services:
   forgex:
     build:
@@ -7,47 +6,34 @@ services:
       args:
         FORGEX_UID: ${FORGEX_UID:-1000}
         FORGEX_GID: ${FORGEX_GID:-1000}
-
     image: forgex:local
     container_name: forgex
-
     working_dir: /workspace
-
     command: ["chat", "--workspace", "/workspace"]
-
     stdin_open: true
     tty: true
     init: true
-
     read_only: true
-
     security_opt:
       - no-new-privileges:true
-
     cap_drop:
       - ALL
-
     pids_limit: 256
     mem_limit: 8g
     cpus: 4
-
     environment:
       HF_HOME: /home/forgex/.cache/huggingface
       PYTHONUNBUFFERED: "1"
-
-      # Connect to Ollama running on Windows host.
-      OLLAMA_HOST: http://host.docker.internal:11434
-
+      FORGEX_MODEL__PROVIDER: ollama
+      FORGEX_MODEL__MODEL_NAME: qwen2.5-coder:7b
+      FORGEX_MODEL__OLLAMA_BASE_URL: http://host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
     volumes:
       - ./:/workspace
       - forgex-home:/home/forgex
-
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
-
     restart: "no"
 
 volumes:
