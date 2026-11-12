@@ -47,9 +47,14 @@ class TesterNode(AgentNode):
                     result = await toolkit.run_tests(request)
                     verified = bool(result.success)
                     output = "\n".join(part for part in (result.stdout, result.stderr) if part)
-                    failures = [] if verified else [
-                        output.strip() or f"Test runner finished with status: {result.status.value}"
-                    ]
+                    failures = (
+                        []
+                        if verified
+                        else [
+                            output.strip()
+                            or f"Test runner finished with status: {result.status.value}"
+                        ]
+                    )
                     report.update(
                         verified=verified,
                         next_action="complete" if verified else "fix",
