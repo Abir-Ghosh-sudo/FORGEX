@@ -1,6 +1,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
 
 #include "../core/core.hpp"
 #include "../parser/parser.hpp"
