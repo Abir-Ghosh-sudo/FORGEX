@@ -41,6 +41,7 @@ class ForgexApplication:
         metadata: Mapping[str, Any] | None = None,
         model_manager: Any | None = None,
         approval_handler: Callable[..., Any] | None = None,
+        file_approval_handler: Callable[[str, str], Any] | None = None,
     ) -> None:
         if max_concurrency < 1:
             raise ValueError("max_concurrency must be at least 1.")
@@ -81,6 +82,7 @@ class ForgexApplication:
 
         self.lifecycle = ApplicationLifecycle(self.context)
         self.approval_handler = approval_handler
+        self.file_approval_handler = file_approval_handler
         self.process_supervisor = ProcessSupervisor()
         self.permission_manager = PermissionManager()
         self.security_policy = SecurityPolicy(
@@ -199,6 +201,7 @@ class ForgexApplication:
                 self.orchestrator,
                 model=self.model_manager,
                 terminal_executor=self.terminal_executor,
+                file_approval_handler=self.file_approval_handler,
             )
 
         if not self.orchestrator.is_compiled:
