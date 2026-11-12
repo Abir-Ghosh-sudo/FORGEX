@@ -29,6 +29,7 @@ def _approve_terminal_request(request, decision) -> bool:
     )
     return Confirm.ask("Allow this command for this run?", default=False)
 
+
 def _approve_file_action(operation: str, target: str) -> bool:
     """Ask the operator before an agent changes a workspace file."""
     console.print(
