@@ -89,37 +89,39 @@ The package version is defined in `pyproject.toml` and exposed by `forgex --vers
 - A supported model runtime and a coding model
 - C++20 toolchain only if you want to build the optional native extension
 
-### Quick install directly from the terminal
+### One-command install (recommended)
 
-You can install FORGEX straight from GitHub without manually cloning the repository.
+Install FORGEX with a single command. The installer downloads the latest source from the GitHub `main` branch, creates an isolated Python virtual environment, installs the package, adds the CLI launcher to your user PATH, and verifies the installation.
+
+**Requirements:** Python 3.11+ and an internet connection. Docker, Git, and a C++ compiler are not required for this installation. A model runtime/model is configured separately.
 
 **Windows (PowerShell):**
 
 ```powershell
-py -3.11 -m venv $env:USERPROFILE\\forgex-env
-& $env:USERPROFILE\\forgex-env\\Scripts\\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
-forgex --version
-forgex doctor
+irm https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.ps1 | iex
 ```
 
-**Linux:**
+**Linux (Bash):**
 
 ```bash
-python3 -m venv ~/forgex-env
-source ~/forgex-env/bin/activate
-python -m pip install --upgrade pip
-python -m pip install "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
-forgex --version
-forgex doctor
+curl -fsSL https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.sh | bash
 ```
 
-Keep the virtual environment activated whenever you use the `forgex` command. To leave it, run `deactivate`. To update later, run:
+After installation, open a new terminal if needed and run:
 
 ```bash
-python -m pip install --upgrade "git+https://github.com/Abir-Ghosh-sudo/FORGEX.git"
+forgex --version
+forgex doctor
+forgex chat
 ```
+
+**Install locations**
+- Windows: `%LOCALAPPDATA%\\FORGEX`
+- Linux: `~/.local/share/forgex` (or `$XDG_DATA_HOME/forgex`), with the CLI launcher in `~/.local/bin` by default.
+
+**Updates:** Run the same one-command installer again to replace the installed checkout with the latest `main` branch version. Back up any local changes inside the installation directory first; the installer replaces that directory.
+
+**Security:** Review [install.ps1](install.ps1) or [install.sh](install.sh) before piping a remote script into your shell. The installer does not download an AI model automatically.
 
 ### 1. Clone the repository
 
