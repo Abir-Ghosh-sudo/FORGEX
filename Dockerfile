@@ -1,21 +1,20 @@
 # syntax=docker/dockerfile:1
 
-# Build the wheel with the optional C++20 extension when a compiler is available.
+# Build a portable wheel using FORGEX's pure-Python fallback.
+# The native C++20 extension remains available for dedicated native builds.
 FROM python:3.12-slim AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential cmake git \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /build
 COPY . .
 
-RUN python -m pip install --upgrade pip scikit-build-core pybind11 \
+RUN python -m pip install --upgrade pip scikit-build-core cmake \
     && mkdir -p /wheels \
-    && python -m pip wheel --no-deps --no-build-isolation --wheel-dir=/wheels .
+    && python -m pip wheel --no-deps --no-build-isolation \
+        --config-settings=cmake.define.FORGEX_BUILD_PYTHON=OFF \
+        --wheel-dir=/wheels .
 
 
 # Keep the runtime image small and run FORGEX as an unprivileged user.
