@@ -1,0 +1,35 @@
+services:
+  forgex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FORGEX_UID: ${FORGEX_UID:-1000}
+        FORGEX_GID: ${FORGEX_GID:-1000}
+    image: forgex:local
+    container_name: forgex
+    working_dir: /workspace
+    command: ["chat", "--workspace", "/workspace"]
+    stdin_open: true
+    tty: true
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 8g
+    cpus: 4
+    environment:
+      HF_HOME: /home/forgex/.cache/huggingface
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./:/workspace
+      - forgex-home:/home/forgex
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    restart: "no"
+
+volumes:
+  forgex-home:
