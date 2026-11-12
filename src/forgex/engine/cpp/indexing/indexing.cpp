@@ -238,6 +238,7 @@ IndexingResult RepositoryIndexer::index_directory(
     }
 
     std::unordered_set<std::string> discovered_paths;
+    bool scan_truncated = false;
 
     std::filesystem::recursive_directory_iterator iterator(
         canonical_root,
@@ -322,6 +323,9 @@ IndexingResult RepositoryIndexer::index_directory(
             options.max_files > 0 &&
             result.discovered_count > options.max_files
         ) {
+            // A capped scan is incomplete: never prune entries that may
+            // simply be beyond the configured scan limit.
+            scan_truncated = true;
             ++result.skipped_count;
             iterator.increment(error);
             continue;
@@ -363,7 +367,7 @@ IndexingResult RepositoryIndexer::index_directory(
         iterator.increment(error);
     }
 
-    if (options.remove_missing_files) {
+    if (options.remove_missing_files && !scan_truncated) {
         for (auto it = files_.begin(); it != files_.end();) {
             if (discovered_paths.find(it->first) ==
                 discovered_paths.end()) {
@@ -466,13 +470,6 @@ std::vector<IndexedFile> RepositoryIndexer::search_content(
 
         if (content.find(target) != std::string::npos) {
             result.push_back(file);
-
-            if (
-                max_results > 0 &&
-                result.size() >= max_results
-            ) {
-                break;
-            }
         }
     }
 
@@ -483,6 +480,10 @@ std::vector<IndexedFile> RepositoryIndexer::search_content(
             return left.path < right.path;
         }
     );
+
+    if (max_results > 0 && result.size() > max_results) {
+        result.resize(max_results);
+    }
 
     return result;
 }
