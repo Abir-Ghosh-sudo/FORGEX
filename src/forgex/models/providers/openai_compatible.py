@@ -145,4 +145,3 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
 
 __all__ = ["OpenAICompatibleProvider"]
-
