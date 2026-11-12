@@ -155,9 +155,10 @@ class ActionExecutor:
                 "modify" if overwrite else "create", target_str
             ):
                 raise ActionExecutionError("File change was not approved by the operator.")
-            if target.exists() and not target.is_file():
+            target_existed = target.exists()
+            if target_existed and not target.is_file():
                 raise ActionExecutionError("Write target exists and is not a regular file.")
-            if target.exists() and not overwrite:
+            if target_existed and not overwrite:
                 raise ActionExecutionError("Target already exists; use an explicit modify action.")
 
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -178,7 +179,7 @@ class ActionExecutor:
             )
             target.write_text(text_content, encoding="utf-8")
             return ActionExecutionResult(
-                "modify" if target.exists() and old_text else "create",
+                "modify" if target_existed else "create",
                 target_str,
                 True,
                 diff=diff,
