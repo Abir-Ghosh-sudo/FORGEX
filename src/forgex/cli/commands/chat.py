@@ -30,6 +30,18 @@ def _approve_terminal_request(request, decision) -> bool:
     )
     return Confirm.ask("Allow this command for this run?", default=False)
 
+def _approve_file_action(operation: str, target: str) -> bool:
+    """Ask the operator before an agent changes a workspace file."""
+    console.print(
+        Panel(
+            f"[bold]{operation.upper()}[/bold]  {target}",
+            title="File change approval required",
+            border_style="yellow",
+        )
+    )
+    return Confirm.ask("Allow this file change for this run?", default=False)
+
+
 EXIT_COMMANDS = {"/exit", "/quit", "/q"}
 HELP_COMMANDS = {"/help", "/h"}
 CLEAR_COMMANDS = {"/clear"}
@@ -70,7 +82,7 @@ def _show_help() -> None:
 
 async def _interactive_session(workspace: Path) -> None:
     """Run a persistent FORGEX application session."""
-    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request)
+    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request, file_approval_handler=_approve_file_action)
 
     try:
         await application.start()
