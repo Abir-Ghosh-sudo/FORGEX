@@ -60,7 +60,11 @@ async def _execute_task(
     instruction: str,
 ) -> None:
     """Initialize FORGEX and execute a task."""
-    application = ForgexApplication(workspace=workspace, approval_handler=_approve_terminal_request, file_approval_handler=_approve_file_action)
+    application = ForgexApplication(
+        workspace=workspace,
+        approval_handler=_approve_terminal_request,
+        file_approval_handler=_approve_file_action,
+    )
 
     try:
         with Status(
