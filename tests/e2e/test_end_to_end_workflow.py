@@ -107,7 +107,11 @@ async def test_end_to_end_coding_workflow(tmp_path: Path) -> None:
 
     # 3. Application and Orchestrator Initialization with deterministic mock model
     mock_model = MockCodingModel()
-    app = ForgexApplication(workspace=workspace, model_manager=mock_model)
+    app = ForgexApplication(
+        workspace=workspace,
+        model_manager=mock_model,
+        file_approval_handler=lambda operation, target: True,
+    )
     await app.start()
     assert app.is_running is True
 
