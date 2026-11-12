@@ -96,6 +96,22 @@ async def test_end_to_end_coding_workflow(tmp_path: Path) -> None:
     init_res = git_manager.init_repo()
     assert init_res.success is True
 
+    # Configure a deterministic identity for this isolated test repository.
+    subprocess.run(
+        ["git", "config", "user.name", "FORGEX Test"],
+        cwd=workspace,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "forgex-test@example.invalid"],
+        cwd=workspace,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
     # Initial commit
     commit_res = git_manager.commit("Initial project commit")
     assert commit_res.success is True
