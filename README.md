@@ -384,3 +384,47 @@ FORGEX is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for 
 *Plan smarter. Build faster. Stay in control.*
 
 </div>
+
+
+## 🐳 Docker
+
+Run FORGEX in a non-root container with a read-only container filesystem, dropped Linux capabilities, resource limits, and only the project workspace mounted for editing.
+
+### Requirements
+
+- Docker Engine with Docker Compose v2.
+- At least 4 GB RAM available to the container; increase the Compose memory limit if needed.
+
+### Build and start interactive FORGEX
+
+From the repository root:
+
+```bash
+docker compose build
+docker compose run --rm forgex
+```
+
+The project directory is mounted at `/workspace`. FORGEX starts an interactive chat session there.
+
+### Run a task or a diagnostic
+
+```bash
+docker compose run --rm forgex doctor
+docker compose run --rm forgex run "Add input validation to the configuration loader"
+```
+
+### Linux file permissions
+
+The Compose build uses UID/GID 1000 by default. If your Linux account uses different IDs, build with:
+
+```bash
+FORGEX_UID="$(id -u)" FORGEX_GID="$(id -g)" docker compose build
+```
+
+### Notes
+
+- The container does not include an Ollama server or download an LLM automatically. Configure a supported model runtime separately.
+- Model downloads and remote model providers need network access.
+- The workspace mount is writable because FORGEX must edit project files. Do not mount your home directory, SSH keys, Docker socket, or secrets into an untrusted agent container.
+- Docker adds an isolation boundary, but this default setup is not a hardened hostile-code sandbox. Review approvals and restrict networking further when running untrusted repositories.
+- To rebuild after changing dependencies or source files, run `docker compose build --no-cache`.
