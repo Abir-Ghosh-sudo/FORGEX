@@ -12,8 +12,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Python 3.11+ is required." }
         $pythonCommand = "py"
     } elseif (Get-Command python -ErrorAction SilentlyContinue) {
-        & python --version
-        if ($LASTEXITCODE -ne 0) { throw "Could not run Python." }
+        & python -c "import sys; raise SystemExit(sys.version_info < (3, 11))"
+        if ($LASTEXITCODE -ne 0) { throw "Python 3.11+ is required. Detected an older Python version." }
         $pythonCommand = "python"
     } else { throw "Python 3.11+ is required. Install it from python.org." }
     Write-Host "Downloading FORGEX..."
