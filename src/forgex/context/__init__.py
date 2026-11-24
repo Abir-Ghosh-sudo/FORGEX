@@ -8,6 +8,7 @@ task-specific prompts without sending entire repositories to models.
 from forgex.context.context_assembler import ContextAssembler
 from forgex.context.context_manager import ContextManager, ContextSnapshot
 from forgex.context.file_retrieval import FileRetriever
+from forgex.context.rag import ChromaRAG, RetrievedChunk, chunk_text
 from forgex.context.symbol_retrieval import SymbolRetriever
 
 __all__ = [
@@ -16,4 +17,7 @@ __all__ = [
     "FileRetriever",
     "SymbolRetriever",
     "ContextAssembler",
+    "ChromaRAG",
+    "RetrievedChunk",
+    "chunk_text",
 ]
