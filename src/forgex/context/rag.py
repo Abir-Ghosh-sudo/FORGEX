@@ -6,7 +6,6 @@ LangChain integrations are optional; this module has no mandatory heavy deps.
 from __future__ import annotations
 
 import hashlib
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
