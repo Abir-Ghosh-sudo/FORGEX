@@ -23,7 +23,7 @@ except ImportError:  # pragma: no cover - exercised in minimal installations
 def build_langchain_messages(
     messages: Sequence[ModelMessage | Mapping[str, Any] | Any],
 ) -> list[Any]:
-    """Convert FORGEX mappings/messages or LangChain messages to provider mappings."""
+    """Convert FORGEX messages to LangChain messages or provider mappings."""
     converted: list[Any] = []
     for item in messages:
         if isinstance(item, ModelMessage):
@@ -44,8 +44,13 @@ def build_langchain_messages(
             converted.append(msg.to_dict())
         else:
             role = msg.role.lower()
-            cls = SystemMessage if role == "system" else AIMessage if role in {"assistant", "ai"} else HumanMessage
-            converted.append(cls(content=msg.content))
+            if role == "system":
+                message_class = SystemMessage
+            elif role in {"assistant", "ai"}:
+                message_class = AIMessage
+            else:
+                message_class = HumanMessage
+            converted.append(message_class(content=msg.content))
     return converted
 
 
@@ -61,12 +66,15 @@ def _provider_messages(value: Any) -> list[ModelMessage | Mapping[str, Any]]:
     if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
         if not value:
             raise ValueError("At least one message is required.")
-        return [
-            item if isinstance(item, (ModelMessage, Mapping)) else
-            {"role": {"human": "user", "ai": "assistant"}.get(getattr(item, "type", "user"), getattr(item, "type", "user")),
-             "content": getattr(item, "content", str(item))}
-            for item in value
-        ]
+        messages: list[ModelMessage | Mapping[str, Any]] = []
+        for item in value:
+            if isinstance(item, (ModelMessage, Mapping)):
+                messages.append(item)
+                continue
+            role = getattr(item, "type", "user")
+            role = {"human": "user", "ai": "assistant"}.get(role, role)
+            messages.append({"role": role, "content": getattr(item, "content", str(item))})
+        return messages
     raise TypeError("Runnable input must be text, a message sequence, or a ChatPromptValue.")
 
 
