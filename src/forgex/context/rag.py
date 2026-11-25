@@ -26,11 +26,20 @@ class RetrievedChunk:
     score: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {"text": self.text, "source": self.source,
-                "chunk_index": self.chunk_index, "score": self.score}
+        return {
+            "text": self.text,
+            "source": self.source,
+            "chunk_index": self.chunk_index,
+            "score": self.score,
+        }
 
 
-def chunk_text(text: str, *, chunk_size: int = 1200, chunk_overlap: int = 160) -> list[str]:
+def chunk_text(
+    text: str,
+    *,
+    chunk_size: int = 1200,
+    chunk_overlap: int = 160,
+) -> list[str]:
     """Split text into deterministic character windows with overlap."""
     if chunk_size < 1:
         raise ValueError("chunk_size must be positive.")
@@ -44,7 +53,7 @@ def chunk_text(text: str, *, chunk_size: int = 1200, chunk_overlap: int = 160) -
     while start < len(normalized):
         end = min(len(normalized), start + chunk_size)
         if end < len(normalized):
-            boundary = normalized.rfind("\n", start + chunk_size // 2, end)
+            boundary = normalized.rfind("\\n", start + chunk_size // 2, end)
             if boundary > start:
                 end = boundary
         piece = normalized[start:end].strip()
@@ -69,20 +78,31 @@ class ChromaRAG:
         chunk_size: int = 1200,
         chunk_overlap: int = 160,
     ) -> None:
+        if chunk_size < 1 or chunk_overlap < 0 or chunk_overlap >= chunk_size:
+            raise ValueError("Invalid chunk_size/chunk_overlap configuration.")
         self.workspace = Path(workspace).expanduser().resolve()
         if not self.workspace.is_dir():
-            raise NotADirectoryError(f"Workspace does not exist or is not a directory: {self.workspace}")
+            raise NotADirectoryError(
+                f"Workspace does not exist or is not a directory: {self.workspace}"
+            )
         try:
             import chromadb
         except ImportError as exc:
-            raise ImportError("Chroma RAG requires the optional dependency: pip install 'forgex-ai[vector]'") from exc
+            raise ImportError(
+                "Chroma RAG requires the optional dependency: "
+                "pip install 'forgex-ai[vector]'"
+            ) from exc
         self.embeddings = embeddings
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.retriever = FileRetriever(self.workspace)
-        self.client = chromadb.PersistentClient(path=str(persist_directory)) if persist_directory else chromadb.Client()
+        if persist_directory:
+            self.client = chromadb.PersistentClient(path=str(persist_directory))
+        else:
+            self.client = chromadb.Client()
         self.collection = self.client.get_or_create_collection(
-            name=collection_name, metadata={"hnsw:space": "cosine"}
+            name=collection_name,
+            metadata={"hnsw:space": "cosine"},
         )
 
     def ingest(self, paths: list[str] | None = None) -> int:
@@ -99,18 +119,34 @@ class ChromaRAG:
                 content = path.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
-            for index, chunk in enumerate(chunk_text(content, chunk_size=self.chunk_size,
-                                                       chunk_overlap=self.chunk_overlap)):
+            chunks = chunk_text(
+                content,
+                chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+            )
+            for index, chunk in enumerate(chunks):
                 digest = hashlib.sha256(f"{rel}:{index}:{chunk}".encode()).hexdigest()
                 ids.append(digest)
                 docs.append(chunk)
-                metas.append({"source": str(path.relative_to(self.workspace)), "chunk_index": index})
+                metas.append(
+                    {
+                        "source": str(path.relative_to(self.workspace)),
+                        "chunk_index": index,
+                    }
+                )
         if not docs:
             return 0
         vectors = self.embeddings.embed_documents(docs)
         if len(vectors) != len(docs):
-            raise ValueError("Embedding provider returned a different number of vectors than documents.")
-        self.collection.upsert(ids=ids, documents=docs, embeddings=vectors, metadatas=metas)
+            raise ValueError(
+                "Embedding provider returned a different number of vectors than documents."
+            )
+        self.collection.upsert(
+            ids=ids,
+            documents=docs,
+            embeddings=vectors,
+            metadatas=metas,
+        )
         return len(docs)
 
     def retrieve(self, query: str, *, top_k: int = 5) -> list[RetrievedChunk]:
@@ -119,21 +155,25 @@ class ChromaRAG:
             raise ValueError("Query cannot be empty.")
         if top_k < 1:
             raise ValueError("top_k must be positive.")
-        if self.collection.count() == 0:
+        count = self.collection.count()
+        if count == 0:
             return []
         result = self.collection.query(
             query_embeddings=[self.embeddings.embed_query(query)],
-            n_results=min(top_k, self.collection.count()),
+            n_results=min(top_k, count),
             include=["documents", "metadatas", "distances"],
         )
         docs = (result.get("documents") or [[]])[0]
         metas = (result.get("metadatas") or [[]])[0]
         distances = (result.get("distances") or [[]])[0]
         return [
-            RetrievedChunk(text=doc, source=meta.get("source", ""),
-                           chunk_index=int(meta.get("chunk_index", 0)),
-                           score=1.0 - float(distances[i]) if i < len(distances) else None)
-            for i, (doc, meta) in enumerate(zip(docs, metas))
+            RetrievedChunk(
+                text=doc,
+                source=meta.get("source", ""),
+                chunk_index=int(meta.get("chunk_index", 0)),
+                score=1.0 - float(distances[i]) if i < len(distances) else None,
+            )
+            for i, (doc, meta) in enumerate(zip(docs, metas, strict=False))
         ]
 
     def build_context(self, query: str, *, top_k: int = 5) -> str:
@@ -141,8 +181,8 @@ class ChromaRAG:
         chunks = self.retrieve(query, top_k=top_k)
         if not chunks:
             return "No relevant repository context was found."
-        return "\n\n".join(
-            f"[Source: {item.source} | chunk {item.chunk_index}]\n{item.text}"
+        return "\\n\\n".join(
+            f"[Source: {item.source} | chunk {item.chunk_index}]\\n{item.text}"
             for item in chunks
         )
 
