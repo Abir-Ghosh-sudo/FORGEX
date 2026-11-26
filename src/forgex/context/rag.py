@@ -3,6 +3,7 @@
 The vector backend and embedding model are injected by the caller. Chroma and
 LangChain integrations are optional; this module has no mandatory heavy deps.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -89,8 +90,7 @@ class ChromaRAG:
             import chromadb
         except ImportError as exc:
             raise ImportError(
-                "Chroma RAG requires the optional dependency: "
-                "pip install 'forgex-ai[vector]'"
+                "Chroma RAG requires the optional dependency: pip install 'forgex-ai[vector]'
             ) from exc
         self.embeddings = embeddings
         self.chunk_size = chunk_size
@@ -182,8 +182,7 @@ class ChromaRAG:
         if not chunks:
             return "No relevant repository context was found."
         return "\\n\\n".join(
-            f"[Source: {item.source} | chunk {item.chunk_index}]\\n{item.text}"
-            for item in chunks
+            f"[Source: {item.source} | chunk {item.chunk_index}]\\n{item.text}" for item in chunks
         )
 
 
