@@ -3,6 +3,7 @@
 LangChain remains an optional integration: importing FORGEX does not require
 langchain-core to be installed.
 """
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
