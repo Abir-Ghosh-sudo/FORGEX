@@ -239,9 +239,8 @@ class ModelManager:
             from forgex.models.providers.openai_compatible import OpenAICompatibleProvider
 
             return OpenAICompatibleProvider(
-                base_url=self.settings.ollama_base_url
-                if "11434" not in self.settings.ollama_base_url
-                else "http://localhost:8000/v1",
+                base_url=self.settings.openai_base_url,
+                api_key=self.settings.openai_api_key,
                 **common,
             )
 
