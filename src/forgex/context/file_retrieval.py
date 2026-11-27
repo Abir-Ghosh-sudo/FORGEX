@@ -54,7 +54,9 @@ class FileRetriever:
         end_line: int | None = None,
     ) -> str:
         """Read a workspace file with optional one-based line range."""
-        resolved = self._resolver.resolve(path, must_exist=True, expected_type="file")
+        resolved = self._resolver.resolve(path, expected_type="file")
+        if not resolved.exists:
+            raise FileNotFoundError(path)
         if start_line is not None and start_line < 1:
             raise ValueError("start_line must be at least 1.")
         if end_line is not None and end_line < 1:
