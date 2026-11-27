@@ -9,6 +9,8 @@ from forgex.models.context_budget import ContextBudgeter
 from forgex.models.errors import ModelConfigurationError, ModelNotFoundError
 from forgex.models.hardware import detect_hardware
 from forgex.models.router import ModelRoute, ModelRouter
+from forgex.models.providers.openai_compatible import OpenAICompatibleProvider
+from forgex.config.settings import ModelSettings
 
 
 class TestModelMessage:
@@ -78,3 +80,49 @@ class TestErrors:
         with pytest.raises(ModelNotFoundError) as exc:
             raise ModelNotFoundError("not found", model="x")
         assert exc.value.model == "x"
+
+
+
+def test_openai_compatible_provider_parses_complete_generation_result():
+    provider = OpenAICompatibleProvider(model_name="test-model")
+    result = provider._parse_response(
+        {
+            "choices": [
+                {
+                    "message": {"content": "hello"},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 4,
+                "completion_tokens": 2,
+                "total_tokens": 6,
+            },
+        }
+    )
+
+    assert result.text == "hello"
+    assert result.model == "test-model"
+    assert result.provider == "openai_compatible"
+    assert result.total_tokens == 6
+
+
+def test_openai_compatible_provider_declares_valid_capabilities():
+    provider = OpenAICompatibleProvider(model_name="test-model")
+    capabilities = provider.capabilities
+
+    assert capabilities.streaming is True
+    assert capabilities.tool_calling is True
+    assert capabilities.local_only is False
+
+
+def test_cloud_model_provider_can_be_configured():
+    settings = ModelSettings(
+        provider="openai_compatible",
+        model_name="test-model",
+        openai_base_url="https://router.huggingface.co/v1",
+        openai_api_key="test-token",
+    )
+
+    assert settings.provider == "openai_compatible"
+    assert settings.openai_api_key == "test-token"
