@@ -51,12 +51,10 @@ class ContextAssembler:
         for rel in focus_files:
             if rel in included:
                 continue
-            full = self.workspace / rel
-            if not full.exists() or not full.is_file():
-                continue
             try:
-                text = full.read_text(encoding="utf-8", errors="replace")
-            except Exception:
+                text = self.retriever.read(rel)
+            except (OSError, ValueError):
+                # Invalid/out-of-workspace paths are ignored rather than read.
                 continue
             file_block = f"\n### File: {rel}\n```\n{text}\n```\n"
             cost = self._estimate_tokens(file_block)
