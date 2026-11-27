@@ -67,7 +67,10 @@ class AgentRole:
             )
 
         try:
-            if hasattr(self.model, "agenerate") and callable(self.model.agenerate):
+            async_generate = getattr(self.model, "generate_async", None)
+            if callable(async_generate):
+                response = await async_generate(messages, agent=self.name)
+            elif hasattr(self.model, "agenerate") and callable(self.model.agenerate):
                 response = await self.model.agenerate(messages, agent=self.name)
             else:
                 generate_fn = self.model.generate
