@@ -1,7 +1,8 @@
-"""Hardware-aware heuristics for local model selection."""
+"""Hardware-aware heuristics without importing heavyweight ML runtimes."""
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import os
 import platform
@@ -46,7 +47,11 @@ class HardwareProfile:
 
 
 def detect_hardware() -> HardwareProfile:
-    """Detect local hardware and derive safe local-model defaults."""
+    """Detect hardware using lightweight OS queries only.
+
+    In particular, do not import torch/transformers just to inspect hardware:
+    those imports can consume significant startup time and memory.
+    """
     system = platform.system()
     machine = platform.machine()
     cpu_count = os.cpu_count() or 1
@@ -55,32 +60,26 @@ def detect_hardware() -> HardwareProfile:
 
     mem = total_memory_gb or 8.0
     if mem <= 8:
-        ctx = 4096
-        quant = "Q4_K_M"
+        ctx, quant = 2048, "Q4_K_M"
     elif mem <= 16:
-        ctx = 8192
-        quant = "Q4_K_M"
+        ctx, quant = 4096, "Q4_K_M"
     elif mem <= 32:
-        ctx = 16384
-        quant = "Q5_K_M"
+        ctx, quant = 8192, "Q4_K_M"
     else:
-        ctx = 32768
-        quant = "Q6_K"
+        ctx, quant = 16384, "Q5_K_M"
 
     if vram_gb is not None and vram_gb >= 8:
-        ctx = max(ctx, 16384)
+        ctx = max(ctx, 8192)
         quant = "Q5_K_M" if vram_gb < 12 else "Q6_K"
 
-    if gpu_available and shutil.which("ollama") or shutil.which("ollama"):
+    if shutil.which("ollama"):
         preferred = "ollama"
-    elif _python_package_available("llama_cpp"):
+    elif _module_available("llama_cpp"):
         preferred = "llama_cpp"
-    elif _python_package_available("transformers"):
+    elif _module_available("transformers"):
         preferred = "transformers"
     else:
         preferred = "ollama"
-
-    sequential = mem <= 16
 
     return HardwareProfile(
         system=system,
@@ -93,7 +92,7 @@ def detect_hardware() -> HardwareProfile:
         recommended_context_window=ctx,
         recommended_quantization=quant,
         preferred_provider=preferred,
-        sequential_agents_recommended=sequential,
+        sequential_agents_recommended=mem <= 16,
     )
 
 
@@ -127,62 +126,54 @@ def _detect_total_memory_gb() -> float | None:
             if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
                 return round(stat.ullTotalPhys / (1024**3), 2)
         elif Path("/proc/meminfo").exists():
-            meminfo_text = Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore")
-            for line in meminfo_text.splitlines():
+            for line in Path("/proc/meminfo").read_text(
+                encoding="utf-8", errors="ignore"
+            ).splitlines():
                 if line.startswith("MemTotal:"):
-                    kb = int(line.split()[1])
-                    return round(kb / (1024**2), 2)
+                    return round(int(line.split()[1]) / (1024**2), 2)
     except Exception:
         logger.debug("Total memory detection failed.", exc_info=True)
     return None
 
 
 def _detect_gpu() -> tuple[bool, str | None, float | None]:
-    try:
-        import torch  # type: ignore
-
-        if torch.cuda.is_available():
-            name = torch.cuda.get_device_name(0)
-            vram = round(torch.cuda.get_device_properties(0).total_memory / (1024**3), 2)
-            return True, name, vram
-        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-            return True, "Apple Silicon (MPS)", None
-    except Exception:
-        pass
+    """Detect NVIDIA GPUs without importing a machine-learning framework."""
+    executable = shutil.which("nvidia-smi")
+    if not executable:
+        return False, None, None
 
     try:
         result = subprocess.run(
             [
-                "nvidia-smi",
+                executable,
                 "--query-gpu=name,memory.total",
                 "--format=csv,noheader,nounits",
             ],
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=2,
             check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
-            line = result.stdout.strip().splitlines()[0]
-            parts = [p.strip() for p in line.split(",")]
+            parts = [part.strip() for part in result.stdout.strip().splitlines()[0].split(",")]
             name = parts[0] if parts else None
             vram = None
             if len(parts) > 1:
                 try:
                     vram = round(float(parts[1]) / 1024.0, 2)
-                except Exception:
-                    vram = None
+                except ValueError:
+                    pass
             return True, name, vram
     except Exception:
         logger.debug("GPU detection failed.", exc_info=True)
     return False, None, None
 
 
-def _python_package_available(module_name: str) -> bool:
+def _module_available(module_name: str) -> bool:
+    """Check optional dependency presence without importing it."""
     try:
-        __import__(module_name)
-        return True
-    except Exception:
+        return importlib.util.find_spec(module_name) is not None
+    except (ImportError, ValueError, ModuleNotFoundError):
         return False
 
 
