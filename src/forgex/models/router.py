@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -168,9 +169,8 @@ class ModelRouter:
     @staticmethod
     def _module_available(name: str) -> bool:
         try:
-            __import__(name)
-            return True
-        except Exception:
+            return importlib.util.find_spec(name) is not None
+        except (ImportError, ValueError, ModuleNotFoundError):
             return False
 
 
