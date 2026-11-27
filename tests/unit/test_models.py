@@ -126,3 +126,56 @@ def test_cloud_model_provider_can_be_configured():
 
     assert settings.provider == "openai_compatible"
     assert settings.openai_api_key == "test-token"
+
+
+def test_low_resource_model_defaults_are_safe_for_laptops():
+    settings = ModelSettings()
+
+    assert settings.model_name == "qwen2.5-coder:1.5b"
+    assert settings.context_window == 4096
+    assert settings.max_output_tokens == 1024
+    assert settings.ollama_num_threads == 4
+
+
+def test_ollama_provider_applies_resource_limits(monkeypatch):
+    from forgex.models.providers.ollama import OllamaProvider
+
+    provider = OllamaProvider(
+        model_name="test-model",
+        num_threads=2,
+        keep_alive="1m",
+    )
+    captured = {}
+
+    def fake_chat(payload):
+        captured.update(payload)
+        return {
+            "model": "test-model",
+            "message": {"content": "ok"},
+            "eval_count": 1,
+            "prompt_eval_count": 1,
+        }
+
+    monkeypatch.setattr(provider, "_chat_http", fake_chat)
+    result = provider._generate_sync([ModelMessage(role="user", content="hi")])
+
+    assert result.text == "ok"
+    assert captured["keep_alive"] == "1m"
+    assert captured["options"]["num_thread"] == 2
+    assert captured["options"]["num_ctx"] == 8192
+    assert captured["options"]["num_batch"] == 128
+
+
+def test_hardware_module_probe_does_not_import_ml_runtime(monkeypatch):
+    from forgex.models import hardware
+
+    calls = []
+
+    def fake_find_spec(name):
+        calls.append(name)
+        return None
+
+    monkeypatch.setattr(hardware.importlib.util, "find_spec", fake_find_spec)
+
+    assert hardware._module_available("transformers") is False
+    assert calls == ["transformers"]
