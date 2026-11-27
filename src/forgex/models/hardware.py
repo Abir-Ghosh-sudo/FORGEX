@@ -123,9 +123,9 @@ def _detect_total_memory_gb() -> float | None:
             if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
                 return round(stat.ullTotalPhys / (1024**3), 2)
         elif Path("/proc/meminfo").exists():
-            for line in Path("/proc/meminfo").read_text(
-                encoding="utf-8", errors="ignore"
-            ).splitlines():
+            for line in (
+                Path("/proc/meminfo").read_text(encoding="utf-8", errors="ignore").splitlines()
+            ):
                 if line.startswith("MemTotal:"):
                     return round(int(line.split()[1]) / (1024**2), 2)
     except Exception:
@@ -152,10 +152,7 @@ def _detect_gpu() -> tuple[bool, str | None, float | None]:
             check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
-            parts = [
-                part.strip()
-                for part in result.stdout.strip().splitlines()[0].split(",")
-            ]
+            parts = [part.strip() for part in result.stdout.strip().splitlines()[0].split(",")]
             name = parts[0] if parts else None
             vram = None
             if len(parts) > 1:
