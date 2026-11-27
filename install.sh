@@ -5,6 +5,8 @@ INSTALL_ROOT="\${XDG_DATA_HOME:-$HOME/.local/share}/forgex"
 BIN_DIR="\${XDG_BIN_HOME:-$HOME/.local/bin}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
+WITH_OLLAMA=false
+if [[ "${1:-}" == "--with-ollama" ]]; then WITH_OLLAMA=true; fi
 echo "=== FORGEX Installer ==="
 PYTHON=""
 for candidate in python3.13 python3.12 python3.11 python3; do
@@ -43,5 +45,20 @@ case ":$PATH:" in
         ;;
 esac
 "$BIN_DIR/forgex" --version
+if [[ "$WITH_OLLAMA" == true ]]; then
+    if ! command -v curl >/dev/null 2>&1; then
+        echo "curl is required to install Ollama." >&2
+        exit 1
+    fi
+    echo "Installing Ollama (may request sudo)..."
+    curl -fsSL https://ollama.com/install.sh | sh
+    if ! command -v ollama >/dev/null 2>&1; then
+        echo "Ollama installation finished. Open a new terminal, then run: ollama pull qwen2.5-coder:1.5b" >&2
+        exit 1
+    fi
+    echo "Downloading lightweight default coding model (qwen2.5-coder:1.5b)..."
+    ollama pull qwen2.5-coder:1.5b
+    "$BIN_DIR/forgex" model use ollama qwen2.5-coder:1.5b
+fi
 echo "FORGEX installed successfully! Run: forgex doctor"
 echo "If command is not found, open a new terminal or run: source ~/.profile"
