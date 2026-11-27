@@ -12,14 +12,30 @@ _ACCENT = "#B13CFF"  # FORGEX electric purple
 _HIGHLIGHT = "#20DDF5"  # FORGEX neon cyan
 _MUTED = "#A7B0C0"
 
-_LOGO = r"""
-  ▄████  ▒█████   ██▀███   ▄████ ▓█████ ▒██   ██▒
- ██▒ ▀█▒▒██▒  ██▒▓██ ▒ ██▒██▒ ▀█▒▓█   ▀ ▒▒ █ █ ▒░
-▒██░▄▄▄░▒██░  ██▒▓██ ░▄█ ▒▒██░▄▄▄░▒███   ░░  █   ░
-░▓█  ██▓▒██   ██░▒██▀▀█▄  ░▓█  ██▓▒▓█  ▄  ░ █ █ ▒
-░▒▓███▀▒░ ████▓▒░░██▓ ▒██▒░▒▓███▀▒░▒████▒▒██▒ ▒██▒
- ░▒   ▒ ░ ▒░▒░▒░ ░ ▒▓ ░▒▓░ ░▒   ▒ ░░ ▒░ ░▒▒ ░ ░▓ ░
-"""
+_GLYPHS = {
+    "F": ("█████", "██   ", "██   ", "████ ", "██   ", "██   ", "██   "),
+    "O": (" ███ ", "██ ██", "██ ██", "██ ██", "██ ██", "██ ██", " ███ "),
+    "R": ("████ ", "██ ██", "██ ██", "████ ", "███  ", "██ ██", "██ ██"),
+    "G": (" ███ ", "██ ██", "██   ", "██ ██", "██ ██", "██ ██", " ███ "),
+    "E": ("█████", "██   ", "██   ", "████ ", "██   ", "██   ", "█████"),
+    "X": ("██ ██", "██ ██", " ██ █ ", "  █  ", " ██ █ ", "██ ██", "██ ██"),
+}
+
+
+def _build_wordmark() -> Group:
+    """Build a large, terminal-native FORGEX wordmark."""
+    rows: list[Text] = []
+    letters = "FORGEX"
+    for row_index in range(7):
+        line = Text()
+        for index, letter in enumerate(letters):
+            if index:
+                line.append("   ")
+            color = _HIGHLIGHT if index % 2 == 0 else _ACCENT
+            line.append(_GLYPHS[letter][row_index].replace("█", "██"), style=f"bold {color}")
+        rows.append(line)
+    return Group(*rows)
+
 
 
 def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True) -> None:
@@ -28,26 +44,12 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
     target.clear()
 
     eyebrow = Text("Welcome to the FORGEX terminal coding agent!", style=f"bold {_HIGHLIGHT}")
-    mascot = Group(
-        Text("          .----------------.          ", style=f"bold {_ACCENT}"),
-        Text("       .-'   ◉        ◉   '-.       ", style=f"bold {_HIGHLIGHT}"),
-        Text("      /       .------.       \\      ", style=f"bold {_ACCENT}"),
-        Text("     |        |  /\\  |        |     ", style=f"bold {_HIGHLIGHT}"),
-        Text("     |        | <  > |        |     ", style=f"bold {_HIGHLIGHT}"),
-        Text("      \\       '------'       /      ", style=f"bold {_ACCENT}"),
-        Text("       '----.________.----'       ", style=f"bold {_HIGHLIGHT}"),
-        Text("             /  ||  \\             ", style=f"bold {_ACCENT}"),
-        Text("            /___||___\\            ", style=f"bold {_HIGHLIGHT}"),
-    )
-    wordmark = Text.from_markup(
-        f"[bold {_HIGHLIGHT}]F[/][bold {_ACCENT}]O R G E[/][bold {_HIGHLIGHT}]X[/]"
-    )
+    wordmark = _build_wordmark()
     tagline = Text("Build beyond the ordinary.", style=f"bold {_HIGHLIGHT}")
     description = Text("Plan  •  Code  •  Test  •  Improve", style=_MUTED)
     content = Group(
         Align.center(eyebrow),
         Text(""),
-        Align.center(mascot),
         Align.center(wordmark),
         Text(""),
         Align.center(tagline),
@@ -59,7 +61,7 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
             title="[bold white]WELCOME[/bold white]",
             subtitle=f"[{_HIGHLIGHT}]YOUR AI DEVELOPMENT PARTNER[/{_HIGHLIGHT}]",
             border_style=_ACCENT,
-            padding=(1, 3),
+            padding=(1, 2),
             expand=False,
         )
     )
