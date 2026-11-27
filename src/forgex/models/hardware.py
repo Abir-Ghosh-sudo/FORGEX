@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import logging
 import os
@@ -47,11 +48,7 @@ class HardwareProfile:
 
 
 def detect_hardware() -> HardwareProfile:
-    """Detect hardware using lightweight OS queries only.
-
-    In particular, do not import torch/transformers just to inspect hardware:
-    those imports can consume significant startup time and memory.
-    """
+    """Detect hardware using lightweight OS queries only."""
     system = platform.system()
     machine = platform.machine()
     cpu_count = os.cpu_count() or 1
@@ -155,14 +152,15 @@ def _detect_gpu() -> tuple[bool, str | None, float | None]:
             check=False,
         )
         if result.returncode == 0 and result.stdout.strip():
-            parts = [part.strip() for part in result.stdout.strip().splitlines()[0].split(",")]
+            parts = [
+                part.strip()
+                for part in result.stdout.strip().splitlines()[0].split(",")
+            ]
             name = parts[0] if parts else None
             vram = None
             if len(parts) > 1:
-                try:
+                with contextlib.suppress(ValueError):
                     vram = round(float(parts[1]) / 1024.0, 2)
-                except ValueError:
-                    pass
             return True, name, vram
     except Exception:
         logger.debug("GPU detection failed.", exc_info=True)
