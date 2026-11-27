@@ -30,5 +30,8 @@ def test_welcome_screen_renders_forgex_branding():
     output = console.export_text()
 
     assert "Welcome to the FORGEX terminal coding agent!" in output
-    assert "Build Beyond Code." in output
+    assert "Build beyond the ordinary." in output
+    assert "Plan" in output
+    assert "Code" in output
+    assert "Press Enter to open your workspace" in output
     assert "Press Enter to continue" not in output
