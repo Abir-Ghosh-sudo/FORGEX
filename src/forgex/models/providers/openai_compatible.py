@@ -53,6 +53,7 @@ class OpenAICompatibleProvider(BaseModelProvider):
             )
         return self._async_client
 
+    @property
     def capabilities(self) -> ModelCapabilities:
         return ModelCapabilities(
             streaming=True,
