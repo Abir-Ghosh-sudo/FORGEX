@@ -49,7 +49,8 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
         )
     )
     target.print()
-    target.print(Align.center(Text("Press Enter to open your workspace", style=f"bold {_HIGHLIGHT}")))
+    prompt = Text("Press Enter to open your workspace", style=f"bold {_HIGHLIGHT}")
+    target.print(Align.center(prompt))
     if wait_for_enter:
         Prompt.ask(
             f"[{_HIGHLIGHT}]Continue[/{_HIGHLIGHT}]",
