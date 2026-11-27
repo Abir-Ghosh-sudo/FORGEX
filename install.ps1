@@ -32,7 +32,7 @@ try {
     Write-Host "Installing FORGEX dependencies..."
     & $venvPython -m pip install --upgrade pip
     if ($LASTEXITCODE -ne 0) { throw "Could not upgrade pip." }
-    & $venvPython -m pip install $installRoot
+    & $venvPython -m pip install "${installRoot}[local]"
     if ($LASTEXITCODE -ne 0) { throw "FORGEX installation failed." }
     $binDir = Join-Path $installRoot "bin"
     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
@@ -61,8 +61,21 @@ try {
             if (Test-Path $candidate) { $ollama = $candidate }
         }
         if (-not $ollama) { throw "Ollama installed. Open a new PowerShell window, then run: ollama pull qwen2.5-coder:1.5b" }
+        $ollamaPath = if ($ollama -is [string]) { $ollama } else { $ollama.Source }
+        & $ollamaPath list *> $null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Starting Ollama service..."
+            Start-Process -FilePath $ollamaPath -ArgumentList "serve" -WindowStyle Hidden
+            $ready = $false
+            for ($i = 0; $i -lt 30; $i++) {
+                Start-Sleep -Seconds 1
+                & $ollamaPath list *> $null
+                if ($LASTEXITCODE -eq 0) { $ready = $true; break }
+            }
+            if (-not $ready) { throw "Ollama service did not start. Start Ollama, then run: ollama pull qwen2.5-coder:1.5b" }
+        }
         Write-Host "Downloading the lightweight default coding model (qwen2.5-coder:1.5b)..."
-        & $ollama.Source pull qwen2.5-coder:1.5b
+        & $ollamaPath pull qwen2.5-coder:1.5b
         if ($LASTEXITCODE -ne 0) { throw "Ollama is installed, but the model download failed. Start Ollama and run: ollama pull qwen2.5-coder:1.5b" }
         & $shim model use ollama qwen2.5-coder:1.5b
         if ($LASTEXITCODE -ne 0) { throw "Model downloaded, but FORGEX could not select it. Run: forgex model use ollama qwen2.5-coder:1.5b" }
