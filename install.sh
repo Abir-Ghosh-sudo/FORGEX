@@ -28,7 +28,7 @@ echo "Creating virtual environment..."
 VENV_PYTHON="$INSTALL_ROOT/.venv/bin/python"
 echo "Installing FORGEX..."
 "$VENV_PYTHON" -m pip install --upgrade pip
-"$VENV_PYTHON" -m pip install "$INSTALL_ROOT"
+"$VENV_PYTHON" -m pip install "${INSTALL_ROOT}[local]"
 mkdir -p "$BIN_DIR"
 cat > "$BIN_DIR/forgex" <<EOF
 #!/usr/bin/env bash
@@ -56,6 +56,15 @@ if [[ "$WITH_OLLAMA" == true ]]; then
         echo "Ollama installation finished. Open a new terminal, then run: ollama pull qwen2.5-coder:1.5b" >&2
         exit 1
     fi
+    if ! ollama list >/dev/null 2>&1; then
+        echo "Starting Ollama service..."
+        nohup ollama serve >/tmp/forgex-ollama.log 2>&1 &
+        for _ in $(seq 1 30); do
+            sleep 1
+            if ollama list >/dev/null 2>&1; then break; fi
+        done
+    fi
+    ollama list >/dev/null 2>&1 || { echo "Ollama service did not start. Run ollama serve and retry the model setup." >&2; exit 1; }
     echo "Downloading lightweight default coding model (qwen2.5-coder:1.5b)..."
     ollama pull qwen2.5-coder:1.5b
     "$BIN_DIR/forgex" model use ollama qwen2.5-coder:1.5b
