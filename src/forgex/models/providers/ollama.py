@@ -129,7 +129,7 @@ class OllamaProvider(BaseModelProvider):
             lower = detail.lower()
             if exc.code == 404 or "not found" in lower or "model" in lower:
                 raise ModelNotFoundError(
-                    f"Ollama model not found: {self.model_name}",
+                    f"Ollama model '{self.model_name}' is not installed. Run: forgex model pull {self.model_name} (or ollama pull {self.model_name}), then retry. Use forgex model list to see installed models and forgex model use ollama <model-name> to select one.",
                     provider=self.provider_name,
                     model=self.model_name,
                 ) from exc
