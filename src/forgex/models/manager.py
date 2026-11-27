@@ -142,9 +142,7 @@ class ModelManager:
             ),
         )
         fitted, _budget = budgeter.fit_messages(provider.normalize_messages(messages))
-        return await provider.generate_async(
-            [message.to_dict() for message in fitted], **kwargs
-        )
+        return await provider.generate_async([message.to_dict() for message in fitted], **kwargs)
 
     def download(
         self,
