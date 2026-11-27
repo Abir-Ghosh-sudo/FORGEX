@@ -21,6 +21,7 @@ _LOGO = r"""
  ░▒   ▒ ░ ▒░▒░▒░ ░ ▒▓ ░▒▓░ ░▒   ▒ ░░ ▒░ ░▒▒ ░ ░▓ ░
 """
 
+
 def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True) -> None:
     """Render the FORGEX terminal welcome screen."""
     target = console or Console()
