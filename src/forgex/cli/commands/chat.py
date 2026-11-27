@@ -13,6 +13,7 @@ from rich.status import Status
 
 from forgex.core import ForgexApplication
 from forgex.core.exceptions import ForgexError
+from forgex.cli.welcome import show_welcome
 
 console = Console()
 
@@ -48,22 +49,18 @@ CLEAR_COMMANDS = {"/clear"}
 
 
 def _show_welcome(workspace: Path) -> None:
-    """Display the interactive session welcome screen."""
-    console.print()
-
+    """Display the branded startup screen and workspace details."""
+    show_welcome(console)
     console.print(
         Panel(
-            "[bold cyan]FORGEX Interactive Session[/bold cyan]\n"
-            "[dim]Build Beyond Code.[/dim]\n\n"
             f"[bold]Workspace:[/bold] {workspace}\n\n"
             "[green]/help[/green]  Show available commands\n"
             "[green]/clear[/green] Clear terminal screen\n"
             "[green]/exit[/green]  End the session",
-            title="FORGEX",
+            title="FORGEX Session",
             border_style="cyan",
         )
     )
-
 
 def _show_help() -> None:
     """Display interactive command help."""
