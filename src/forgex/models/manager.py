@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,7 @@ class ModelManager:
         )
         self._provider: BaseModelProvider | None = None
         self._route: ModelRoute | None = None
+        self._provider_lock = threading.RLock()
 
     @property
     def route(self) -> ModelRoute | None:
@@ -51,14 +53,12 @@ class ModelManager:
         model: str | None = None,
         model_path: str | Path | None = None,
     ) -> ModelRoute:
-        route = self.router.resolve(
+        return self.router.resolve(
             self.settings,
             provider_override=provider,
             model_override=model,
             model_path_override=model_path,
         )
-        self._route = route
-        return route
 
     def get_provider(
         self,
@@ -74,39 +74,39 @@ class ModelManager:
             model_path=model_path,
         )
 
-        if (
-            not force_new
-            and self._provider is not None
-            and self._route is not None
-            and self._route.provider == route.provider
-            and self._route.model_name == route.model_name
-            and self._route.model_path == route.model_path
-        ):
+        with self._provider_lock:
+            current = self._route
+            if (
+                not force_new
+                and self._provider is not None
+                and current is not None
+                and current.provider == route.provider
+                and current.model_name == route.model_name
+                and current.model_path == route.model_path
+            ):
+                return self._provider
+
+            if self._provider is not None:
+                try:
+                    self._provider.close()
+                except Exception:
+                    logger.debug("Failed to close previous provider.", exc_info=True)
+
+            self._provider = self._create_provider(route)
+            self._route = route
             return self._provider
-
-        if self._provider is not None:
-            try:
-                self._provider.close()
-            except Exception:
-                logger.debug("Failed to close previous provider.", exc_info=True)
-
-        self._provider = self._create_provider(route)
-        self._route = route
-        return self._provider
 
     def generate(
         self,
         messages: list[dict[str, Any]],
         **kwargs: Any,
     ) -> GenerationResult | str:
-        """Unified generation entrypoint compatible with agent roles."""
         provider = self.get_provider(
             provider=kwargs.pop("provider", None),
             model=kwargs.pop("model", None),
             model_path=kwargs.pop("model_path", None),
             force_new=bool(kwargs.pop("force_new_provider", False)),
         )
-
         budgeter = ContextBudgeter(
             context_window=provider.context_window,
             reserved_output_tokens=min(
@@ -115,8 +115,7 @@ class ModelManager:
             ),
         )
         fitted, _budget = budgeter.fit_messages(provider.normalize_messages(messages))
-        result = provider.generate([m.to_dict() for m in fitted], **kwargs)
-        return result
+        return provider.generate([message.to_dict() for message in fitted], **kwargs)
 
     async def generate_async(
         self,
@@ -143,7 +142,9 @@ class ModelManager:
             ),
         )
         fitted, _budget = budgeter.fit_messages(provider.normalize_messages(messages))
-        return await provider.generate_async([m.to_dict() for m in fitted], **kwargs)
+        return await provider.generate_async(
+            [message.to_dict() for message in fitted], **kwargs
+        )
 
     def download(
         self,
@@ -197,12 +198,14 @@ class ModelManager:
             ) from exc
 
     def close(self) -> None:
-        if self._provider is not None:
-            try:
-                self._provider.close()
-            except Exception:
-                logger.debug("Provider close failed.", exc_info=True)
-            self._provider = None
+        with self._provider_lock:
+            if self._provider is not None:
+                try:
+                    self._provider.close()
+                except Exception:
+                    logger.debug("Provider close failed.", exc_info=True)
+                self._provider = None
+                self._route = None
 
     def _create_provider(self, route: ModelRoute) -> BaseModelProvider:
         common: dict[str, Any] = {
@@ -220,6 +223,8 @@ class ModelManager:
 
             return OllamaProvider(
                 base_url=self.settings.ollama_base_url,
+                num_threads=self.settings.ollama_num_threads,
+                keep_alive=self.settings.ollama_keep_alive,
                 **common,
             )
         if route.provider == "llama_cpp":
@@ -234,7 +239,6 @@ class ModelManager:
                 local_files_only=self.settings.local_files_only,
                 **common,
             )
-
         if route.provider in {"openai_compatible", "vllm", "sglang", "openai"}:
             from forgex.models.providers.openai_compatible import OpenAICompatibleProvider
 
@@ -243,7 +247,6 @@ class ModelManager:
                 api_key=self.settings.openai_api_key,
                 **common,
             )
-
         raise ModelConfigurationError(f"Unsupported provider: {route.provider}")
 
     async def aclose(self) -> None:
