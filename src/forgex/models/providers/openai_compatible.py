@@ -11,6 +11,8 @@ from forgex.models.base import (
     BaseModelProvider,
     GenerationResult,
     ModelCapabilities,
+    ModelMessage,
+    ModelProviderInfo,
 )
 from forgex.models.errors import ModelProviderError
 
@@ -52,6 +54,37 @@ class OpenAICompatibleProvider(BaseModelProvider):
                 timeout=self.request_timeout_seconds,
             )
         return self._async_client
+
+    @property
+    def info(self) -> ModelProviderInfo:
+        return ModelProviderInfo(
+            name="openai_compatible",
+            display_name="OpenAI-compatible API",
+            local=False,
+            supports_download=False,
+            description="Connects to OpenAI-compatible inference servers and hosted APIs.",
+        )
+
+    def _generate_sync(
+        self,
+        messages: list[ModelMessage],
+        **kwargs: Any,
+    ) -> GenerationResult:
+        payload = self._build_payload(
+            [message.to_dict() for message in messages],
+            **kwargs,
+        )
+        try:
+            response = self.client.post("/chat/completions", json=payload)
+            response.raise_for_status()
+            return self._parse_response(response.json())
+        except Exception as exc:
+            logger.exception("OpenAI-compatible generation request failed.")
+            raise ModelProviderError(
+                f"OpenAI-compatible request failed: {exc}",
+                provider="openai_compatible",
+                model=self.model_name,
+            ) from exc
 
     @property
     def capabilities(self) -> ModelCapabilities:
