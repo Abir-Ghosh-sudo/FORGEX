@@ -196,3 +196,57 @@ def test_model_router_checks_optional_packages_without_importing(monkeypatch):
 
     assert ModelRouter._module_available("transformers") is False
     assert checked == ["transformers"]
+
+
+
+def test_ollama_missing_model_error_includes_recovery_steps(monkeypatch):
+    import asyncio
+    from urllib.error import HTTPError
+    from io import BytesIO
+
+    from forgex.models.providers.ollama import OllamaProvider
+
+    provider = OllamaProvider(model_name="qwen2.5-coder:1.5b")
+    body = BytesIO(b'{"error":"model not found"}')
+
+    def missing_model(*args, **kwargs):
+        raise HTTPError(
+            url="http://127.0.0.1:11434/api/chat",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=body,
+        )
+
+    monkeypatch.setattr(
+        "forgex.models.providers.ollama.request.urlopen",
+        missing_model,
+    )
+
+    with pytest.raises(ModelNotFoundError) as exc:
+        provider._chat_http({"model": provider.model_name})
+
+    assert "forgex model pull qwen2.5-coder:1.5b" in str(exc.value)
+    assert "forgex model list" in str(exc.value)
+
+
+def test_async_provider_keeps_model_not_found_error(monkeypatch):
+    import asyncio
+
+    from forgex.models.providers.ollama import OllamaProvider
+
+    provider = OllamaProvider(model_name="missing-model")
+
+    def raise_missing_model(*args, **kwargs):
+        raise ModelNotFoundError(
+            "Model is not installed.",
+            provider="ollama",
+            model="missing-model",
+        )
+
+    monkeypatch.setattr(provider, "_generate_sync", raise_missing_model)
+
+    with pytest.raises(ModelNotFoundError, match="not installed"):
+        asyncio.run(
+            provider.generate_async([{"role": "user", "content": "hello"}])
+        )
