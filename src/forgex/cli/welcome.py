@@ -2,39 +2,61 @@
 
 from __future__ import annotations
 
-from rich.console import Console
+from rich.align import Align
+from rich.console import Console, Group
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.text import Text
 
+_ACCENT = "#8b7cf6"
+_HIGHLIGHT = "#55d6c2"
+_MUTED = "#9aa4b2"
+
 _LOGO = r"""
-███████╗ ██████╗ ██████╗  ██████╗ ███████╗██╗  ██╗
-██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝╚██╗██╔╝
-█████╗  ██║   ██║██████╔╝██║  ███╗█████╗   ╚███╔╝
-██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝   ██╔██╗
-██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗██╔╝ ██╗
-╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝
+  ▄████  ▒█████   ██▀███   ▄████ ▓█████ ▒██   ██▒
+ ██▒ ▀█▒▒██▒  ██▒▓██ ▒ ██▒██▒ ▀█▒▓█   ▀ ▒▒ █ █ ▒░
+▒██░▄▄▄░▒██░  ██▒▓██ ░▄█ ▒▒██░▄▄▄░▒███   ░░  █   ░
+░▓█  ██▓▒██   ██░▒██▀▀█▄  ░▓█  ██▓▒▓█  ▄  ░ █ █ ▒
+░▒▓███▀▒░ ████▓▒░░██▓ ▒██▒░▒▓███▀▒░▒████▒▒██▒ ▒██▒
+ ░▒   ▒ ░ ▒░▒░▒░ ░ ▒▓ ░▒▓░ ░▒   ▒ ░░ ▒░ ░▒▒ ░ ░▓ ░
 """
 
-
 def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True) -> None:
-    """Render the branded startup screen and optionally wait for confirmation."""
+    """Render the FORGEX terminal welcome screen."""
     target = console or Console()
     target.clear()
-    banner = Text.from_markup(
-        "[orange1]✳[/orange1]  Welcome to the [bold]FORGEX[/bold] terminal coding agent!"
+
+    eyebrow = Text("✦  FORGEX  /  AUTONOMOUS CODING WORKSPACE", style=f"bold {_HIGHLIGHT}")
+    logo = Text(_LOGO, style=f"bold {_ACCENT}", no_wrap=True)
+    tagline = Text("Build beyond the ordinary.", style=f"bold {_HIGHLIGHT}")
+    description = Text("Plan  •  Code  •  Test  •  Improve", style=_MUTED)
+    content = Group(
+        Align.center(eyebrow),
+        Text(""),
+        Align.center(logo),
+        Text(""),
+        Align.center(tagline),
+        Align.center(description),
     )
-    target.print(Panel(banner, border_style="orange1", padding=(1, 2), expand=False))
-    target.print()
-    target.print(Text(_LOGO, style="bold #e17b5c", no_wrap=True))
+    target.print(
+        Panel(
+            content,
+            title="[bold white]WELCOME[/bold white]",
+            subtitle=f"[{_HIGHLIGHT}]YOUR AI DEVELOPMENT PARTNER[/{_HIGHLIGHT}]",
+            border_style=_ACCENT,
+            padding=(1, 3),
+            expand=False,
+        )
+    )
     target.print()
     target.print(
-        "[bold #79aee8]Build Beyond Code.[/bold #79aee8]  "
-        "[dim]Your workspace. Your models. Your agent.[/dim]"
+        Align.center(
+            Text("Press Enter to open your workspace", style=f"bold {_HIGHLIGHT}")
+        )
     )
     if wait_for_enter:
         Prompt.ask(
-            "[bold #79aee8]Press Enter to continue[/bold #79aee8]",
+            f"[{_HIGHLIGHT}]Continue[/{_HIGHLIGHT}]",
             console=target,
             default="",
             show_default=False,
