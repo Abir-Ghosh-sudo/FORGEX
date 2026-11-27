@@ -30,10 +30,14 @@ class OllamaProvider(BaseModelProvider):
         self,
         *,
         base_url: str = "http://127.0.0.1:11434",
+        num_threads: int = 4,
+        keep_alive: str = "2m",
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
         self.base_url = (base_url or "http://127.0.0.1:11434").rstrip("/")
+        self.num_threads = max(1, int(num_threads))
+        self.keep_alive = keep_alive
 
     @property
     def info(self) -> ModelProviderInfo:
@@ -64,11 +68,14 @@ class OllamaProvider(BaseModelProvider):
             "model": self.model_name,
             "messages": [m.to_dict() for m in messages],
             "stream": False,
+            "keep_alive": self.keep_alive,
             "options": {
                 "temperature": kwargs.get("temperature", self.temperature),
                 "top_p": kwargs.get("top_p", self.top_p),
                 "num_predict": kwargs.get("max_output_tokens", self.max_output_tokens),
                 "num_ctx": kwargs.get("context_window", self.context_window),
+                "num_thread": self.num_threads,
+                "num_batch": 128,
             },
         }
 
@@ -192,11 +199,11 @@ class OllamaProvider(BaseModelProvider):
 
     @staticmethod
     def _safe_total(data: dict[str, Any]) -> int | None:
-        p = OllamaProvider._safe_int(data.get("prompt_eval_count"))
-        c = OllamaProvider._safe_int(data.get("eval_count"))
-        if p is None or c is None:
+        prompt = OllamaProvider._safe_int(data.get("prompt_eval_count"))
+        completion = OllamaProvider._safe_int(data.get("eval_count"))
+        if prompt is None or completion is None:
             return None
-        return p + c
+        return prompt + completion
 
     def is_available(self) -> bool:
         try:
@@ -214,10 +221,11 @@ class OllamaProvider(BaseModelProvider):
             with request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8", errors="replace") or "{}")
             models = data.get("models") or []
-            names = []
-            for item in models:
-                if isinstance(item, dict) and item.get("name"):
-                    names.append(str(item["name"]))
+            names = [
+                str(item["name"])
+                for item in models
+                if isinstance(item, dict) and item.get("name")
+            ]
             if names:
                 return names
         except Exception:
@@ -241,12 +249,11 @@ class OllamaProvider(BaseModelProvider):
                 (proc.stderr or "Failed to list Ollama models").strip(),
                 provider="ollama",
             )
-        names = []
-        for line in (proc.stdout or "").splitlines()[1:]:
-            parts = line.split()
-            if parts:
-                names.append(parts[0])
-        return names
+        return [
+            parts[0]
+            for line in (proc.stdout or "").splitlines()[1:]
+            if (parts := line.split())
+        ]
 
     @staticmethod
     def pull_model(
