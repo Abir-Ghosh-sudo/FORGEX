@@ -90,7 +90,7 @@ class ChromaRAG:
             import chromadb
         except ImportError as exc:
             raise ImportError(
-                "Chroma RAG requires the optional dependency: pip install 'forgex-ai[vector]'
+                "Chroma RAG requires the optional dependency: pip install 'forgex-ai[vector]'"
             ) from exc
         self.embeddings = embeddings
         self.chunk_size = chunk_size
