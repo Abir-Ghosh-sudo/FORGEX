@@ -10,7 +10,11 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from forgex.models.errors import ModelConfigurationError, ModelInferenceError
+from forgex.models.errors import (
+    ModelConfigurationError,
+    ModelInferenceError,
+    ModelNotFoundError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +190,7 @@ class BaseModelProvider(abc.ABC):
                 lambda: self._generate_sync(normalized, **kwargs),
             )
         except Exception as exc:
-            if isinstance(exc, ModelInferenceError):
+            if isinstance(exc, (ModelInferenceError, ModelNotFoundError)):
                 raise
             raise ModelInferenceError(
                 f"{self.provider_name} generation failed: {exc}",
