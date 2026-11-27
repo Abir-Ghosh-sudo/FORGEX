@@ -55,13 +55,10 @@ class OpenAICompatibleProvider(BaseModelProvider):
 
     def capabilities(self) -> ModelCapabilities:
         return ModelCapabilities(
-            supports_streaming=True,
-            supports_chat=True,
-            supports_completion=True,
-            supports_tool_calling=True,
-            supports_system_prompt=True,
-            multimodal=False,
-            recommended_max_tokens=self.max_output_tokens,
+            streaming=True,
+            tool_calling=True,
+            max_context_tokens=self.context_window,
+            local_only=False,
         )
 
     def generate(
@@ -128,6 +125,8 @@ class OpenAICompatibleProvider(BaseModelProvider):
         usage = data.get("usage") or {}
         return GenerationResult(
             text=content,
+            model=self.model_name,
+            provider="openai_compatible",
             finish_reason=finish_reason,
             prompt_tokens=int(usage.get("prompt_tokens", 0)),
             completion_tokens=int(usage.get("completion_tokens", 0)),
