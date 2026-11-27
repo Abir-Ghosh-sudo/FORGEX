@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 REPO_URL="https://github.com/Abir-Ghosh-sudo/FORGEX/archive/refs/heads/main.tar.gz"
-INSTALL_ROOT="\${XDG_DATA_HOME:-$HOME/.local/share}/forgex"
-BIN_DIR="\${XDG_BIN_HOME:-$HOME/.local/bin}"
+INSTALL_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/forgex"
+BIN_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 WITH_OLLAMA=false
