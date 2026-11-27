@@ -51,7 +51,13 @@ async def test_agent_role_prefers_native_async_model_generation():
             raise AssertionError("Synchronous generation should not be used.")
 
     model = AsyncModel()
-    result = await PlannerRole(model=model).run({"task": "test task"})
+    result = await PlannerRole(model=model).run(
+        {
+            "task": "test task",
+            "workspace": ".",
+            "context": "Unit-test context",
+        }
+    )
 
     assert result.data["summary"] == "done"
     assert model.async_called is True
