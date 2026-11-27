@@ -213,7 +213,10 @@ class FileRetriever:
             except PermissionError:
                 entries = []
             for entry in entries:
-                if entry.name in self.EXCLUDED_DIRS or entry.suffix.lower() in self.EXCLUDED_SUFFIXES:
+                if (
+                    entry.name in self.EXCLUDED_DIRS
+                    or entry.suffix.lower() in self.EXCLUDED_SUFFIXES
+                ):
                     continue
                 if entry.is_symlink():
                     continue
