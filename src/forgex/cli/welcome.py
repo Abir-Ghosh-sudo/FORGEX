@@ -24,9 +24,7 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
     banner = Text.from_markup(
         "[orange1]✳[/orange1]  Welcome to the [bold]FORGEX[/bold] terminal coding agent!"
     )
-    target.print(
-        Panel(banner, border_style="orange1", padding=(1, 2), expand=False)
-    )
+    target.print(Panel(banner, border_style="orange1", padding=(1, 2), expand=False))
     target.print()
     target.print(Text(_LOGO, style="bold #e17b5c", no_wrap=True))
     target.print()
