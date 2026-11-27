@@ -179,3 +179,20 @@ def test_hardware_module_probe_does_not_import_ml_runtime(monkeypatch):
 
     assert hardware._module_available("transformers") is False
     assert calls == ["transformers"]
+
+
+def test_model_router_checks_optional_packages_without_importing(monkeypatch):
+    import importlib.util
+
+    from forgex.models.router import ModelRouter
+
+    checked = []
+
+    def fake_find_spec(name):
+        checked.append(name)
+        return None
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+
+    assert ModelRouter._module_available("transformers") is False
+    assert checked == ["transformers"]
