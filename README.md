@@ -94,46 +94,61 @@ The package version is defined in `pyproject.toml` and exposed by `forgex --vers
 
 ## 🚀 Getting Started
 
-### Requirements
+### Easiest setup: one command
 
-- Python **3.11 or newer**
-- Git
-- A supported model runtime and a coding model
-- C++20 toolchain only if you want to build the optional native extension
+The installer sets up FORGEX in an isolated Python environment. Add the `--with-ollama` option to also install the local Ollama runtime, download the small default coding model (`qwen2.5-coder:1.5b`), and select it in FORGEX. No C++ compiler, Docker, or manual virtual-environment setup is needed.
 
-### One-command install (recommended)
+**Windows 10/11 (PowerShell):**
+```powershell
+$s = irm https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.ps1; & ([scriptblock]::Create($s)) -WithOllama
+```
 
-Install FORGEX with a single command. The installer downloads the latest source from the GitHub `main` branch, creates an isolated Python virtual environment, installs the package, adds the CLI launcher to your user PATH, and verifies the installation.
+**Linux (Bash):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.sh | bash -s -- --with-ollama
+```
 
-**Requirements:** Python 3.11+ and an internet connection. Docker, Git, and a C++ compiler are not required for this installation. A model runtime/model is configured separately.
+This full setup installs FORGEX, its required Python dependencies, Ollama, and the default 1.5B coding model. It may take a while because model weights must be downloaded. Linux may ask for your sudo password to install Ollama; Windows requires `winget`. Local model inference uses CPU/RAM while generating.
 
-**Windows (PowerShell):**
+**If Ollama is already installed**, skip its installation and use the FORGEX-only command:
 
+Windows:
 ```powershell
 irm https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.ps1 | iex
 ```
 
-**Linux (Bash):**
-
+Linux:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Abir-Ghosh-sudo/FORGEX/main/install.sh | bash
 ```
 
-After installation, open a new terminal if needed and run:
+Then download/select the default model once:
+```bash
+ollama pull qwen2.5-coder:1.5b
+forgex model use ollama qwen2.5-coder:1.5b
+```
 
+### After installation
+
+Open a new terminal if needed, then run:
 ```bash
 forgex --version
 forgex doctor
+forgex model status
 forgex chat
 ```
 
-**Install locations**
-- Windows: `%LOCALAPPDATA%\\FORGEX`
-- Linux: `~/.local/share/forgex` (or `$XDG_DATA_HOME/forgex`), with the CLI launcher in `~/.local/bin` by default.
+To start working in a project directory:
+```bash
+cd /path/to/your/project
+forgex init
+forgex analyze
+forgex run "Explain this codebase and suggest improvements"
+```
 
-**Updates:** Run the same one-command installer again to replace the installed checkout with the latest `main` branch version. Back up any local changes inside the installation directory first; the installer replaces that directory.
+**Updates:** Run the same installer command again to update FORGEX. It replaces the installed FORGEX directory; back up any files you changed inside that directory first. Your project folders are not replaced.
 
-**Security:** Review [install.ps1](install.ps1) or [install.sh](install.sh) before piping a remote script into your shell. The installer does not download an AI model automatically.
+**Security and transparency:** Review [install.ps1](install.ps1) or [install.sh](install.sh) before running a remote installer. The `--with-ollama` option installs software and downloads model weights. The optional native C++ engine, Transformers, MCP, and vector-store extras are not required for the standard Ollama workflow.
 
 ### 1. Clone the repository
 
@@ -188,7 +203,7 @@ pip install -e ".[vector]"
 One option is [Ollama](https://ollama.com/). Install Ollama, start its service, and pull a coding model:
 
 ```bash
-ollama pull qwen2.5-coder:7b
+ollama pull qwen2.5-coder:1.5b
 ```
 
 Then verify your environment:
