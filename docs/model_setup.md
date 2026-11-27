@@ -6,14 +6,27 @@ FORGEX 1.0 is local-first. No mandatory paid API or hosted inference service.
 
 ### Ollama (Recommended)
 
-Ollama provides easy local model management.
+Ollama provides easy local model management. FORGEX defaults to the small
+`qwen2.5-coder:1.5b` model to reduce laptop resource usage, but the model must
+be downloaded once before the first task.
 
 ```bash
 # Install Ollama: https://ollama.com
-ollama pull qwen2.5-coder:7b
-forgex model use ollama qwen2.5-coder:7b
+ollama pull qwen2.5-coder:1.5b
+forgex model use ollama qwen2.5-coder:1.5b
 forgex model status
 ```
+
+If you already have another Ollama model installed, list it and select it instead:
+
+```bash
+forgex model list
+forgex model use ollama <installed-model-name>
+```
+
+FORGEX does not silently download models on startup. If a configured model is
+missing, the CLI reports the exact pull command and available-model commands.
+
 
 ### llama.cpp (GGUF)
 
