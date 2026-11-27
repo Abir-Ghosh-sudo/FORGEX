@@ -51,9 +51,14 @@ try {
         if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
             throw "winget is required for automatic Ollama installation. Install Ollama manually from https://ollama.com/download/windows, then run: ollama pull qwen2.5-coder:1.5b"
         }
-        Write-Host "Installing Ollama..."
-        winget install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
-        if ($LASTEXITCODE -ne 0) { throw "Ollama installation failed. Install it from https://ollama.com/download/windows and rerun: ollama pull qwen2.5-coder:1.5b" }
+        $existingOllama = Get-Command ollama -ErrorAction SilentlyContinue
+        if (-not $existingOllama) {
+            Write-Host "Installing Ollama..."
+            winget install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+            if ($LASTEXITCODE -ne 0) { throw "Ollama installation failed. Install it from https://ollama.com/download/windows and rerun: ollama pull qwen2.5-coder:1.5b" }
+        } else {
+            Write-Host "Ollama is already installed; skipping installation."
+        }
         $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
         $ollama = Get-Command ollama -ErrorAction SilentlyContinue
         if (-not $ollama) {
