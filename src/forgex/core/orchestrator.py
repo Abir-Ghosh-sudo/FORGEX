@@ -366,9 +366,15 @@ class WorkflowOrchestrator:
                 raise
 
             except Exception as exc:
-                logger.exception(
-                    "Workflow execution failed: task=%s",
+                logger.error(
+                    "Workflow execution failed: task=%s: %s",
                     task.task_id,
+                    exc,
+                )
+                logger.debug(
+                    "Workflow execution traceback: task=%s",
+                    task.task_id,
+                    exc_info=True,
                 )
 
                 task = await self.task_manager.get_task(task.task_id)
