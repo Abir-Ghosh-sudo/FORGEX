@@ -28,13 +28,27 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
     target.clear()
 
     eyebrow = Text("✦  FORGEX  /  AUTONOMOUS CODING WORKSPACE", style=f"bold {_HIGHLIGHT}")
-    logo = Text(_LOGO, style=f"bold {_ACCENT}", no_wrap=True)
+    mascot = Group(
+        Text("          .----------------.          ", style=f"bold {_ACCENT}"),
+        Text("       .-'   ◉        ◉   '-.       ", style=f"bold {_HIGHLIGHT}"),
+        Text("      /       .------.       \\      ", style=f"bold {_ACCENT}"),
+        Text("     |        |  /\\  |        |     ", style=f"bold {_HIGHLIGHT}"),
+        Text("     |        | <  > |        |     ", style=f"bold {_HIGHLIGHT}"),
+        Text("      \\       '------'       /      ", style=f"bold {_ACCENT}"),
+        Text("       '----.________.----'       ", style=f"bold {_HIGHLIGHT}"),
+        Text("             /  ||  \\             ", style=f"bold {_ACCENT}"),
+        Text("            /___||___\\            ", style=f"bold {_HIGHLIGHT}"),
+    )
+    wordmark = Text.from_markup(
+        f"[bold {_HIGHLIGHT}]F[/][bold {_ACCENT}]O R G E[/][bold {_HIGHLIGHT}]X[/]"
+    )
     tagline = Text("Build beyond the ordinary.", style=f"bold {_HIGHLIGHT}")
     description = Text("Plan  •  Code  •  Test  •  Improve", style=_MUTED)
     content = Group(
         Align.center(eyebrow),
         Text(""),
-        Align.center(logo),
+        Align.center(mascot),
+        Align.center(wordmark),
         Text(""),
         Align.center(tagline),
         Align.center(description),
