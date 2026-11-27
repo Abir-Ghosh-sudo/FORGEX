@@ -8,9 +8,9 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.text import Text
 
-_ACCENT = "#8b7cf6"
-_HIGHLIGHT = "#55d6c2"
-_MUTED = "#9aa4b2"
+_ACCENT = "#B13CFF"  # FORGEX electric purple
+_HIGHLIGHT = "#20DDF5"  # FORGEX neon cyan
+_MUTED = "#A7B0C0"
 
 _LOGO = r"""
   ▄████  ▒█████   ██▀███   ▄████ ▓█████ ▒██   ██▒
