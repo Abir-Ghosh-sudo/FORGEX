@@ -53,12 +53,15 @@ class ModelSettings(BaseSettings):
         "ollama",
         "llama_cpp",
         "transformers",
+        "openai_compatible",
     ] = "auto"
 
     model_name: str = "qwen2.5-coder:7b"
     model_path: Path | None = None
 
     ollama_base_url: str = "http://127.0.0.1:11434"
+    openai_base_url: str = "https://router.huggingface.co/v1"
+    openai_api_key: str | None = None
 
     context_window: int = Field(default=8192, ge=512, le=131072)
     max_output_tokens: int = Field(default=2048, ge=128, le=32768)
