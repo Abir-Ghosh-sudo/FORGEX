@@ -10,7 +10,7 @@
 **An open-source, terminal-first AI coding agent that helps you understand, build, debug, and improve real codebases.**
 
 [![CI](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml/badge.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-v1.0.0-6366f1.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/releases)
+[![Version](https://img.shields.io/badge/version-v1.0.0-20DDF5.svg)](https://github.com/Abir-Ghosh-sudo/FORGEX/releases)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-Apache--2.0-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey)](https://github.com/Abir-Ghosh-sudo/FORGEX)
@@ -32,6 +32,18 @@ Give it a task in natural language. FORGEX can plan the work, inspect the projec
 Use local models for privacy and offline-oriented workflows, or connect the model runtime that fits your environment.
 
 > **Your terminal. Your codebase. Your models. Your control.**
+
+### 🎨 FORGEX visual identity
+
+The terminal experience and project artwork share the same dark, neon visual system:
+
+| Color | Hex | Role |
+|---|---|---|
+| <span style="color:#20DDF5">Neon Cyan</span> | `#20DDF5` | Primary highlights, prompts, active states |
+| <span style="color:#B13CFF">Electric Purple</span> | `#B13CFF` | Accent, emphasis, secondary highlights |
+| Soft Silver | `#A7B0C0` | Muted text and supporting details |
+| Deep Charcoal | `#05070D` | Dark terminal/background surfaces |
+
 
 ## ✨ What is inside?
 
