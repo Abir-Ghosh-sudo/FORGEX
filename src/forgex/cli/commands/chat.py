@@ -62,6 +62,7 @@ def _show_welcome(workspace: Path) -> None:
         )
     )
 
+
 def _show_help() -> None:
     """Display interactive command help."""
     console.print(
