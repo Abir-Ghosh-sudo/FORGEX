@@ -1,4 +1,5 @@
 #requires -Version 5.1
+param([switch]$WithOllama)
 $ErrorActionPreference = "Stop"
 $repo = "https://github.com/Abir-Ghosh-sudo/FORGEX/archive/refs/heads/main.zip"
 $installRoot = Join-Path $env:LOCALAPPDATA "FORGEX"
@@ -46,8 +47,28 @@ try {
     $env:Path = "$binDir;$env:Path"
     & $shim --version
     if ($LASTEXITCODE -ne 0) { throw "FORGEX version check failed." }
+    if ($WithOllama) {
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            throw "winget is required for automatic Ollama installation. Install Ollama manually from https://ollama.com/download/windows, then run: ollama pull qwen2.5-coder:1.5b"
+        }
+        Write-Host "Installing Ollama..."
+        winget install --id Ollama.Ollama --exact --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -ne 0) { throw "Ollama installation failed. Install it from https://ollama.com/download/windows and rerun: ollama pull qwen2.5-coder:1.5b" }
+        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+        $ollama = Get-Command ollama -ErrorAction SilentlyContinue
+        if (-not $ollama) {
+            $candidate = Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"
+            if (Test-Path $candidate) { $ollama = $candidate }
+        }
+        if (-not $ollama) { throw "Ollama installed. Open a new PowerShell window, then run: ollama pull qwen2.5-coder:1.5b" }
+        Write-Host "Downloading the lightweight default coding model (qwen2.5-coder:1.5b)..."
+        & $ollama.Source pull qwen2.5-coder:1.5b
+        if ($LASTEXITCODE -ne 0) { throw "Ollama is installed, but the model download failed. Start Ollama and run: ollama pull qwen2.5-coder:1.5b" }
+        & $shim model use ollama qwen2.5-coder:1.5b
+        if ($LASTEXITCODE -ne 0) { throw "Model downloaded, but FORGEX could not select it. Run: forgex model use ollama qwen2.5-coder:1.5b" }
+    }
     Write-Host "FORGEX installed successfully!" -ForegroundColor Green
-    Write-Host "Run 'forgex doctor' or 'forgex chat' in a new terminal."
+    Write-Host "Run 'forgex doctor' then 'forgex chat' in a new terminal."
 } finally {
     if (Test-Path $tempRoot) { Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue }
 }
