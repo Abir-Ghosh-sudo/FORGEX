@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Any
@@ -122,11 +123,17 @@ class ModelManager:
         messages: list[dict[str, Any]],
         **kwargs: Any,
     ) -> GenerationResult:
-        provider = self.get_provider(
-            provider=kwargs.pop("provider", None),
-            model=kwargs.pop("model", None),
-            model_path=kwargs.pop("model_path", None),
-            force_new=bool(kwargs.pop("force_new_provider", False)),
+        provider_name = kwargs.pop("provider", None)
+        model_name = kwargs.pop("model", None)
+        model_path = kwargs.pop("model_path", None)
+        force_new = bool(kwargs.pop("force_new_provider", False))
+        provider = await asyncio.to_thread(
+            lambda: self.get_provider(
+                provider=provider_name,
+                model=model_name,
+                model_path=model_path,
+                force_new=force_new,
+            )
         )
         budgeter = ContextBudgeter(
             context_window=provider.context_window,
