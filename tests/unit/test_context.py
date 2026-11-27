@@ -42,3 +42,47 @@ class TestContextAssembler:
         a = ContextAssembler(tmp_path)
         text = a.assemble(task="test", max_tokens=1024)
         assert "Task: test" in text
+
+
+class TestFileRetrieverWorkspaceSecurity:
+    def test_read_rejects_path_outside_workspace(self, tmp_path):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        outside = tmp_path / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+
+        retriever = FileRetriever(workspace)
+        with pytest.raises(Exception):
+            retriever.read("../outside.txt")
+
+    def test_write_rejects_path_outside_workspace(self, tmp_path):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        retriever = FileRetriever(workspace)
+
+        with pytest.raises(Exception):
+            retriever.write("../outside.txt", "should not escape")
+
+        assert not (tmp_path / "outside.txt").exists()
+
+    def test_delete_requires_explicit_confirmation(self, tmp_path):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        target = workspace / "keep.txt"
+        target.write_text("keep", encoding="utf-8")
+        retriever = FileRetriever(workspace)
+
+        with pytest.raises(PermissionError):
+            retriever.delete("keep.txt", permanent=True)
+
+        assert target.exists()
+
+    def test_delete_cannot_remove_workspace_root(self, tmp_path):
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        retriever = FileRetriever(workspace)
+
+        with pytest.raises(PermissionError):
+            retriever.delete(".", permanent=True, confirm=True)
+
+        assert workspace.exists()
