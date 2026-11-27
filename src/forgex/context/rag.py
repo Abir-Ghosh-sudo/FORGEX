@@ -54,7 +54,7 @@ def chunk_text(
     while start < len(normalized):
         end = min(len(normalized), start + chunk_size)
         if end < len(normalized):
-            boundary = normalized.rfind("\\n", start + chunk_size // 2, end)
+            boundary = normalized.rfind("\n", start + chunk_size // 2, end)
             if boundary > start:
                 end = boundary
         piece = normalized[start:end].strip()
@@ -181,8 +181,8 @@ class ChromaRAG:
         chunks = self.retrieve(query, top_k=top_k)
         if not chunks:
             return "No relevant repository context was found."
-        return "\\n\\n".join(
-            f"[Source: {item.source} | chunk {item.chunk_index}]\\n{item.text}" for item in chunks
+        return "\n\n".join(
+            f"[Source: {item.source} | chunk {item.chunk_index}]\n{item.text}" for item in chunks
         )
 
 
