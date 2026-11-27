@@ -58,7 +58,7 @@ def _show_welcome(workspace: Path) -> None:
             "[green]/clear[/green] Clear terminal screen\n"
             "[green]/exit[/green]  End the session",
             title="FORGEX Session",
-            border_style="cyan",
+            border_style="#20DDF5",
         )
     )
 
@@ -73,7 +73,7 @@ def _show_help() -> None:
             "[cyan]/exit[/cyan]   Exit the session\n\n"
             "[dim]Any other input is treated as a coding task.[/dim]",
             title="Help",
-            border_style="blue",
+            border_style="#B13CFF",
         )
     )
 
@@ -92,7 +92,7 @@ async def _interactive_session(workspace: Path) -> None:
 
         while True:
             try:
-                instruction = Prompt.ask("\n[bold cyan]forgex[/bold cyan]").strip()
+                instruction = Prompt.ask("\n[bold #20DDF5]forgex[/bold #20DDF5]").strip()
 
             except (EOFError, KeyboardInterrupt):
                 console.print("\n[yellow]Ending session...[/yellow]")
@@ -119,7 +119,7 @@ async def _interactive_session(workspace: Path) -> None:
 
             try:
                 with Status(
-                    "[cyan]FORGEX is working...[/cyan]",
+                    "[#20DDF5]FORGEX is working...[/#20DDF5]",
                     console=console,
                     spinner="dots",
                 ):
@@ -128,9 +128,9 @@ async def _interactive_session(workspace: Path) -> None:
 
                 console.print(
                     Panel(
-                        "[green]Task execution finished.[/green]",
-                        title="FORGEX",
-                        border_style="green",
+                        "[bold #20DDF5]Task execution finished.[/bold #20DDF5]",
+                        title="[bold #B13CFF]FORGEX[/bold #B13CFF]",
+                        border_style="#20DDF5",
                     )
                 )
 
