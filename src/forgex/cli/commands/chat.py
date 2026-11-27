@@ -11,9 +11,9 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.status import Status
 
+from forgex.cli.welcome import show_welcome
 from forgex.core import ForgexApplication
 from forgex.core.exceptions import ForgexError
-from forgex.cli.welcome import show_welcome
 
 console = Console()
 
