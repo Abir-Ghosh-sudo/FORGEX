@@ -27,7 +27,7 @@ def show_welcome(console: Console | None = None, *, wait_for_enter: bool = True)
     target = console or Console()
     target.clear()
 
-    eyebrow = Text("✦  FORGEX  /  AUTONOMOUS CODING WORKSPACE", style=f"bold {_HIGHLIGHT}")
+    eyebrow = Text("Welcome to the FORGEX terminal coding agent!", style=f"bold {_HIGHLIGHT}")
     mascot = Group(
         Text("          .----------------.          ", style=f"bold {_ACCENT}"),
         Text("       .-'   ◉        ◉   '-.       ", style=f"bold {_HIGHLIGHT}"),
