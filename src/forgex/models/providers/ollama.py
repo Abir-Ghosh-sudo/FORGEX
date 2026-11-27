@@ -222,9 +222,7 @@ class OllamaProvider(BaseModelProvider):
                 data = json.loads(resp.read().decode("utf-8", errors="replace") or "{}")
             models = data.get("models") or []
             names = [
-                str(item["name"])
-                for item in models
-                if isinstance(item, dict) and item.get("name")
+                str(item["name"]) for item in models if isinstance(item, dict) and item.get("name")
             ]
             if names:
                 return names
@@ -250,9 +248,7 @@ class OllamaProvider(BaseModelProvider):
                 provider="ollama",
             )
         return [
-            parts[0]
-            for line in (proc.stdout or "").splitlines()[1:]
-            if (parts := line.split())
+            parts[0] for line in (proc.stdout or "").splitlines()[1:] if (parts := line.split())
         ]
 
     @staticmethod
