@@ -168,8 +168,10 @@ class FileRetriever:
                 text = path.read_text(encoding="utf-8", errors="replace")
             except OSError:
                 continue
-            if compiled.search(text) if compiled else (
-                query in text if case_sensitive else query.lower() in text.lower()
+            if (
+                compiled.search(text)
+                if compiled
+                else (query in text if case_sensitive else query.lower() in text.lower())
             ):
                 results.append(rel)
                 if max_results is not None and len(results) >= max_results:
